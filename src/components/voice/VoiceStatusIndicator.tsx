@@ -1,98 +1,128 @@
 import React from 'react';
-import { Mic, MicOff, Volume2, Wifi, WifiOff } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, Languages, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 
-interface VoiceStatusIndicatorProps {
-  isConnected: boolean;
-  isListening: boolean;
-  isProcessing: boolean;
-  isSpeaking: boolean;
+export interface VoiceStatusIndicatorProps {
+  status: 'idle' | 'listening' | 'processing' | 'speaking' | 'error' | 'interrupted';
+  transcript?: string;
+  language?: string;
+  confidence?: number;
   className?: string;
 }
 
-export const VoiceStatusIndicator: React.FC<VoiceStatusIndicatorProps> = ({
-  isConnected,
-  isListening,
-  isProcessing,
-  isSpeaking,
-  className
-}) => {
+export const VoiceStatusIndicator = ({ 
+  status, 
+  transcript, 
+  language = 'EN',
+  confidence = 0,
+  className 
+}: VoiceStatusIndicatorProps) => {
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'listening':
+        return <Mic className="w-4 h-4 text-primary animate-pulse" />;
+      case 'processing':
+        return <Loader2 className="w-4 h-4 text-spiritual animate-spin" />;
+      case 'speaking':
+        return <Volume2 className="w-4 h-4 text-accent animate-bounce" />;
+      case 'error':
+        return <MicOff className="w-4 h-4 text-destructive" />;
+      case 'interrupted':
+        return <Pause className="w-4 h-4 text-muted-foreground" />;
+      default:
+        return <Mic className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
   const getStatusText = () => {
-    if (!isConnected) return "Disconnected";
-    if (isSpeaking) return "AI Speaking";
-    if (isProcessing) return "Processing...";
-    if (isListening) return "Listening";
-    return "Voice Ready";
+    switch (status) {
+      case 'listening':
+        return 'Listening...';
+      case 'processing':
+        return 'Processing...';
+      case 'speaking':
+        return 'AI Speaking...';
+      case 'error':
+        return 'Error detected';
+      case 'interrupted':
+        return 'Paused';
+      default:
+        return 'Ready';
+    }
   };
 
   const getStatusColor = () => {
-    if (!isConnected) return "text-muted-foreground";
-    if (isSpeaking) return "text-spiritual";
-    if (isProcessing) return "text-primary";
-    if (isListening) return "text-primary";
-    return "text-muted-foreground";
-  };
-
-  const getIndicatorIcon = () => {
-    if (!isConnected) return <WifiOff className="w-3 h-3" />;
-    if (isSpeaking) return <Volume2 className="w-3 h-3" />;
-    if (isListening) return <Mic className="w-3 h-3" />;
-    return <Wifi className="w-3 h-3" />;
+    switch (status) {
+      case 'listening':
+        return 'border-primary/50 bg-primary/5';
+      case 'processing':
+        return 'border-spiritual/50 bg-spiritual/5';
+      case 'speaking':
+        return 'border-accent/50 bg-accent/5';
+      case 'error':
+        return 'border-destructive/50 bg-destructive/5';
+      case 'interrupted':
+        return 'border-muted/50 bg-muted/5';
+      default:
+        return 'border-border/30 bg-background/50';
+    }
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <Badge 
-        variant={isConnected ? "default" : "secondary"}
-        className={cn(
-          "flex items-center gap-2 px-3 py-1 transition-all duration-300",
-          "border border-border/50 bg-background/90 backdrop-blur-sm",
-          getStatusColor()
-        )}
-      >
-        <div className={cn(
-          "flex items-center justify-center",
-          isListening && "animate-pulse",
-          isSpeaking && "animate-bounce"
-        )}>
-          {getIndicatorIcon()}
+    <div className={cn(
+      "relative backdrop-blur-sm border rounded-xl p-3 transition-all duration-300",
+      getStatusColor(),
+      className
+    )}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          {getStatusIcon()}
+          <span className="text-sm font-medium text-foreground">
+            {getStatusText()}
+          </span>
         </div>
         
-        <span className="text-xs font-medium">
-          {getStatusText()}
-        </span>
-        
-        {(isListening || isSpeaking || isProcessing) && (
-          <div className={cn(
-            "w-2 h-2 rounded-full",
-            isListening && "bg-primary animate-pulse",
-            isSpeaking && "bg-spiritual animate-pulse",
-            isProcessing && "bg-accent animate-spin"
-          )} />
-        )}
-      </Badge>
+        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+          <Languages className="w-3 h-3" />
+          <span className="font-mono">{language}</span>
+        </div>
+      </div>
       
-      {/* Connection quality indicator */}
-      {isConnected && (
-        <div className="flex items-center gap-1">
-          {[1, 2, 3].map((bar) => (
-            <div
-              key={bar}
-              className={cn(
-                "w-1 rounded-full transition-all duration-300",
-                "bg-primary/30",
-                bar === 1 && "h-2",
-                bar === 2 && "h-3", 
-                bar === 3 && "h-4",
-                isConnected && "bg-primary animate-pulse"
-              )}
-              style={{
-                animationDelay: `${bar * 100}ms`
-              }}
-            />
-          ))}
+      {transcript && (
+        <div className="space-y-2">
+          <div className="text-sm text-foreground/90 leading-relaxed">
+            {transcript}
+            {status === 'listening' && (
+              <span className="inline-flex items-center ml-1">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+              </span>
+            )}
+          </div>
+          
+          {confidence > 0 && (
+            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+              <span>Confidence:</span>
+              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full transition-all duration-300 rounded-full",
+                    confidence > 0.8 ? "bg-primary" : 
+                    confidence > 0.6 ? "bg-spiritual" : "bg-destructive"
+                  )}
+                  style={{ width: `${confidence * 100}%` }}
+                />
+              </div>
+              <span className="font-mono">{Math.round(confidence * 100)}%</span>
+            </div>
+          )}
         </div>
+      )}
+      
+      {(status === 'listening' || status === 'speaking') && (
+        <div className={cn(
+          "absolute inset-0 rounded-xl opacity-20 animate-pulse",
+          status === 'listening' ? "bg-primary" : "bg-accent"
+        )} style={{ animationDuration: '2s' }} />
       )}
     </div>
   );
