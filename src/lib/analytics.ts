@@ -43,10 +43,11 @@ class Analytics {
         session_id: this.sessionId
       };
 
-      // Store in Supabase
-      await supabase
-        .from('analytics_events')
-        .insert(event);
+      // Store locally until database table is available
+      const analyticsData = localStorage.getItem('analytics_events') || '[]';
+      const events = JSON.parse(analyticsData);
+      events.push(event);
+      localStorage.setItem('analytics_events', JSON.stringify(events.slice(-100))); // Keep last 100 events
 
       console.log('Analytics event tracked:', eventName, properties);
     } catch (error) {
