@@ -58,6 +58,7 @@ import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useRole } from '@/hooks/useRole';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { NotificationSystem } from '@/components/notifications/NotificationSystem';
+import { ConversationDialog } from '@/components/chat/ConversationDialog';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -76,11 +77,26 @@ export function AppSidebar() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAllConversations, setShowAllConversations] = useState(false);
-  const [editingConversation, setEditingConversation] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
+  
+  // Dialog states
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<'rename' | 'pin' | 'archive' | 'export'>('rename');
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
   const currentPath = location.pathname;
   const isMasterAdmin = () => role === 'master_admin';
+
+  // Sort conversations with pinned ones first
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const aPinned = a.metadata?.pinned || false;
+    const bPinned = b.metadata?.pinned || false;
+    
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+    
+    // If both pinned or both unpinned, sort by updated_at
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  });
 
   // Listen for global search keyboard shortcut
   React.useEffect(() => {
@@ -92,8 +108,14 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   
   const recentConversations = showAllConversations 
-    ? conversations 
-    : conversations.slice(0, 8);
+    ? sortedConversations 
+    : sortedConversations.slice(0, 8);
+
+  const openDialog = (type: 'rename' | 'pin' | 'archive' | 'export', conversation: any) => {
+    setSelectedConversation(conversation);
+    setDialogType(type);
+    setDialogOpen(true);
+  };
 
   const handleNewChat = async () => {
     console.log('NEW CHAT CLICKED - Starting new conversation');
@@ -139,17 +161,54 @@ export function AppSidebar() {
     }
   };
 
-  // Conversation actions
-  const handleRenameConversation = (conversation: any) => {
-    const newTitle = window.prompt('Enter new conversation title:', conversation.title || 'New Conversation');
-    if (newTitle && newTitle.trim() && newTitle.trim() !== conversation.title) {
-      updateConversation(conversation.id, { title: newTitle.trim() });
+  // Dialog handlers
+  const handleDialogConfirm = async (data: any) => {
+    if (!selectedConversation) return;
+
+    try {
+      switch (dialogType) {
+        case 'rename':
+          if (data.title && data.title !== selectedConversation.title) {
+            await updateConversation(selectedConversation.id, { title: data.title });
+          }
+          break;
+
+        case 'pin':
+          const currentMetadata = selectedConversation.metadata || {};
+          await updateConversation(selectedConversation.id, { 
+            metadata: { 
+              ...currentMetadata,
+              pinned: true, 
+              pinnedAt: new Date().toISOString(),
+              pinNote: data.description || null
+            } 
+          });
+          break;
+
+        case 'archive':
+          const archiveMetadata = selectedConversation.metadata || {};
+          await updateConversation(selectedConversation.id, { 
+            metadata: { 
+              ...archiveMetadata,
+              archived: true, 
+              archivedAt: new Date().toISOString(),
+              archiveReason: data.description || null
+            } 
+          });
+          break;
+
+        case 'export':
+          await handleExportChat(selectedConversation);
+          break;
+      }
+    } catch (error) {
+      console.error(`${dialogType} failed:`, error);
+      alert(`${dialogType} failed. Please try again.`);
     }
   };
 
   const handleExportChat = async (conversation: any) => {
     try {
-      // Get messages for this conversation if available
       const { data: messages } = await supabase
         .from('chat_messages')
         .select('*')
@@ -162,6 +221,7 @@ export function AppSidebar() {
         updated: conversation.updated_at,
         messageCount: messages?.length || 0,
         messages: messages || [],
+        metadata: conversation.metadata || {},
         exportedAt: new Date().toISOString()
       };
       
@@ -176,33 +236,7 @@ export function AppSidebar() {
       linkElement.click();
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
-    }
-  };
-
-  const handleArchiveConversation = async (conversationId: string) => {
-    try {
-      // Update conversation with archived metadata
-      await updateConversation(conversationId, { 
-        metadata: { archived: true, archivedAt: new Date().toISOString() } 
-      });
-      alert('Conversation archived successfully!');
-    } catch (error) {
-      console.error('Archive failed:', error);
-      alert('Archive failed. Please try again.');
-    }
-  };
-
-  const handlePinConversation = async (conversationId: string) => {
-    try {
-      // Update conversation with pinned metadata
-      await updateConversation(conversationId, { 
-        metadata: { pinned: true, pinnedAt: new Date().toISOString() } 
-      });
-      alert('Conversation pinned to top!');
-    } catch (error) {
-      console.error('Pin failed:', error);
-      alert('Pin failed. Please try again.');
+      throw error;
     }
   };
 
@@ -388,12 +422,17 @@ export function AppSidebar() {
                             className={cn(
                               "w-full transition-all duration-300 hover-lift group",
                               "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
-                              "hover:scale-[1.02] active:scale-[0.98] rounded-xl",
+                              "hover:scale-[1.02] active:scale-[0.98] rounded-xl relative",
                               collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-auto p-3",
                               currentConversation?.id === conversation.id && "bg-sidebar-accent text-sidebar-accent-foreground"
                             )}
                             title={collapsed ? (conversation.title || 'New Conversation') : undefined}
                           >
+                            {/* Pin indicator */}
+                            {conversation.metadata?.pinned && !collapsed && (
+                              <Pin className="absolute top-1 right-1 h-3 w-3 text-amber-500" />
+                            )}
+                            
                             <MessageSquare className={cn(
                               "flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110",
                               collapsed ? "h-4 w-4" : "h-4 w-4"
@@ -435,7 +474,7 @@ export function AppSidebar() {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handleRenameConversation(conversation);
+                                    openDialog('rename', conversation);
                                   }}
                                 >
                                   <Edit3 className="w-4 h-4 mr-2" />
@@ -445,17 +484,17 @@ export function AppSidebar() {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handlePinConversation(conversation.id);
+                                    openDialog('pin', conversation);
                                   }}
                                 >
                                   <Pin className="w-4 h-4 mr-2" />
-                                  Pin to Top
+                                  {conversation.metadata?.pinned ? 'Unpin' : 'Pin to Top'}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handleExportChat(conversation);
+                                    openDialog('export', conversation);
                                   }}
                                 >
                                   <Copy className="w-4 h-4 mr-2" />
@@ -466,7 +505,7 @@ export function AppSidebar() {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handleArchiveConversation(conversation.id);
+                                    openDialog('archive', conversation);
                                   }}
                                 >
                                   <Archive className="w-4 h-4 mr-2" />
@@ -507,7 +546,7 @@ export function AppSidebar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleRenameConversation(conversation);
+                            openDialog('rename', conversation);
                           }}
                         >
                           <Edit3 className="w-4 h-4 mr-2" />
@@ -517,17 +556,17 @@ export function AppSidebar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handlePinConversation(conversation.id);
+                            openDialog('pin', conversation);
                           }}
                         >
                           <Star className="w-4 h-4 mr-2" />
-                          Add to Favorites
+                          {conversation.metadata?.pinned ? 'Remove from Favorites' : 'Add to Favorites'}
                         </ContextMenuItem>
                         <ContextMenuItem 
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleExportChat(conversation);
+                            openDialog('export', conversation);
                           }}
                         >
                           <Copy className="w-4 h-4 mr-2" />
@@ -538,7 +577,7 @@ export function AppSidebar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleArchiveConversation(conversation.id);
+                            openDialog('archive', conversation);
                           }}
                         >
                           <Archive className="w-4 h-4 mr-2" />
@@ -666,6 +705,15 @@ export function AppSidebar() {
       )}
       
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      
+      {/* Conversation Dialog */}
+      <ConversationDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        conversation={selectedConversation}
+        type={dialogType}
+        onConfirm={handleDialogConfirm}
+      />
     </Sidebar>
   );
 }
