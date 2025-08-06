@@ -148,7 +148,7 @@ export function AppSidebar() {
             )}
           >
             <Plus className="h-5 w-5" />
-            {!collapsed && "New Chat"}
+            {!collapsed && <span className="text-primary-foreground font-semibold">New Chat</span>}
           </Button>
 
           {/* Search Button */}
