@@ -17,7 +17,8 @@ import {
   Edit3,
   Star,
   Pin,
-  Copy
+  Copy,
+  Minus
 } from 'lucide-react';
 import {
   Sidebar,
@@ -378,16 +379,16 @@ export function AppSidebar() {
                                   Archive
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => deleteConversation(conversation.id)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (window.confirm('Are you sure you want to delete this conversation?')) {
+                                      deleteConversation(conversation.id);
+                                    }
+                                  }}
                                   className="text-destructive focus:text-destructive"
                                 >
-                                  <DeleteButton 
-                                    iconStyle="minus"
-                                    size="xs"
-                                    variant="ghost"
-                                    className="w-4 h-4 mr-2 p-0"
-                                    confirmationRequired={false}
-                                  />
+                                  <Minus className="w-4 h-4 mr-2" />
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -420,20 +421,16 @@ export function AppSidebar() {
                           Archive
                         </ContextMenuItem>
                         <ContextMenuItem 
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (window.confirm('Are you sure you want to delete this conversation?')) {
                               deleteConversation(conversation.id);
                             }
                           }}
                           className="text-destructive focus:text-destructive"
                         >
-                          <DeleteButton 
-                            iconStyle="minus"
-                            size="xs"
-                            variant="ghost"
-                            className="w-4 h-4 mr-2 p-0"
-                            confirmationRequired={false}
-                          />
+                          <Minus className="w-4 h-4 mr-2" />
                           Delete Conversation
                         </ContextMenuItem>
                       </ContextMenuContent>
