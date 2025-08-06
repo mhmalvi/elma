@@ -128,51 +128,59 @@ export function AppSidebar() {
         "w-80 data-[state=collapsed]:w-16 min-w-16"
       )}
     >
-      <SidebarHeader className="border-b border-sidebar-border/50 p-4">
+      <SidebarHeader className="border-b border-sidebar-border/50 p-3">
         <button
           onClick={handleLogoClick}
           className={cn(
-            "flex items-center gap-3 w-full rounded-xl p-2 transition-all duration-300 group",
+            "flex items-center gap-3 w-full rounded-xl transition-all duration-300 group",
             "hover:bg-sidebar-accent/50 hover:scale-[1.02] active:scale-[0.98]",
-            collapsed && "justify-center"
+            collapsed ? "justify-center p-2" : "p-3"
           )}
         >
           <div className={cn(
-            "h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg",
+            "rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg",
             "transition-all duration-300 group-hover:shadow-primary/30 group-hover:scale-110",
+            collapsed ? "h-8 w-8" : "h-10 w-10",
             !collapsed && "shadow-primary/20"
           )}>
-            <Bot className="h-5 w-5 text-primary-foreground transition-transform duration-300 group-hover:rotate-12" />
+            <Bot className={cn(
+              "text-primary-foreground transition-transform duration-300 group-hover:rotate-12",
+              collapsed ? "h-4 w-4" : "h-5 w-5"
+            )} />
           </div>
           {!collapsed && (
-            <div className="flex-1 min-w-0 text-left">
-              <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent transition-all duration-300">
-                AirChatBot
-              </h2>
-              <p className="text-xs text-sidebar-foreground/70 font-medium transition-all duration-300 group-hover:text-sidebar-foreground/90">
-                Islamic AI Assistant
-              </p>
-            </div>
-          )}
-          {!collapsed && (
-            <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-all duration-300 group-hover:text-primary group-hover:translate-x-1" />
+            <>
+              <div className="flex-1 min-w-0 text-left">
+                <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent transition-all duration-300">
+                  AirChatBot
+                </h2>
+                <p className="text-xs text-sidebar-foreground/70 font-medium transition-all duration-300 group-hover:text-sidebar-foreground/90">
+                  Islamic AI Assistant
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-all duration-300 group-hover:text-primary group-hover:translate-x-1" />
+            </>
           )}
         </button>
       </SidebarHeader>
 
-      <SidebarContent className="flex-1 p-4 space-y-6">
+      <SidebarContent className={cn("flex-1 space-y-4", collapsed ? "p-2" : "p-4")}>
         {/* Action Buttons */}
         <div className="space-y-3">
           <Button 
             onClick={handleNewChat}
             className={cn(
-              "w-full justify-start gap-3 h-12 font-semibold bg-gradient-primary hover:bg-gradient-primary/90",
+              "w-full font-semibold bg-gradient-primary hover:bg-gradient-primary/90",
               "shadow-lg hover:shadow-primary/30 rounded-xl text-white border border-primary/20",
-              "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover-lift",
-              collapsed && "w-12 h-12 p-0 justify-center"
+              "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover-lift group",
+              collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-12"
             )}
+            title={collapsed ? "New Chat" : undefined}
           >
-            <Plus className="h-5 w-5 text-white transition-transform duration-300 group-hover:rotate-90" />
+            <Plus className={cn(
+              "text-white transition-transform duration-300 group-hover:rotate-90",
+              collapsed ? "h-4 w-4" : "h-5 w-5"
+            )} />
             {!collapsed && <span className="text-white font-semibold">New Chat</span>}
           </Button>
 
@@ -181,13 +189,17 @@ export function AppSidebar() {
             variant="outline"
             onClick={() => setSearchOpen(true)}
             className={cn(
-              "w-full justify-start gap-3 h-10 rounded-lg border-sidebar-border/50 group",
+              "w-full rounded-lg border-sidebar-border/50 group",
               "hover:bg-sidebar-accent hover:border-primary/20 transition-all duration-300",
               "hover:shadow-sm hover:scale-[1.01] active:scale-[0.99]",
-              collapsed && "w-10 h-10 p-0 justify-center"
+              collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-10"
             )}
+            title={collapsed ? "Search (⌘K)" : undefined}
           >
-            <Search className="h-4 w-4 text-sidebar-foreground/70 group-hover:text-primary transition-colors duration-300" />
+            <Search className={cn(
+              "text-sidebar-foreground/70 group-hover:text-primary transition-colors duration-300",
+              collapsed ? "h-4 w-4" : "h-4 w-4"
+            )} />
             {!collapsed && (
               <div className="flex items-center justify-between flex-1">
                 <span className="text-sidebar-foreground group-hover:text-sidebar-foreground transition-colors duration-300">Search</span>
@@ -208,9 +220,9 @@ export function AppSidebar() {
               size="sm"
               onClick={toggleTheme}
               className={cn(
-                "hover-lift rounded-lg transition-all duration-300 group relative overflow-hidden min-h-10",
+                "hover-lift rounded-lg transition-all duration-300 group relative overflow-hidden",
                 "hover:bg-sidebar-accent hover:shadow-sm hover:scale-105 active:scale-95",
-                collapsed && "w-10 h-10 p-0 mx-auto"
+                collapsed ? "w-10 h-10 p-0 mx-auto" : "min-h-10"
               )}
               title={collapsed ? (theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode') : undefined}
             >
@@ -228,9 +240,9 @@ export function AppSidebar() {
               size="sm"
               onClick={() => navigate('/bookmarks')}
               className={cn(
-                "hover-lift rounded-lg transition-all duration-300 group min-h-10",
+                "hover-lift rounded-lg transition-all duration-300 group",
                 "hover:bg-sidebar-accent hover:shadow-sm hover:scale-105 active:scale-95",
-                collapsed && "w-10 h-10 p-0 mx-auto"
+                collapsed ? "w-10 h-10 p-0 mx-auto" : "min-h-10"
               )}
               title={collapsed ? 'Bookmarks' : undefined}
             >
@@ -238,10 +250,10 @@ export function AppSidebar() {
             </Button>
             
             <div className={cn(
-              "flex justify-center items-center min-h-10",
-              collapsed && "mx-auto"
+              "flex justify-center items-center",
+              collapsed ? "mx-auto" : "min-h-10"
             )}>
-              <NotificationSystem />
+              <NotificationSystem collapsed={collapsed} />
             </div>
           </div>
         </div>
@@ -267,29 +279,32 @@ export function AppSidebar() {
                 {recentConversations.map((conversation) => (
                   <SidebarMenuItem key={conversation.id}>
                     <div className="group relative">
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleConversationClick(conversation.id)}
-                        className={cn(
-                          "w-full justify-start gap-3 h-auto p-3 rounded-xl transition-all duration-300 hover-lift group",
-                          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
-                          "hover:scale-[1.02] active:scale-[0.98]",
-                          collapsed && "w-12 h-12 p-0 justify-center"
-                        )}
-                        title={collapsed ? (conversation.title || 'New Conversation') : undefined}
-                      >
-                        <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110" />
-                        {!collapsed && (
-                          <div className="flex-1 text-left min-w-0">
-                            <div className="truncate text-sm font-medium text-sidebar-foreground transition-colors duration-300">
-                              {conversation.title || 'New Conversation'}
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleConversationClick(conversation.id)}
+                          className={cn(
+                            "w-full transition-all duration-300 hover-lift group",
+                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
+                            "hover:scale-[1.02] active:scale-[0.98] rounded-xl",
+                            collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-auto p-3"
+                          )}
+                          title={collapsed ? (conversation.title || 'New Conversation') : undefined}
+                        >
+                          <MessageSquare className={cn(
+                            "flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110",
+                            collapsed ? "h-4 w-4" : "h-4 w-4"
+                          )} />
+                          {!collapsed && (
+                            <div className="flex-1 text-left min-w-0">
+                              <div className="truncate text-sm font-medium text-sidebar-foreground transition-colors duration-300">
+                                {conversation.title || 'New Conversation'}
+                              </div>
+                              <div className="text-xs text-sidebar-foreground/60 transition-colors duration-300 group-hover:text-sidebar-foreground/80">
+                                {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                              </div>
                             </div>
-                            <div className="text-xs text-sidebar-foreground/60 transition-colors duration-300 group-hover:text-sidebar-foreground/80">
-                              {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
-                            </div>
-                          </div>
-                        )}
-                      </Button>
+                          )}
+                        </Button>
                       {!collapsed && (
                         <Button
                           variant="ghost"
@@ -314,28 +329,41 @@ export function AppSidebar() {
 
       </SidebarContent>
       
-      {/* User Profile Footer - Modern with Dropdown */}
+      {/* User Profile Footer */}
       {user && (
-        <div className="border-t border-sidebar-border/50 p-4">
+        <div className={cn("border-t border-sidebar-border/50", collapsed ? "p-2" : "p-4")}>
           {!collapsed ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-300 cursor-pointer group hover-lift hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]">
-                  <Avatar className="h-10 w-10 ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/40 group-hover:scale-105">
+                <div className={cn(
+                  "flex items-center rounded-xl hover:bg-sidebar-accent/50 transition-all duration-300 cursor-pointer group hover-lift hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]",
+                  collapsed ? "justify-center p-2" : "gap-3 p-3"
+                )}>
+                  <Avatar className={cn(
+                    "ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/40 group-hover:scale-105",
+                    collapsed ? "h-8 w-8" : "h-10 w-10"
+                  )}>
                     <AvatarImage src={profile?.avatar_url} className="transition-all duration-300" />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold transition-all duration-300 group-hover:scale-110">
+                    <AvatarFallback className={cn(
+                      "bg-gradient-primary text-primary-foreground font-bold transition-all duration-300 group-hover:scale-110",
+                      collapsed ? "text-xs" : "text-sm"
+                    )}>
                       {profile?.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate text-sidebar-foreground transition-colors duration-300">
-                      {profile?.display_name || user.email?.split('@')[0]}
-                    </p>
-                    <p className="text-xs text-sidebar-foreground/60 truncate transition-colors duration-300 group-hover:text-sidebar-foreground/80">
-                      {isMasterAdmin() ? 'Master Admin' : 'User'}
-                    </p>
-                  </div>
-                  <Settings className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-90 text-primary" />
+                  {!collapsed && (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate text-sidebar-foreground transition-colors duration-300">
+                          {profile?.display_name || user.email?.split('@')[0]}
+                        </p>
+                        <p className="text-xs text-sidebar-foreground/60 truncate transition-colors duration-300 group-hover:text-sidebar-foreground/80">
+                          {isMasterAdmin() ? 'Master Admin' : 'User'}
+                        </p>
+                      </div>
+                      <Settings className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-90 text-primary" />
+                    </>
+                  )}
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -374,9 +402,9 @@ export function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="flex justify-center">
-                  <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover-lift cursor-pointer transition-all duration-300 hover:ring-primary/40 hover:scale-110 active:scale-95 hover:shadow-lg">
+                  <Avatar className="h-8 w-8 ring-2 ring-primary/20 hover-lift cursor-pointer transition-all duration-300 hover:ring-primary/40 hover:scale-110 active:scale-95 hover:shadow-lg">
                     <AvatarImage src={profile?.avatar_url} className="transition-all duration-300" />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold transition-all duration-300 hover:scale-110">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs font-bold transition-all duration-300 hover:scale-110">
                       {profile?.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
