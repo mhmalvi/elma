@@ -2,61 +2,78 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'master_admin' | 'tenant_admin' | 'moderator' | 'user';
+export type AppRole = 'master_admin' | 'admin' | 'moderator' | 'user';
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: AppRole;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useRole = () => {
   const { user } = useAuth();
-  const [role, setRole] = useState<AppRole>('user');
-  const [tenants, setTenants] = useState<any[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setRole('user');
-      setTenants([]);
+      setProfile(null);
       setLoading(false);
       return;
     }
 
-    const fetchUserRole = async () => {
+    const fetchUserProfile = async () => {
       try {
-        // For now, return master_admin for testing
-        // TODO: Implement proper role checking once types are updated
-        setRole('master_admin');
-        setTenants([{ tenant_id: '1', tenant_name: 'Default Organization', tenant_slug: 'default', user_role: 'master_admin' }]);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          setProfile(null);
+        } else {
+          setProfile(data);
+        }
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Error fetching user profile:', error);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserRole();
+    fetchUserProfile();
   }, [user]);
 
-  const hasRole = (requiredRole: AppRole, tenantId?: string) => {
-    if (role === 'master_admin') return true;
+  const hasRole = (requiredRole: AppRole) => {
+    if (!profile) return false;
     
-    // Check if user has the required role in specific tenant
-    if (tenantId) {
-      const tenant = tenants.find(t => t.tenant_id === tenantId);
-      return tenant && (tenant.user_role === requiredRole || tenant.user_role === 'master_admin');
-    }
+    // Master admin has all permissions
+    if (profile.role === 'master_admin') return true;
     
-    return role === requiredRole;
+    // Check specific role
+    return profile.role === requiredRole;
   };
 
-  const isMasterAdmin = () => role === 'master_admin';
-  const isTenantAdmin = (tenantId?: string) => hasRole('tenant_admin', tenantId);
-  const isModerator = (tenantId?: string) => hasRole('moderator', tenantId);
+  const isMasterAdmin = () => profile?.role === 'master_admin';
+  const isAdmin = () => hasRole('admin');
+  const isModerator = () => hasRole('moderator');
+  const isUser = () => profile?.role === 'user';
 
   return {
-    role,
-    tenants,
+    profile,
+    role: profile?.role || 'user',
     loading,
     hasRole,
     isMasterAdmin,
-    isTenantAdmin,
-    isModerator
+    isAdmin,
+    isModerator,
+    isUser
   };
 };

@@ -50,11 +50,7 @@ import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
-const voiceNavItems = [
-  { title: 'Voice Test', url: '/voice-test', icon: TestTube, badge: 'Beta' },
-  { title: 'Voice Quality', url: '/voice-quality', icon: Volume2, badge: null },
-  { title: 'Performance', url: '/performance', icon: Zap, badge: null },
-];
+// Remove voice features from sidebar - they'll be in settings now
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -261,39 +257,6 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Voice Features */}
-        <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground font-semibold text-sm mb-4">Voice Features</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
-              {voiceNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate(item.url)}
-                    className={cn(
-                      "w-full justify-start gap-3 h-auto p-3 rounded-xl transition-all duration-200 hover-lift hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      isActive(item.url) && "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-sm",
-                      collapsed && "w-12 h-12 p-0 justify-center"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {!collapsed && (
-                      <div className="flex items-center justify-between flex-1">
-                        <span className="text-sm font-medium">{item.title}</span>
-                        {item.badge && (
-                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 rounded-lg">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </Button>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       
       {/* User Profile Footer - Modern with Dropdown */}

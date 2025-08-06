@@ -252,6 +252,7 @@ export type Database = {
           display_name: string | null
           id: string
           preferences: Json | null
+          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
         }
@@ -261,6 +262,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           preferences?: Json | null
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
         }
@@ -270,6 +272,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           preferences?: Json | null
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
         }
@@ -331,6 +334,17 @@ export type Database = {
           level: string
         }[]
       }
+      get_user_role: {
+        Args: { user_uuid?: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          required_role: Database["public"]["Enums"]["app_role"]
+          user_uuid?: string
+        }
+        Returns: boolean
+      }
       search_islamic_content: {
         Args: { search_query: string; result_limit?: number }
         Returns: {
@@ -343,7 +357,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "master_admin" | "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -470,6 +484,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["master_admin", "admin", "moderator", "user"],
+    },
   },
 } as const
