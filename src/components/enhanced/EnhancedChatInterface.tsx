@@ -140,6 +140,20 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         }
       }
 
+      // OPTIMISTIC UI: Add user message immediately
+      const userMessage = {
+        id: `temp-user-${Date.now()}`,
+        conversation_id: conversation.id,
+        user_id: user?.id || '',
+        content: messageText,
+        role: 'user' as const,
+        sources: [],
+        qdrant_context: {},
+        metadata: {},
+        created_at: new Date().toISOString()
+      };
+      addMessage(userMessage);
+
       console.log('Sending message to AI for conversation:', conversation.id);
       
       const { data, error } = await supabase.functions.invoke('ai-chat', {
@@ -156,15 +170,33 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       }
 
       console.log('AI response received:', data);
-      console.log('AI response structure:', JSON.stringify(data, null, 2));
 
-      // Auto-speak the response if voice mode is active
-      if (isListening && data.answer) {
-        await speakText(data.answer);
+      // Add AI response to UI immediately
+      if (data.answer || data.response) {
+        const aiMessage = {
+          id: `temp-ai-${Date.now()}`,
+          conversation_id: conversation.id,
+          user_id: user?.id || '',
+          content: data.answer || data.response,
+          role: 'assistant' as const,
+          sources: data.sources || [],
+          qdrant_context: data.qdrant_context || {},
+          metadata: data.metadata || {},
+          created_at: new Date().toISOString()
+        };
+        addMessage(aiMessage);
+
+        // Auto-speak the response if voice mode is active
+        if (isListening && (data.answer || data.response)) {
+          await speakText(data.answer || data.response);
+        }
       }
 
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Remove the optimistic user message on error
+      // The real-time subscription will handle proper message sync
       
       toast({
         title: "Error",
