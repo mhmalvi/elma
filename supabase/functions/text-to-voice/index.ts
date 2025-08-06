@@ -12,14 +12,21 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice, options } = await req.json()
+    console.log('Received request:', req.method)
+    
+    const requestBody = await req.json()
+    console.log('Request body received:', requestBody)
+    
+    const { text, voice, options } = requestBody
 
     if (!text) {
+      console.error('No text provided in request')
       throw new Error('Text is required')
     }
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY')
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key missing from environment')
       throw new Error('ElevenLabs API key not configured')
     }
 
@@ -117,8 +124,17 @@ serve(async (req) => {
     return await makeRequest(0)
   } catch (error) {
     console.error('Error in text-to-voice function:', error)
+    console.error('Error stack:', error.stack)
+    
+    // Return more detailed error information
+    const errorMessage = error.message || 'Unknown error occurred'
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.toString(),
+        timestamp: new Date().toISOString()
+      }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
