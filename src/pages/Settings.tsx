@@ -6,6 +6,9 @@ import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { VoiceTestSuite } from '@/components/voice/VoiceTestSuite'
+import { IslamicContentSeeder } from '@/components/database/IslamicContentSeeder'
+import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor'
 
 const Settings = () => {
   const navigate = useNavigate()
@@ -135,6 +138,19 @@ const Settings = () => {
                 <SelectItem value="fast">Fast</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </Card>
+
+        {/* System Diagnostics - High Priority Testing */}
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5" />
+            System Diagnostics
+          </h3>
+          <div className="space-y-6">
+            <VoiceTestSuite />
+            <IslamicContentSeeder />
+            <EdgeFunctionMonitor />
           </div>
         </Card>
 
