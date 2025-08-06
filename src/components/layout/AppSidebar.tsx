@@ -285,15 +285,19 @@ export function AppSidebar() {
           )}
         >
           <div className={cn(
-            "rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg",
+            "rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg overflow-hidden",
             "transition-all duration-300 group-hover:shadow-primary/30 group-hover:scale-110",
             collapsed ? "h-8 w-8" : "h-10 w-10",
             !collapsed && "shadow-primary/20"
           )}>
-            <Bot className={cn(
-              "text-primary-foreground transition-transform duration-300 group-hover:rotate-12",
-              collapsed ? "h-4 w-4" : "h-5 w-5"
-            )} />
+            <img 
+              src="/src/assets/airchatbot-logo.png" 
+              alt="AirChatBot"
+              className={cn(
+                "object-contain transition-transform duration-300 group-hover:rotate-12",
+                collapsed ? "h-5 w-5" : "h-6 w-6"
+              )}
+            />
           </div>
           {!collapsed && (
             <>
