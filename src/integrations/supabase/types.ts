@@ -319,6 +319,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_recent_function_logs: {
+        Args: { limit_count?: number }
+        Returns: {
+          log_timestamp: string
+          function_name: string
+          event_message: string
+          status_code: number
+          execution_time_ms: number
+          method: string
+          level: string
+        }[]
+      }
       search_islamic_content: {
         Args: { search_query: string; result_limit?: number }
         Returns: {

@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FunctionLog {
-  timestamp: string;
+  log_timestamp: string;
   function_name: string;
   event_message: string;
   status_code?: number;
@@ -37,52 +37,22 @@ export const EdgeFunctionMonitor = () => {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      // Since we don't have a specific function for logs, we'll create mock data
-      // based on the edge function analytics we can see
-      const mockLogs: FunctionLog[] = [
-        {
-          timestamp: new Date().toISOString(),
-          function_name: 'ai-chat',
-          event_message: 'Successfully generated response',
-          status_code: 200,
-          execution_time_ms: 4750,
-          method: 'POST',
-          level: 'log'
-        },
-        {
-          timestamp: new Date(Date.now() - 60000).toISOString(),
-          function_name: 'ai-chat',
-          event_message: 'Embedding generation failed: Models not found: text-embedding-3-small',
-          level: 'error'
-        },
-        {
-          timestamp: new Date(Date.now() - 120000).toISOString(),
-          function_name: 'ai-chat',
-          event_message: 'Processing question: How do I strengthen my relationship with Allah?',
-          status_code: 200,
-          level: 'log'
-        },
-        {
-          timestamp: new Date(Date.now() - 180000).toISOString(),
-          function_name: 'voice-to-text',
-          event_message: 'Audio transcription completed',
-          status_code: 200,
-          execution_time_ms: 2300,
-          method: 'POST',
-          level: 'log'
-        },
-        {
-          timestamp: new Date(Date.now() - 240000).toISOString(),
-          function_name: 'text-to-voice',
-          event_message: 'Speech synthesis completed',
-          status_code: 200,
-          execution_time_ms: 1800,
-          method: 'POST',
-          level: 'log'
-        }
-      ];
-      
-      setLogs(mockLogs);
+      const { data, error } = await supabase.rpc('get_recent_function_logs', { 
+        limit_count: 100 
+      });
+
+      if (error) {
+        console.error('Error fetching logs:', error);
+        throw error;
+      }
+
+      // Cast the data to ensure proper typing
+      const typedLogs: FunctionLog[] = (data || []).map((log: any) => ({
+        ...log,
+        level: log.level as FunctionLog['level']
+      }));
+
+      setLogs(typedLogs);
     } catch (error) {
       console.error('Error in fetchLogs:', error);
       toast({
@@ -126,7 +96,7 @@ export const EdgeFunctionMonitor = () => {
     return {
       name: functionName,
       status,
-      lastCall: functionLogs[0]?.timestamp,
+      lastCall: functionLogs[0]?.log_timestamp,
       averageResponseTime: avgResponseTime || undefined,
       errorRate: errorRate * 100,
       totalCalls: functionLogs.length
@@ -311,7 +281,7 @@ export const EdgeFunctionMonitor = () => {
                     </div>
                     <p className="text-xs">{log.event_message}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleString()}
+                      {new Date(log.log_timestamp).toLocaleString()}
                     </p>
                   </div>
                 ))}
