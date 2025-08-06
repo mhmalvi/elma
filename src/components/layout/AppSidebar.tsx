@@ -85,22 +85,20 @@ export function AppSidebar() {
     ? conversations 
     : conversations.slice(0, 8);
 
-  const handleNewChat = () => {
-    startNewConversation();
+  const handleNewChat = async () => {
+    await startNewConversation();
     // Navigate to chat if not already there
     if (currentPath !== '/chat') {
-      window.location.href = '/chat';
+      navigate('/chat');
     }
   };
 
-  const handleConversationClick = (conversationId: string) => {
+  const handleConversationClick = async (conversationId: string) => {
     const conversation = conversations.find(c => c.id === conversationId);
     if (conversation) {
-      selectConversation(conversation);
-      // Always navigate to chat and force refresh if already on chat
-      if (currentPath === '/chat') {
-        window.location.reload();
-      } else {
+      await selectConversation(conversation);
+      // Navigate to chat to show the conversation
+      if (currentPath !== '/chat') {
         navigate('/chat');
       }
     }
