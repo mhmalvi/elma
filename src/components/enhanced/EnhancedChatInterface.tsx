@@ -138,6 +138,9 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         if (!conversation) {
           throw new Error('Failed to create conversation');
         }
+        // CRITICAL FIX: Wait for conversation to be properly set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('Conversation created and set:', conversation.id);
       }
 
       // OPTIMISTIC UI: Add user message immediately
