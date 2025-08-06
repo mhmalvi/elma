@@ -37,14 +37,13 @@ export const VoiceModeSelector = ({ className }: VoiceModeSelectorProps) => {
         onClick={() => setMode(null)}
         disabled={isActive}
         className={cn(
-          "relative z-10 flex items-center gap-2 transition-all duration-300 rounded-full px-4 py-2 flex-1",
+          "relative z-10 flex items-center justify-center transition-all duration-300 rounded-full p-3 flex-1",
           currentMode === null ? "text-foreground" : "text-muted-foreground hover:text-foreground",
           isActive && "opacity-50 cursor-not-allowed"
         )}
         title="Text chat mode"
       >
-        <Type className="w-4 h-4" />
-        <span className="font-medium text-sm">Text</span>
+        <Type className="w-5 h-5" />
       </Button>
 
       {/* Dictation Mode Button */}
@@ -54,14 +53,13 @@ export const VoiceModeSelector = ({ className }: VoiceModeSelectorProps) => {
         onClick={() => handleModeSelect('dictation')}
         disabled={isActive}
         className={cn(
-          "relative z-10 flex items-center gap-2 transition-all duration-300 rounded-full px-4 py-2 flex-1",
+          "relative z-10 flex items-center justify-center transition-all duration-300 rounded-full p-3 flex-1",
           currentMode === 'dictation' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           isActive && "opacity-50 cursor-not-allowed"
         )}
         title="Voice memo mode"
       >
-        <Mic className="w-4 h-4" />
-        <span className="font-medium text-sm">Memo</span>
+        <Mic className="w-5 h-5" />
       </Button>
 
       {/* Live Talk Mode Button */}
@@ -71,14 +69,13 @@ export const VoiceModeSelector = ({ className }: VoiceModeSelectorProps) => {
         onClick={() => handleModeSelect('live')}
         disabled={isActive}
         className={cn(
-          "relative z-10 flex items-center gap-2 transition-all duration-300 rounded-full px-4 py-2 flex-1",
+          "relative z-10 flex items-center justify-center transition-all duration-300 rounded-full p-3 flex-1",
           currentMode === 'live' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           isActive && "opacity-50 cursor-not-allowed"
         )}
         title="Live conversation mode"
       >
-        <MessageCircle className="w-4 h-4" />
-        <span className="font-medium text-sm">Live</span>
+        <MessageCircle className="w-5 h-5" />
       </Button>
     </div>
   );
