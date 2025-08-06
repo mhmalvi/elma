@@ -210,7 +210,12 @@ export const useConversations = () => {
   // Select conversation
   const selectConversation = useCallback(async (conversation: Conversation) => {
     console.log('Selecting conversation:', conversation.title, conversation.id);
+    
+    // CRITICAL: Set the current conversation FIRST
     setCurrentConversation(conversation);
+    console.log('Current conversation set to:', conversation.id);
+    
+    // Then load messages
     await loadMessages(conversation.id);
     console.log('Conversation selected and messages loaded');
   }, [loadMessages]);
