@@ -91,7 +91,7 @@ export const useRealtimeSTT = () => {
     }
 
     recognition.onstart = () => {
-      console.log('Web Speech Recognition started');
+      console.log('🎤 Web Speech Recognition STARTED successfully');
       setSTTState(prev => ({
         ...prev,
         isListening: true,
@@ -99,6 +99,7 @@ export const useRealtimeSTT = () => {
         error: null
       }));
     };
+
 
     recognition.onresult = (event) => {
       let interimTranscript = '';

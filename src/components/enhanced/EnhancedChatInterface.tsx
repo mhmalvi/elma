@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { RealtimeSTTInterface } from '@/components/voice/RealtimeSTTInterface';
+import { VoiceDebugInterface } from '@/components/voice/VoiceDebugInterface';
 import { 
   Send, 
   Mic,
@@ -480,18 +480,20 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         </div>
       )}
 
-      {/* Real-time STT Interface */}
+      {/* Debug Voice Interface */}
       {showVoiceInterface && (
         <div className="border-t bg-muted/5 p-6">
           <div className="max-w-4xl mx-auto">
-            <RealtimeSTTInterface 
+            <VoiceDebugInterface 
               onTranscriptFinal={(transcript) => {
+                console.log('💬 CHAT: Received final transcript:', transcript);
                 setInputValue(transcript);
                 setShowVoiceInterface(false);
               }}
               onTranscriptUpdate={(transcript, isFinal) => {
+                console.log('💬 CHAT: Transcript update:', { transcript, isFinal });
                 if (!isFinal) {
-                  // Show real-time transcript preview
+                  // Show real-time transcript preview in input
                   setInputValue(transcript);
                 }
               }}
