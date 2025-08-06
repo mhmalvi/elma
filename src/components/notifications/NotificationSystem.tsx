@@ -169,7 +169,7 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
           >
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-card/90 backdrop-blur-sm">
+              <div className="flex items-center justify-between p-4 pt-8 border-b bg-card/90 backdrop-blur-sm">
                 <h3 className="font-semibold text-foreground">Notifications</h3>
                 <div className="flex items-center gap-2">
                   <Button
