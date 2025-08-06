@@ -11,17 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { User, Settings, Save, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
 interface Profile {
   display_name: string;
   avatar_url: string;
   role: string;
   preferences: any;
 }
-
 const Profile = () => {
-  const { user, loading } = useAuth();
-  const { toast } = useToast();
+  const {
+    user,
+    loading
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const [profile, setProfile] = useState<Profile>({
     display_name: '',
     avatar_url: '',
@@ -30,25 +33,20 @@ const Profile = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
   useEffect(() => {
     if (user) {
       loadProfile();
     }
   }, [user]);
-
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('*').eq('user_id', user?.id).maybeSingle();
       if (error) {
         throw error;
       }
-
       if (data) {
         setProfile({
           display_name: data.display_name || '',
@@ -76,23 +74,18 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
-
   const saveProfile = async () => {
     if (!user) return;
-
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          display_name: profile.display_name,
-          avatar_url: profile.avatar_url,
-          preferences: profile.preferences
-        })
-        .eq('user_id', user.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update({
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url,
+        preferences: profile.preferences
+      }).eq('user_id', user.id);
       if (error) throw error;
-
       toast({
         title: "Success",
         description: "Profile updated successfully"
@@ -108,18 +101,14 @@ const Profile = () => {
       setIsSaving(false);
     }
   };
-
   const uploadAvatar = async (file: File) => {
     if (!user) return;
-
     try {
       // Delete old avatar if exists
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/').pop();
         if (oldPath) {
-          await supabase.storage
-            .from('avatars')
-            .remove([`${user.id}/${oldPath}`]);
+          await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
         }
       }
 
@@ -127,21 +116,21 @@ const Profile = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const {
+        data
+      } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
       // Update profile with new avatar URL
-      setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
-
+      setProfile(prev => ({
+        ...prev,
+        avatar_url: data.publicUrl
+      }));
       toast({
         title: "Success",
         description: "Avatar uploaded successfully"
@@ -155,7 +144,6 @@ const Profile = () => {
       });
     }
   };
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -178,25 +166,18 @@ const Profile = () => {
         });
         return;
       }
-
       uploadAvatar(file);
     }
   };
-
   if (loading || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+    return <div className="flex items-center justify-center h-screen">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+      </div>;
   }
-
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-
-  return (
-    <div className="min-h-screen bg-background p-6">
+  return <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -232,13 +213,10 @@ const Profile = () => {
               <Label htmlFor="displayName" className="text-sm font-medium">
                 Display Name
               </Label>
-              <Input
-                id="displayName"
-                value={profile.display_name}
-                onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
-                placeholder="Enter your display name"
-                className="border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200"
-              />
+              <Input id="displayName" value={profile.display_name} onChange={e => setProfile(prev => ({
+              ...prev,
+              display_name: e.target.value
+            }))} placeholder="Enter your display name" className="border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200" />
               <p className="text-xs text-muted-foreground">
                 This is how your name will appear in conversations
               </p>
@@ -250,31 +228,17 @@ const Profile = () => {
                 Avatar URL
               </Label>
               <div className="flex gap-3">
-                <Input
-                  id="avatarUrl"
-                  value={profile.avatar_url}
-                  onChange={(e) => setProfile(prev => ({ ...prev, avatar_url: e.target.value }))}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="flex-1 border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200"
-                />
+                <Input id="avatarUrl" value={profile.avatar_url} onChange={e => setProfile(prev => ({
+                ...prev,
+                avatar_url: e.target.value
+              }))} placeholder="https://example.com/avatar.jpg" className="flex-1 border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200" />
                 <label htmlFor="avatar-upload" className="cursor-pointer">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-10 w-10 relative hover:bg-teal-50 hover:border-teal-400 transition-colors"
-                    asChild
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-10 w-10 relative hover:bg-teal-50 hover:border-teal-400 transition-colors" asChild>
                     <div>
                       <Upload className="h-4 w-4" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        id="avatar-upload"
-                        style={{ fontSize: '0' }}
-                      />
+                      <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="avatar-upload" style={{
+                      fontSize: '0'
+                    }} />
                     </div>
                   </Button>
                 </label>
@@ -303,16 +267,8 @@ const Profile = () => {
 
             {/* Actions */}
             <div className="flex gap-3 pt-6">
-              <Button 
-                onClick={saveProfile} 
-                disabled={isSaving}
-                className="flex-1 bg-gradient-primary hover:bg-gradient-primary/90 text-white border-2 border-teal-400"
-              >
-                {isSaving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
+              <Button onClick={saveProfile} disabled={isSaving} className="flex-1 bg-gradient-primary hover:bg-gradient-primary/90 text-white border-2 border-teal-400">
+                {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                 Save Changes
               </Button>
               <Button variant="outline" onClick={loadProfile} className="px-6">
@@ -323,26 +279,8 @@ const Profile = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer group">
-            <CardContent className="p-6 text-center space-y-2">
-              <Settings className="h-8 w-8 mx-auto text-muted-foreground group-hover:text-primary transition-colors" />
-              <h3 className="font-medium">App Settings</h3>
-              <p className="text-sm text-muted-foreground">Voice, notifications, and preferences</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer group">
-            <CardContent className="p-6 text-center space-y-2">
-              <User className="h-8 w-8 mx-auto text-muted-foreground group-hover:text-primary transition-colors" />
-              <h3 className="font-medium">Privacy</h3>
-              <p className="text-sm text-muted-foreground">Data and security settings</p>
-            </CardContent>
-          </Card>
-        </div>
+        
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Profile;
