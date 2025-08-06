@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DeleteButton } from '@/components/ui/delete-button';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -140,46 +141,69 @@ export function AppSidebar() {
 
   // Conversation actions
   const handleRenameConversation = (conversation: any) => {
-    setEditingConversation(conversation.id);
-    setEditTitle(conversation.title || 'New Conversation');
-  };
-
-  const handleSaveRename = async (conversationId: string) => {
-    if (editTitle.trim()) {
-      await updateConversation(conversationId, { title: editTitle.trim() });
-      setEditingConversation(null);
-      setEditTitle('');
+    const newTitle = window.prompt('Enter new conversation title:', conversation.title || 'New Conversation');
+    if (newTitle && newTitle.trim() && newTitle.trim() !== conversation.title) {
+      updateConversation(conversation.id, { title: newTitle.trim() });
     }
   };
 
-  const handleExportChat = (conversation: any) => {
-    // Create a simple text export
-    const exportData = {
-      title: conversation.title || 'New Conversation',
-      created: conversation.created_at,
-      updated: conversation.updated_at,
-      // Add message data when available
-    };
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `chat-${conversation.title || 'conversation'}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+  const handleExportChat = async (conversation: any) => {
+    try {
+      // Get messages for this conversation if available
+      const { data: messages } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true });
+
+      const exportData = {
+        title: conversation.title || 'New Conversation',
+        created: conversation.created_at,
+        updated: conversation.updated_at,
+        messageCount: messages?.length || 0,
+        messages: messages || [],
+        exportedAt: new Date().toISOString()
+      };
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `chat-${(conversation.title || 'conversation').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
-  const handleArchiveConversation = (conversationId: string) => {
-    // For now, we'll show a message about archiving
-    alert('Archive functionality will be available soon!');
+  const handleArchiveConversation = async (conversationId: string) => {
+    try {
+      // Update conversation with archived metadata
+      await updateConversation(conversationId, { 
+        metadata: { archived: true, archivedAt: new Date().toISOString() } 
+      });
+      alert('Conversation archived successfully!');
+    } catch (error) {
+      console.error('Archive failed:', error);
+      alert('Archive failed. Please try again.');
+    }
   };
 
-  const handlePinConversation = (conversationId: string) => {
-    // For now, we'll show a message about pinning
-    alert('Pin to top functionality will be available soon!');
+  const handlePinConversation = async (conversationId: string) => {
+    try {
+      // Update conversation with pinned metadata
+      await updateConversation(conversationId, { 
+        metadata: { pinned: true, pinnedAt: new Date().toISOString() } 
+      });
+      alert('Conversation pinned to top!');
+    } catch (error) {
+      console.error('Pin failed:', error);
+      alert('Pin failed. Please try again.');
+    }
   };
 
   const toggleTheme = () => {
