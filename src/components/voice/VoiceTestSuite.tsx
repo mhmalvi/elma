@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, Mic, Volume2, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Mic, Volume2, MessageSquare, TestTube } from 'lucide-react';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
+import { VoiceQualityTester } from './VoiceQualityTester';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -234,6 +235,15 @@ export const VoiceTestSuite = () => {
             <MessageSquare className="w-4 h-4" />
             AI Test
           </Button>
+        </div>
+
+        {/* Enhanced Quality Testing */}
+        <div className="mt-8 pt-6 border-t">
+          <div className="flex items-center gap-2 mb-4">
+            <TestTube className="w-5 h-5" />
+            <h3 className="text-lg font-semibold">Advanced Quality Testing</h3>
+          </div>
+          <VoiceQualityTester />
         </div>
       </CardContent>
     </Card>
