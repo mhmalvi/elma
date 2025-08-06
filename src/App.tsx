@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { WebLayout } from "@/components/layout/WebLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Bookmarks from "./pages/Bookmarks";
@@ -11,6 +11,10 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import { VoiceTestSuite } from "./components/voice/VoiceTestSuite";
+import { VoiceOptimizer } from "./components/performance/VoiceOptimizer";
+import { OfflineContentManager } from "./components/offline/OfflineContentManager";
+import { MobileBrowserTester } from "./components/performance/MobileBrowserTester";
 
 const queryClient = new QueryClient();
 
@@ -20,17 +24,36 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <WebLayout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/bookmarks" element={<Bookmarks />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </WebLayout>
+        <Routes>
+          {/* Auth route without layout */}
+          <Route path="/auth" element={<Auth />} />
+          
+          {/* All other routes with sidebar layout */}
+          <Route path="/*" element={
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/bookmarks" element={<Bookmarks />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/voice-test" element={<VoiceTestSuite />} />
+                <Route path="/performance" element={
+                  <div className="p-6 space-y-6">
+                    <VoiceOptimizer />
+                    <MobileBrowserTester />
+                  </div>
+                } />
+                <Route path="/offline" element={
+                  <div className="p-6">
+                    <OfflineContentManager />
+                  </div>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
