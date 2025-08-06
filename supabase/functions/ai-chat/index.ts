@@ -20,15 +20,99 @@ serve(async (req) => {
     }
 
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+    const QDRANT_API_KEY = Deno.env.get('QDRANT_API_KEY');
+    const QDRANT_ENDPOINT = Deno.env.get('QDRANT_ENDPOINT');
+
     if (!OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY is not configured');
     }
 
-    // System prompt for Islamic Q&A
-    const systemPrompt = `You are AirChatBot, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith. 
+    if (!QDRANT_API_KEY || !QDRANT_ENDPOINT) {
+      throw new Error('Qdrant credentials are not configured');
+    }
+
+    console.log('Processing question:', question);
+
+    // Step 1: Generate embedding for the question using OpenRouter
+    console.log('Generating embedding for question...');
+    const embeddingResponse = await fetch('https://openrouter.ai/api/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: question,
+      }),
+    });
+
+    if (!embeddingResponse.ok) {
+      const errorText = await embeddingResponse.text();
+      console.error('Embedding API error:', errorText);
+      throw new Error(`Failed to generate embedding: ${embeddingResponse.status}`);
+    }
+
+    const embeddingData = await embeddingResponse.json();
+    const questionEmbedding = embeddingData.data[0].embedding;
+    console.log('Generated embedding with dimension:', questionEmbedding.length);
+
+    // Step 2: Search for relevant context in Qdrant
+    console.log('Searching Qdrant for relevant context...');
+    const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_knowledge/points/search`, {
+      method: 'POST',
+      headers: {
+        'api-key': QDRANT_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        vector: questionEmbedding,
+        limit: 5,
+        with_payload: true,
+        score_threshold: 0.7
+      }),
+    });
+
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error('Qdrant search error:', errorText);
+      // Continue without RAG if Qdrant fails
+      console.log('Continuing without RAG context due to Qdrant error');
+    }
+
+    let contextText = '';
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json();
+      console.log('Found relevant documents:', searchData.result?.length || 0);
+      
+      if (searchData.result && searchData.result.length > 0) {
+        contextText = searchData.result
+          .map((result: any) => {
+            const payload = result.payload;
+            let context = '';
+            if (payload.text) context += payload.text;
+            if (payload.verse) context += `\n[Verse: ${payload.verse}]`;
+            if (payload.hadith) context += `\n[Hadith: ${payload.hadith}]`;
+            if (payload.reference) context += `\n[Reference: ${payload.reference}]`;
+            return context;
+          })
+          .join('\n\n---\n\n');
+        
+        console.log('Retrieved context length:', contextText.length);
+      }
+    }
+
+    // Step 3: Generate response with RAG context
+    const systemPrompt = `You are AirChatBot, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith.
+
+${contextText ? `RELEVANT CONTEXT FROM ISLAMIC SOURCES:
+${contextText}
+
+Use this context to provide accurate answers. Always cite the specific sources mentioned in the context.` : ''}
 
 Guidelines:
 - Answer questions about Islam using only authentic sources from the Quran and Hadith
+- If context is provided above, prioritize using that information and cite those specific sources
 - Provide warm, compassionate responses in a conversational tone
 - Keep answers concise (2-3 sentences) unless asked to explain more
 - Always cite your sources (Surah name and verse number, or Hadith collection)
@@ -41,7 +125,7 @@ Example response format:
 
 Source: Quran 2:155, Sahih Bukhari"`;
 
-    // Call OpenRouter API
+    console.log('Generating AI response...');
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -74,10 +158,12 @@ Source: Quran 2:155, Sahih Bukhari"`;
       throw new Error('No response from AI');
     }
 
+    console.log('Successfully generated response');
     return new Response(
       JSON.stringify({ 
         response: aiResponse,
-        success: true 
+        success: true,
+        contextUsed: contextText.length > 0
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
