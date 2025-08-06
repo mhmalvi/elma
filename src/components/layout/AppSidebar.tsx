@@ -296,7 +296,7 @@ export function AppSidebar() {
                   <Avatar className="h-4 w-4 mr-2">
                     <AvatarFallback className="text-xs">P</AvatarFallback>
                   </Avatar>
-                  Edit Profile
+                  Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/bookmarks')}>
                   <Bookmark className="h-4 w-4 mr-2" />
