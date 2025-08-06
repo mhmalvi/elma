@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react"
-import { ArrowLeft, Send, Settings } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { Send, Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { VoiceButton } from "@/components/ui/voice-button"
 import { ChatBubble } from "@/components/ui/chat-bubble"
 import { LoadingDots } from "@/components/ui/loading-dots"
+import { FloatingVoiceButton } from "@/components/ui/floating-voice-button"
+import { TopAppBar } from "@/components/ui/top-app-bar"
+import { ModernCard } from "@/components/ui/modern-card"
 import { useToast } from "@/hooks/use-toast"
 
 interface Message {
@@ -20,23 +21,23 @@ interface Message {
   }
 }
 
+const welcomeMessage: Message = {
+  id: '1',
+  text: "Assalamu Alaikum! I'm here to help you learn from the Quran and Hadith. You can speak to me or type your questions.",
+  isUser: false,
+  source: {
+    reference: "Welcome message"
+  }
+}
+
 const Chat = () => {
-  const navigate = useNavigate()
   const { toast } = useToast()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Assalamu Alaikum! I'm here to help you learn from the Quran and Hadith. You can speak to me or type your questions.",
-      isUser: false,
-      source: {
-        reference: "Welcome message"
-      }
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage])
   const [textInput, setTextInput] = useState("")
   const [isRecording, setIsRecording] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [transcript, setTranscript] = useState("")
+  const [showVoiceMode, setShowVoiceMode] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -60,6 +61,7 @@ const Chat = () => {
     
     setIsRecording(true)
     setTranscript("Listening...")
+    setShowVoiceMode(true)
     
     // Simulate recording (replace with actual implementation)
     setTimeout(() => {
@@ -73,6 +75,7 @@ const Chat = () => {
       handleSubmitMessage(transcript)
       setTranscript("")
     }
+    setTimeout(() => setShowVoiceMode(false), 500)
   }
 
   const handleSubmitMessage = async (message: string) => {
@@ -121,95 +124,124 @@ const Chat = () => {
     })
   }
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-lg font-semibold">AirChatBot</h1>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => navigate('/settings')}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-      </div>
+  const handleToggleAudio = () => {
+    // Toggle audio playback for all messages
+    toast({
+      title: "Audio toggled",
+      description: "Voice responses have been toggled"
+    })
+  }
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <ChatBubble
+  return (
+    <div className="flex flex-col h-screen bg-background pb-20">
+      {/* Modern App Bar */}
+      <TopAppBar
+        title="AirChatBot"
+        transparent
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleAudio}
+            className="rounded-full"
+          >
+            <Volume2 className="w-4 h-4" />
+          </Button>
+        }
+      />
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-4 scroll-smooth">
+        {messages.map((message, index) => (
+          <div
             key={message.id}
-            message={message.text}
-            isUser={message.isUser}
-            audioUrl={message.audioUrl}
-            source={message.source}
-            onExplainMore={() => handleExplainMore(message.id)}
-            onBookmark={() => handleBookmark(message.id)}
-          />
+            className="animate-in slide-in-from-bottom duration-500"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <ChatBubble
+              message={message.text}
+              isUser={message.isUser}
+              audioUrl={message.audioUrl}
+              source={message.source}
+              onExplainMore={() => handleExplainMore(message.id)}
+              onBookmark={() => handleBookmark(message.id)}
+            />
+          </div>
         ))}
         
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-card p-4 rounded-lg shadow-soft mr-4">
+          <div className="flex justify-start animate-in slide-in-from-bottom duration-300">
+            <ModernCard className="p-4 mr-4 bg-card/50 backdrop-blur-sm" hover={false}>
               <LoadingDots />
-            </div>
+            </ModernCard>
           </div>
         )}
         
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Voice Transcript */}
-      {transcript && (
-        <div className="px-4 py-2 bg-muted/50">
-          <p className="text-sm text-muted-foreground italic">
-            {transcript}
-          </p>
+      {/* Voice Mode Overlay */}
+      {showVoiceMode && (
+        <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-30 flex items-center justify-center">
+          <div className="text-center space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-2xl font-display font-semibold text-foreground">
+                {isRecording ? "Listening..." : "Processing..."}
+              </h2>
+              {transcript && transcript !== "Listening..." && (
+                <ModernCard className="p-4 max-w-sm mx-auto" hover={false}>
+                  <p className="text-muted-foreground italic">
+                    "{transcript}"
+                  </p>
+                </ModernCard>
+              )}
+            </div>
+            
+            <FloatingVoiceButton
+              isRecording={isRecording}
+              isLoading={isLoading}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
+            />
+          </div>
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          {/* Text Input */}
-          <form onSubmit={handleTextSubmit} className="flex-1 flex gap-2">
+      {/* Text Input (always visible) */}
+      <div className="sticky bottom-20 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border/50">
+        <div className="max-w-md mx-auto space-y-4">
+          {/* Quick Text Input */}
+          <form onSubmit={handleTextSubmit} className="flex gap-2">
             <Input
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Type your question..."
-              className="flex-1"
-              disabled={isLoading || isRecording}
+              className="flex-1 rounded-full bg-muted/50 border-none focus:bg-background transition-colors"
+              disabled={isLoading}
             />
             <Button 
               type="submit" 
               size="sm"
-              disabled={!textInput.trim() || isLoading || isRecording}
+              disabled={!textInput.trim() || isLoading}
+              className="rounded-full w-10 h-10 p-0 primary-gradient"
             >
               <Send className="w-4 h-4" />
             </Button>
           </form>
 
-          {/* Voice Button */}
-          <VoiceButton
-            isRecording={isRecording}
-            isLoading={isLoading}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording}
-          />
+          {/* Voice Trigger */}
+          <div className="flex justify-center">
+            <Button
+              onClick={() => setShowVoiceMode(true)}
+              disabled={isLoading}
+              variant="outline"
+              className="rounded-full px-6 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+            >
+              <Volume2 className="w-4 h-4 mr-2" />
+              Speak to ask
+            </Button>
+          </div>
         </div>
-        
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Speak naturally or type your questions about Islam
-        </p>
       </div>
     </div>
   )
