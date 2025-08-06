@@ -94,22 +94,12 @@ export function AppSidebar() {
   };
 
   const handleConversationClick = async (conversationId: string) => {
-    console.log('Conversation clicked:', conversationId);
     const conversation = conversations.find(c => c.id === conversationId);
-    console.log('Found conversation:', conversation);
     if (conversation) {
-      console.log('Selecting conversation...');
       await selectConversation(conversation);
-      console.log('Conversation selected, navigating if needed...');
-      // Navigate to chat to show the conversation
       if (currentPath !== '/chat') {
-        console.log('Navigating to /chat');
         navigate('/chat');
-      } else {
-        console.log('Already on /chat, no navigation needed');
       }
-    } else {
-      console.error('Conversation not found in list');
     }
   };
 
