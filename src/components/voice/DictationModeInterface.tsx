@@ -7,6 +7,7 @@ import { useRealtimeSTT } from '@/hooks/useRealtimeSTT';
 import { AIAvatar } from './AIAvatar';
 import { RealTimeWaveform } from './RealTimeWaveform';
 import { VoiceStatusIndicator } from './VoiceStatusIndicator';
+import { LanguageSelector } from './LanguageSelector';
 import { cn } from '@/lib/utils';
 
 interface DictationModeInterfaceProps {
@@ -21,6 +22,8 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
   const [editMode, setEditMode] = useState(false);
   const [editedText, setEditedText] = useState('');
   const [showProcessing, setShowProcessing] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('en-US');
+  const [detectedLanguage, setDetectedLanguage] = useState<string>();
 
   const { sttState, startListening, stopListening, clearTranscript } = useRealtimeSTT();
 
@@ -99,12 +102,13 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
   return (
     <div className={cn("space-y-8", className)}>
       {/* Enhanced Header with Language Support */}
-      <div className="text-center space-y-3 animate-fade-in">
-        <div className="flex items-center justify-center gap-3">
+      <div className="text-center space-y-4 animate-slide-in-up">
+        <div className="flex items-center justify-center gap-4">
           <AIAvatar 
             isListening={isRecording}
             isThinking={showProcessing}
             size="md"
+            className="animate-breathe"
           />
           <div>
             <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
@@ -114,11 +118,13 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
           </div>
         </div>
         
-        {/* Language indicator */}
-        <div className="flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/30 backdrop-blur-sm">
-          <Languages className="w-3 h-3 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground">Auto-detect</span>
-        </div>
+        {/* Language Selector */}
+        <LanguageSelector
+          currentLanguage={currentLanguage}
+          detectedLanguage={detectedLanguage}
+          onLanguageChange={setCurrentLanguage}
+          className="mx-auto"
+        />
       </div>
 
       {/* Enhanced Central Recording Area */}
@@ -131,7 +137,7 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
               variant="circular"
               color="primary"
               size="lg"
-              className="animate-pulse"
+              className="animate-gentle-pulse"
             />
           </div>
         )}
@@ -139,12 +145,12 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
         {/* Outer Ring Effects */}
         {isRecording && (
           <>
-            <div className="absolute w-40 h-40 border border-primary/20 rounded-full animate-ping" 
-                 style={{ animationDuration: '2s' }} />
-            <div className="absolute w-52 h-52 border border-primary/10 rounded-full animate-pulse" 
-                 style={{ animationDelay: '0.5s', animationDuration: '3s' }} />
-            <div className="absolute w-64 h-64 border border-primary/5 rounded-full animate-pulse" 
-                 style={{ animationDelay: '1s', animationDuration: '4s' }} />
+            <div className="absolute w-40 h-40 border border-primary/20 rounded-full animate-gentle-pulse" 
+                 style={{ animationDuration: '3s' }} />
+            <div className="absolute w-52 h-52 border border-primary/10 rounded-full animate-breathe" 
+                 style={{ animationDelay: '0.5s', animationDuration: '4s' }} />
+            <div className="absolute w-64 h-64 border border-primary/5 rounded-full animate-breathe" 
+                 style={{ animationDelay: '1s', animationDuration: '5s' }} />
           </>
         )}
         
@@ -154,7 +160,7 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
             onClick={handleStartRecording}
             size="lg"
             className={cn(
-              "relative w-24 h-24 rounded-full transition-all duration-500",
+              "relative w-24 h-24 rounded-full transition-all duration-700", // Slower
               "bg-gradient-to-br from-primary via-primary-glow to-primary/90",
               "hover:from-primary/95 hover:to-primary-glow/80",
               "shadow-2xl hover:shadow-primary/30 hover:scale-110",
