@@ -169,16 +169,19 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
           >
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-card/50">
-                <h3 className="font-semibold text-card-foreground">Notifications</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center justify-between p-4 border-b bg-card/90 backdrop-blur-sm">
+                <h3 className="font-semibold text-foreground">Notifications</h3>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsOpen(false)}
+                    className="h-8 px-3 border border-border/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-300"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Close
+                  </Button>
+                </div>
               </div>
               
               {/* Content */}
