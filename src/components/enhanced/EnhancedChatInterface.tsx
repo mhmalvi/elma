@@ -49,6 +49,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   const { toast } = useToast();
   
   // Use conversation management hook
+  const conversationHookResult = useConversations();
   const {
     currentConversation,
     messages: conversationMessages,
@@ -56,7 +57,14 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     addMessage,
     messagesLoading,
     selectConversation
-  } = useConversations();
+  } = conversationHookResult;
+  
+  // Debug hook result
+  console.log('ENHANCED CHAT INTERFACE - Hook result:', {
+    currentConversation: currentConversation?.id,
+    messagesCount: conversationMessages.length,
+    hookResult: conversationHookResult
+  });
   
   const {
     isRecording,
