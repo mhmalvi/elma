@@ -190,11 +190,20 @@ export const useAdvancedVoice = () => {
   // Process audio blob and send to STT service
   const processAudioBlob = useCallback(async (audioBlob: Blob) => {
     try {
-      // Convert blob to base64
+      // Convert blob to base64 in chunks to avoid stack overflow
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const base64Audio = btoa(
-        String.fromCharCode(...new Uint8Array(arrayBuffer))
-      );
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Process in chunks to avoid maximum call stack size exceeded
+      const chunkSize = 8192;
+      let binaryString = '';
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+      }
+      
+      const base64Audio = btoa(binaryString);
 
       // Send to Supabase Edge Function for STT
       const { data, error } = await supabase.functions.invoke('voice-to-text', {
