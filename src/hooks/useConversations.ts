@@ -77,7 +77,12 @@ export const useConversations = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+      
+      console.log('RAW SUPABASE MESSAGE RESPONSE:', data);
+      console.log('Messages found:', data?.length || 0);
+      
       setMessages((data || []) as ChatMessage[]);
+      console.log('Messages set in state, length:', (data || []).length);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast({
@@ -87,6 +92,7 @@ export const useConversations = () => {
       });
     } finally {
       setMessagesLoading(false);
+      console.log('Message loading completed');
     }
   }, [user?.id, toast]);
 
@@ -224,39 +230,41 @@ export const useConversations = () => {
 
   // Real-time subscription to conversations only
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     console.log('Setting up real-time subscriptions for user:', user.id);
 
-    // Subscribe to conversation changes
+    // Subscribe to conversation changes - simplified to avoid binding mismatch
     const conversationChannel = supabase
-      .channel(`conversations-changes-${user.id}`)
+      .channel(`conversations-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'conversations',
-          filter: `user_id=eq.${user.id}`
+          table: 'conversations'
         },
         (payload) => {
-          console.log('Realtime conversation event:', payload.eventType, payload);
-          if (payload.eventType === 'INSERT') {
-            const newConversation = payload.new as Conversation;
-            setConversations(prev => {
-              // Check if conversation already exists to avoid duplicates
-              if (prev.find(conv => conv.id === newConversation.id)) {
-                return prev;
-              }
-              return [newConversation, ...prev];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedConversation = payload.new as Conversation;
-            setConversations(prev => 
-              prev.map(conv => conv.id === updatedConversation.id ? updatedConversation : conv)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setConversations(prev => prev.filter(conv => conv.id !== payload.old.id));
+          // Only process if it's for this user
+          const data = payload.new || payload.old;
+          if (data && (data as any).user_id === user.id) {
+            console.log('Realtime conversation event:', payload.eventType);
+            if (payload.eventType === 'INSERT') {
+              const newConversation = payload.new as Conversation;
+              setConversations(prev => {
+                if (prev.find(conv => conv.id === newConversation.id)) {
+                  return prev;
+                }
+                return [newConversation, ...prev];
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedConversation = payload.new as Conversation;
+              setConversations(prev => 
+                prev.map(conv => conv.id === updatedConversation.id ? updatedConversation : conv)
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setConversations(prev => prev.filter(conv => conv.id !== payload.old.id));
+            }
           }
         }
       )
@@ -271,7 +279,7 @@ export const useConversations = () => {
       console.log('Cleaning up conversation subscription');
       supabase.removeChannel(conversationChannel);
     };
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+  }, [user?.id]);
 
   // Separate effect for message subscriptions
   useEffect(() => {
