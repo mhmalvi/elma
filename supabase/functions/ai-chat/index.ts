@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,96 +14,114 @@ serve(async (req) => {
   }
 
   try {
-    const { question } = await req.json();
+    const { question, conversationId } = await req.json();
     
     if (!question) {
       throw new Error('Question is required');
     }
 
+    // Get environment variables
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     const QDRANT_API_KEY = Deno.env.get('QDRANT_API_KEY');
     const QDRANT_ENDPOINT = Deno.env.get('QDRANT_ENDPOINT');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY is not configured');
     }
 
-    if (!QDRANT_API_KEY || !QDRANT_ENDPOINT) {
-      throw new Error('Qdrant credentials are not configured');
+    // Initialize Supabase client
+    const supabase = createClient(
+      SUPABASE_URL!,
+      SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Get user from authorization header
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.log('Authentication failed, proceeding without user context');
     }
 
     console.log('Processing question:', question);
-
-    // Step 1: Generate embedding for the question using OpenRouter
-    console.log('Generating embedding for question...');
-    const embeddingResponse = await fetch('https://openrouter.ai/api/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: question,
-      }),
-    });
-
-    if (!embeddingResponse.ok) {
-      const errorText = await embeddingResponse.text();
-      console.error('Embedding API error:', errorText);
-      throw new Error(`Failed to generate embedding: ${embeddingResponse.status}`);
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const questionEmbedding = embeddingData.data[0].embedding;
-    console.log('Generated embedding with dimension:', questionEmbedding.length);
-
-    // Step 2: Search for relevant context in Qdrant
-    console.log('Searching Qdrant for relevant context...');
-    const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_knowledge/points/search`, {
-      method: 'POST',
-      headers: {
-        'api-key': QDRANT_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        vector: questionEmbedding,
-        limit: 5,
-        with_payload: true,
-        score_threshold: 0.7
-      }),
-    });
-
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('Qdrant search error:', errorText);
-      // Continue without RAG if Qdrant fails
-      console.log('Continuing without RAG context due to Qdrant error');
-    }
+    console.log('User ID:', user?.id);
 
     let contextText = '';
-    if (searchResponse.ok) {
-      const searchData = await searchResponse.json();
-      console.log('Found relevant documents:', searchData.result?.length || 0);
-      
-      if (searchData.result && searchData.result.length > 0) {
-        contextText = searchData.result
-          .map((result: any) => {
-            const payload = result.payload;
-            let context = '';
-            if (payload.text) context += payload.text;
-            if (payload.verse) context += `\n[Verse: ${payload.verse}]`;
-            if (payload.hadith) context += `\n[Hadith: ${payload.hadith}]`;
-            if (payload.reference) context += `\n[Reference: ${payload.reference}]`;
-            return context;
-          })
-          .join('\n\n---\n\n');
+    let qdrantResults = null;
+
+    // Step 1: Try to get context from Qdrant if configured
+    if (QDRANT_API_KEY && QDRANT_ENDPOINT) {
+      try {
+        console.log('Generating embedding for Qdrant search...');
         
-        console.log('Retrieved context length:', contextText.length);
+        // Generate embedding using a simpler approach
+        const embeddingResponse = await fetch('https://openrouter.ai/api/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: question,
+          }),
+        });
+
+        if (embeddingResponse.ok) {
+          const embeddingData = await embeddingResponse.json();
+          const questionEmbedding = embeddingData.data[0].embedding;
+          console.log('Generated embedding successfully');
+
+          // Search Qdrant
+          console.log('Searching Qdrant for relevant context...');
+          const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_knowledge/points/search`, {
+            method: 'POST',
+            headers: {
+              'api-key': QDRANT_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vector: questionEmbedding,
+              limit: 3,
+              with_payload: true,
+              score_threshold: 0.6
+            }),
+          });
+
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            qdrantResults = searchData.result;
+            console.log('Found relevant documents:', qdrantResults?.length || 0);
+            
+            if (qdrantResults && qdrantResults.length > 0) {
+              contextText = qdrantResults
+                .map((result: any) => {
+                  const payload = result.payload;
+                  let context = '';
+                  if (payload.text) context += payload.text;
+                  if (payload.verse) context += `\n[Verse: ${payload.verse}]`;
+                  if (payload.hadith) context += `\n[Hadith: ${payload.hadith}]`;
+                  if (payload.reference) context += `\n[Reference: ${payload.reference}]`;
+                  return context;
+                })
+                .join('\n\n---\n\n');
+            }
+          } else {
+            console.error('Qdrant search failed:', await searchResponse.text());
+          }
+        } else {
+          console.error('Embedding generation failed:', await embeddingResponse.text());
+        }
+      } catch (qdrantError) {
+        console.error('Qdrant integration error:', qdrantError);
+        // Continue without Qdrant context
       }
     }
 
-    // Step 3: Generate response with RAG context
+    // Step 2: Generate AI response
     const systemPrompt = `You are AirChatBot, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith.
 
 ${contextText ? `RELEVANT CONTEXT FROM ISLAMIC SOURCES:
@@ -126,7 +145,7 @@ Example response format:
 Source: Quran 2:155, Sahih Bukhari"`;
 
     console.log('Generating AI response...');
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -135,7 +154,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
         'X-Title': 'AirChatBot - Islamic AI Assistant'
       },
       body: JSON.stringify({
-        model: 'moonshotai/kimi-k2:free',
+        model: 'anthropic/claude-3-haiku',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: question }
@@ -145,25 +164,80 @@ Source: Quran 2:155, Sahih Bukhari"`;
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
       console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status}`);
+      throw new Error(`Failed to generate AI response: ${aiResponse.status}`);
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content;
+    const aiData = await aiResponse.json();
+    const response = aiData.choices[0]?.message?.content;
 
-    if (!aiResponse) {
+    if (!response) {
       throw new Error('No response from AI');
+    }
+
+    // Step 3: Store conversation in Supabase if user is authenticated
+    if (user) {
+      try {
+        let currentConversationId = conversationId;
+
+        // Create or get conversation
+        if (!currentConversationId) {
+          const { data: newConversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              user_id: user.id,
+              title: question.substring(0, 100) + (question.length > 100 ? '...' : ''),
+              metadata: { first_question: question }
+            })
+            .select('id')
+            .single();
+
+          if (!convError && newConversation) {
+            currentConversationId = newConversation.id;
+          }
+        }
+
+        // Store user message
+        if (currentConversationId) {
+          await supabase
+            .from('chat_messages')
+            .insert({
+              conversation_id: currentConversationId,
+              user_id: user.id,
+              content: question,
+              role: 'user'
+            });
+
+          // Store AI response
+          await supabase
+            .from('chat_messages')
+            .insert({
+              conversation_id: currentConversationId,
+              user_id: user.id,
+              content: response,
+              role: 'assistant',
+              sources: qdrantResults ? qdrantResults.map((r: any) => r.payload) : [],
+              qdrant_context: {
+                used_context: contextText.length > 0,
+                results_count: qdrantResults?.length || 0
+              }
+            });
+        }
+      } catch (dbError) {
+        console.error('Database storage error:', dbError);
+        // Continue without storing - don't fail the request
+      }
     }
 
     console.log('Successfully generated response');
     return new Response(
       JSON.stringify({ 
-        response: aiResponse,
+        response,
         success: true,
-        contextUsed: contextText.length > 0
+        contextUsed: contextText.length > 0,
+        conversationId: conversationId || null
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
