@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -23,6 +23,61 @@ export const useVoiceIntegration = () => {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null)
   
   const { toast } = useToast()
+
+  // Cleanup speech synthesis on component unmount or page refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+    }
+
+    const handleUnload = () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+    }
+
+    // Add event listeners for page unload
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('unload', handleUnload)
+
+    // Cleanup function
+    return () => {
+      // Stop any ongoing speech synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+      
+      // Stop any audio elements
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause()
+        currentAudioRef.current = null
+      }
+      
+      // Remove event listeners
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('unload', handleUnload)
+    }
+  }, [])
+
+  // Stop all audio when component unmounts
+  useEffect(() => {
+    return () => {
+      // Stop speech synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+      
+      // Stop audio element
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause()
+        currentAudioRef.current = null
+      }
+      
+      setIsPlayingAudio(false)
+    }
+  }, [])
 
   const startRecording = useCallback(async () => {
     try {
@@ -166,13 +221,13 @@ export const useVoiceIntegration = () => {
   const speakText = useCallback(async (text: string, useHighQuality = true) => {
     if (!text.trim()) return
 
-    // Stop any currently playing audio
+    // CRITICAL: Stop any currently playing audio first
     if (currentAudioRef.current) {
       currentAudioRef.current.pause()
       currentAudioRef.current = null
     }
 
-    // Stop any ongoing speech synthesis
+    // CRITICAL: Stop any ongoing speech synthesis
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
     }
@@ -325,15 +380,19 @@ export const useVoiceIntegration = () => {
   }, [toast])
 
   const stopAudio = useCallback(() => {
+    console.log('Stopping all audio...')
+    
     // Stop audio element
     if (currentAudioRef.current) {
       currentAudioRef.current.pause()
+      currentAudioRef.current.currentTime = 0
       currentAudioRef.current = null
     }
     
-    // Stop speech synthesis
+    // Stop speech synthesis - this is critical for persistent audio
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
+      console.log('Speech synthesis cancelled')
     }
     
     setIsPlayingAudio(false)
