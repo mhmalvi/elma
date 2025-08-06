@@ -105,10 +105,17 @@ export const useConversations = () => {
       
       const newConversation = data as Conversation;
       
-      // Don't update local state here - let real-time subscription handle it
-      // to avoid duplicates, but do set as current conversation
+      // Set as current conversation and clear messages
       setCurrentConversation(newConversation);
-      setMessages([]); // Clear messages for new conversation
+      setMessages([]);
+      
+      // Add to conversations list as fallback (in case real-time fails)
+      setConversations(prev => {
+        if (prev.find(conv => conv.id === newConversation.id)) {
+          return prev; // Already exists
+        }
+        return [newConversation, ...prev];
+      });
       
       console.log('Created new conversation:', newConversation);
       return newConversation;
@@ -217,7 +224,13 @@ export const useConversations = () => {
 
     // Subscribe to conversation changes
     const conversationChannel = supabase
-      .channel(`conversations-changes-${user.id}`)
+      .channel(`conversations-changes-${user.id}`, {
+        config: {
+          presence: {
+            key: user.id,
+          },
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -249,51 +262,73 @@ export const useConversations = () => {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log('Conversation channel subscription status:', status);
+        if (err) {
+          console.error('Conversation channel subscription error:', err);
+        }
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to conversation changes');
+        }
       });
 
-    // Subscribe to messages for current conversation
-    let messageChannel: any = null;
-    if (currentConversation) {
-      console.log('Setting up message subscription for conversation:', currentConversation.id);
-      messageChannel = supabase
-        .channel(`chat-messages-${currentConversation.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages',
-            filter: `conversation_id=eq.${currentConversation.id}`
+    return () => {
+      console.log('Cleaning up conversation subscription');
+      supabase.removeChannel(conversationChannel);
+    };
+  }, [user]);
+
+  // Separate effect for message subscriptions
+  useEffect(() => {
+    if (!user || !currentConversation) return;
+
+    console.log('Setting up message subscription for conversation:', currentConversation.id);
+    
+    const messageChannel = supabase
+      .channel(`chat-messages-${currentConversation.id}`, {
+        config: {
+          presence: {
+            key: `${user.id}-${currentConversation.id}`,
           },
-          (payload) => {
-            console.log('Realtime message event:', payload);
-            const newMessage = payload.new as ChatMessage;
-            if (newMessage.user_id === user.id) {
-              setMessages(prev => {
-                // Avoid duplicates
-                if (prev.find(msg => msg.id === newMessage.id)) {
-                  console.log('Message already exists, skipping duplicate');
-                  return prev;
-                }
-                console.log('Adding new message:', newMessage.content.substring(0, 50) + '...');
-                return [...prev, newMessage];
-              });
-            }
+        },
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${currentConversation.id}`
+        },
+        (payload) => {
+          console.log('Realtime message event:', payload);
+          const newMessage = payload.new as ChatMessage;
+          if (newMessage.user_id === user.id) {
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.find(msg => msg.id === newMessage.id)) {
+                console.log('Message already exists, skipping duplicate');
+                return prev;
+              }
+              console.log('Adding new message:', newMessage.content.substring(0, 50) + '...');
+              return [...prev, newMessage];
+            });
           }
-        )
-        .subscribe((status) => {
-          console.log('Message channel subscription status:', status);
-        });
-    }
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('Message channel subscription status:', status);
+        if (err) {
+          console.error('Message channel subscription error:', err);
+        }
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to message changes for conversation:', currentConversation.id);
+        }
+      });
 
     return () => {
-      console.log('Cleaning up real-time subscriptions');
-      supabase.removeChannel(conversationChannel);
-      if (messageChannel) {
-        supabase.removeChannel(messageChannel);
-      }
+      console.log('Cleaning up message subscription for conversation:', currentConversation.id);
+      supabase.removeChannel(messageChannel);
     };
   }, [user, currentConversation]);
 
