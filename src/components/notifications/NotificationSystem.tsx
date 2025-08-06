@@ -156,26 +156,92 @@ export const NotificationSystem = () => {
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:mt-2 lg:w-80">
-          {/* Mobile backdrop */}
-          <div 
-            className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Notification panel */}
-          <Card className="relative m-4 lg:m-0 p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-card-foreground">Notifications</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+        <>
+          {/* Mobile/Small screens - Full screen overlay */}
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div 
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+              onClick={() => setIsOpen(false)}
+            />
+            <Card className="fixed top-4 left-4 right-4 bottom-auto max-h-[80vh] p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-card-foreground">Notifications</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">
+                    No notifications yet
+                  </p>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-3 rounded-lg border ${
+                        notification.read ? 'bg-muted/30' : 'bg-background'
+                      } transition-colors`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          {getIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {notification.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => markAsRead(notification.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteNotification(notification.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Desktop - Positioned dropdown */}
+          <div className="hidden lg:block absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] z-50">
+            <Card className="p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-card-foreground">Notifications</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
 
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
@@ -228,6 +294,7 @@ export const NotificationSystem = () => {
             </div>
           </Card>
         </div>
+        </>
       )}
     </div>
   );
