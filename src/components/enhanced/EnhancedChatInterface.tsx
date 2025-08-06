@@ -495,30 +495,11 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 disabled={isProcessing}
               />
               
-              {/* Voice Mode Selector in input area */}
-              {!currentMode && (
-                <div className="absolute right-2 top-2">
-                  <VoiceModeSelector />
-                </div>
-              )}
+              {/* Clean input area without duplicate selectors */}
             </div>
 
-            {/* Voice Mode Quick Access */}
-            {!currentMode ? (
-              <VoiceModeSelector className="h-[50px]" />
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm" 
-                onClick={() => {}}
-                className="h-[50px] px-4 border-2 border-primary bg-primary/10 text-primary opacity-50"
-                disabled
-                title={`${currentMode === 'dictation' ? 'Voice Memo' : 'Live Talk'} mode active`}
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
-            )}
+            {/* Single Voice Mode Selector */}
+            <VoiceModeSelector className="h-[50px]" />
 
             <Button
               type="submit"
