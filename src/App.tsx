@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
@@ -14,6 +15,8 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import { VoiceTestSuite } from "./components/voice/VoiceTestSuite";
 import { VoiceOptimizer } from "./components/performance/VoiceOptimizer";
 import { OfflineContentManager } from "./components/offline/OfflineContentManager";
@@ -45,7 +48,8 @@ const App = () => (
               <ConversationsProvider>
                 <AppLayout>
                 <Routes>
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Index />} />
+                  <Route path="/home" element={<Home />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/bookmarks" element={<Bookmarks />} />
@@ -53,6 +57,8 @@ const App = () => (
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/voice-test" element={<VoiceTestSuite />} />
                   <Route path="/voice-quality" element={<VoiceQuality />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
                   <Route path="/performance" element={
                     <div className="p-6 space-y-6">
                       <VoiceOptimizer />
