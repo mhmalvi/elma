@@ -229,11 +229,8 @@ export const useConversations = () => {
     console.log('START NEW CONVERSATION - Clearing current state');
     setCurrentConversation(null);
     setMessages([]);
-    console.log('START NEW CONVERSATION - State cleared, refreshing conversations');
-    // Refresh the conversations list to show any updates
-    await loadConversations();
-    console.log('START NEW CONVERSATION - Conversations reloaded');
-  }, [loadConversations]);
+    console.log('START NEW CONVERSATION - State cleared');
+  }, []);
 
   // Add message to current conversation
   const addMessage = useCallback((message: ChatMessage) => {
@@ -264,10 +261,19 @@ export const useConversations = () => {
             if (payload.eventType === 'INSERT') {
               const newConversation = payload.new as Conversation;
               setConversations(prev => {
-                // CRITICAL: Check for duplicates by ID
-                const exists = prev.find(conv => conv.id === newConversation.id);
-                if (exists) {
+                // CRITICAL: More robust duplicate check
+                const existingIndex = prev.findIndex(conv => conv.id === newConversation.id);
+                if (existingIndex !== -1) {
                   console.log('Duplicate conversation detected, skipping:', newConversation.id);
+                  return prev;
+                }
+                // Also check for near-duplicate titles created within 5 seconds
+                const recentDuplicate = prev.find(conv => 
+                  conv.title === newConversation.title && 
+                  Math.abs(new Date(conv.created_at).getTime() - new Date(newConversation.created_at).getTime()) < 5000
+                );
+                if (recentDuplicate) {
+                  console.log('Recent duplicate conversation detected by title:', newConversation.title);
                   return prev;
                 }
                 console.log('Adding new conversation via realtime:', newConversation.title);
