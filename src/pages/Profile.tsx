@@ -43,9 +43,9 @@ const Profile = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
@@ -216,12 +216,12 @@ const Profile = () => {
               </Avatar>
               <div className="space-y-2">
                 <CardTitle className="text-xl">{profile.display_name || user.email}</CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  {user.email}
+                <div className="flex items-center gap-2">
+                  <CardDescription>{user.email}</CardDescription>
                   <Badge variant={profile.role === 'master_admin' ? 'default' : 'secondary'} className="text-xs">
                     {profile.role === 'master_admin' ? 'Master Admin' : 'User'}
                   </Badge>
-                </CardDescription>
+                </div>
               </div>
             </div>
           </CardHeader>
