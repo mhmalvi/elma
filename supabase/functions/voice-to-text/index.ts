@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, metadata } = await req.json()
+    const { audio, language, metadata } = await req.json()
     
     if (!audio) {
       throw new Error('No audio data provided')
@@ -55,6 +55,7 @@ serve(async (req) => {
 
     console.log('Processing audio data...', {
       audioSize: typeof audio === 'string' ? audio.length : 'unknown',
+      language: language || 'auto-detect',
       metadata: metadata || 'none'
     })
 
@@ -66,8 +67,13 @@ serve(async (req) => {
     const blob = new Blob([binaryAudio], { type: 'audio/webm' })
     formData.append('file', blob, 'audio.webm')
     formData.append('model', 'whisper-1')
-    formData.append('language', 'en') // Optimize for English
-    formData.append('response_format', 'verbose_json') // Get confidence scores
+    
+    // Add language if specified
+    if (language && language !== 'auto') {
+      formData.append('language', language)
+    }
+    
+    formData.append('response_format', 'verbose_json') // Get confidence scores and timestamps
 
     console.log('Sending to OpenAI Whisper API...')
 
