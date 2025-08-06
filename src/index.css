@@ -150,6 +150,24 @@
 
 /* Modern animations and components */
 @layer components {
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .hover-scale {
+    transition: var(--transition-smooth);
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Safe area utilities for mobile */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
   /* Breathing effect for buttons */
   .breathe {
     animation: breathe 3s ease-in-out infinite;
@@ -247,6 +265,17 @@
 }
 
 /* Keyframe animations */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes breathe {
   0%, 100% { 
     opacity: 1;
