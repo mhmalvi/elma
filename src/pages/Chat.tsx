@@ -43,7 +43,15 @@ const Chat = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Redirect if not authenticated
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  // Redirect if not authenticated - moved after all hooks
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />
   }
@@ -56,13 +64,6 @@ const Chat = () => {
     )
   }
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return
