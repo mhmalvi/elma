@@ -23,6 +23,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
+import { useConversations } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +48,15 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // Use conversation management hook
+  const {
+    currentConversation,
+    messages: conversationMessages,
+    createConversation,
+    addMessage,
+    messagesLoading
+  } = useConversations();
+  
   const {
     isRecording,
     isProcessingVoice,
@@ -59,13 +69,21 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     setTranscript
   } = useVoiceIntegration();
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Convert conversation messages to display format
+  const displayMessages = conversationMessages.map(msg => ({
+    id: msg.id,
+    text: msg.content,
+    isUser: msg.role === 'user',
+    timestamp: new Date(msg.created_at),
+    source: msg.sources?.[0] || (msg.metadata as any)?.source
+  }));
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -74,7 +92,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [displayMessages, scrollToBottom]);
 
   // Handle transcript from voice input
   useEffect(() => {
@@ -88,36 +106,27 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || isProcessing) return;
 
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      text: messageText.trim(),
-      isUser: true,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsProcessing(true);
 
-    // Add processing message
-    const processingMessage: Message = {
-      id: `ai-${Date.now()}`,
-      text: '',
-      isUser: false,
-      timestamp: new Date(),
-      isProcessing: true
-    };
-
-    setMessages(prev => [...prev, processingMessage]);
-
     try {
-      console.log('Sending message to AI:', messageText);
+      // Create conversation if none exists
+      let conversation = currentConversation;
+      if (!conversation) {
+        console.log('Creating new conversation for message:', messageText);
+        conversation = await createConversation(messageText.substring(0, 100));
+        if (!conversation) {
+          throw new Error('Failed to create conversation');
+        }
+      }
+
+      console.log('Sending message to AI for conversation:', conversation.id);
       
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { 
           question: messageText,
           user_id: user?.id,
-          conversation_id: null // For now, we'll implement conversation management later
+          conversation_id: conversation.id
         }
       });
 
@@ -128,19 +137,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
 
       console.log('AI response received:', data);
 
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}-final`,
-        text: data.answer || data.response || 'I apologize, but I encountered an issue processing your request.',
-        isUser: false,
-        timestamp: new Date(),
-        source: data.source || data.sources?.[0]
-      };
-
-      // Replace processing message with actual response
-      setMessages(prev => prev.map(msg => 
-        msg.isProcessing ? aiMessage : msg
-      ));
-
       // Auto-speak the response if voice mode is active
       if (isListening && data.answer) {
         await speakText(data.answer);
@@ -149,18 +145,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     } catch (error) {
       console.error('Error sending message:', error);
       
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        text: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-        isUser: false,
-        timestamp: new Date()
-      };
-
-      // Replace processing message with error message
-      setMessages(prev => prev.map(msg => 
-        msg.isProcessing ? errorMessage : msg
-      ));
-
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -234,7 +218,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {messages.length === 0 ? (
+          {displayMessages.length === 0 ? (
             // Welcome State
             <div className="text-center py-12">
               <div className="mb-8">
@@ -280,6 +264,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                       size="sm"
                       onClick={() => sendMessage(prompt)}
                       className="text-xs hover:bg-primary/10"
+                      disabled={isProcessing}
                     >
                       <Quote className="w-3 h-3 mr-1" />
                       {prompt}
@@ -288,37 +273,112 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 </div>
               </div>
             </div>
+          ) : messagesLoading ? (
+            // Loading state
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading conversation...</p>
+            </div>
           ) : (
             // Messages
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex gap-3 animate-fade-in",
-                  message.isUser ? "justify-end" : "justify-start"
-                )}
-              >
-                {!message.isUser && (
+            <>
+              {displayMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex gap-3 animate-fade-in",
+                    message.isUser ? "justify-end" : "justify-start"
+                  )}
+                >
+                  {!message.isUser && (
+                    <Avatar className="w-8 h-8 mt-1">
+                      <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        AI
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+
+                  <div className={cn(
+                    "max-w-[80%] space-y-2",
+                    message.isUser ? "items-end" : "items-start"
+                  )}>
+                    <Card className={cn(
+                      "p-4 transition-all duration-200",
+                      message.isUser 
+                        ? "bg-primary text-primary-foreground ml-auto" 
+                        : "bg-muted"
+                     )}>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.text}
+                      </p>
+
+                      {message.source && (
+                        <div className="mt-3 pt-3 border-t border-border/20">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <BookOpen className="w-3 h-3" />
+                            <span>Source: {message.source.reference || message.source}</span>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+
+                    {!message.isUser && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSpeakMessage(message.text)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          {isPlayingAudio ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(message.text)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                        >
+                          <Bookmark className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-muted-foreground">
+                      {message.timestamp.toLocaleTimeString()}
+                    </div>
+                  </div>
+
+                  {message.isUser && (
+                    <Avatar className="w-8 h-8 mt-1">
+                      <AvatarImage src={user?.user_metadata?.avatar_url} />
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                        {user?.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              ))}
+
+              {/* Processing indicator */}
+              {isProcessing && (
+                <div className="flex gap-3 animate-fade-in justify-start">
                   <Avatar className="w-8 h-8 mt-1">
                     <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                       AI
                     </AvatarFallback>
                   </Avatar>
-                )}
 
-                <div className={cn(
-                  "max-w-[80%] space-y-2",
-                  message.isUser ? "items-end" : "items-start"
-                )}>
-                  <Card className={cn(
-                    "p-4 transition-all duration-200",
-                    message.isUser 
-                      ? "bg-primary text-primary-foreground ml-auto" 
-                      : "bg-muted",
-                    message.isProcessing && "animate-pulse"
-                  )}>
-                    {message.isProcessing ? (
+                  <div className="max-w-[80%] space-y-2 items-start">
+                    <Card className="p-4 transition-all duration-200 bg-muted animate-pulse">
                       <div className="flex items-center gap-2">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
@@ -327,65 +387,11 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                         </div>
                         <span className="text-sm">Thinking...</span>
                       </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.text}
-                      </p>
-                    )}
-
-                    {message.source && (
-                      <div className="mt-3 pt-3 border-t border-border/20">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <BookOpen className="w-3 h-3" />
-                          <span>Source: {message.source.reference}</span>
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-
-                  {!message.isUser && !message.isProcessing && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSpeakMessage(message.text)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        {isPlayingAudio ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(message.text)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Bookmark className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="text-xs text-muted-foreground">
-                    {message.timestamp.toLocaleTimeString()}
+                    </Card>
                   </div>
                 </div>
-
-                {message.isUser && (
-                  <Avatar className="w-8 h-8 mt-1">
-                    <AvatarImage src={user?.user_metadata?.avatar_url} />
-                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                      {user?.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))
+              )}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>
