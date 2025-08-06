@@ -1,8 +1,10 @@
-import { Monitor, Database, Server, Activity } from 'lucide-react';
+import { Monitor, Database, Server, Activity, Shield, BarChart3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { VoiceTestSuite } from '@/components/voice/VoiceTestSuite';
 import { IslamicContentSeeder } from '@/components/database/IslamicContentSeeder';
 import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor';
+import { ContentFilteringManagement } from './ContentFilteringManagement';
+import { UsageAnalyticsDashboard } from './UsageAnalyticsDashboard';
 import { AdminSystemStats } from './AdminSystemStats';
 
 export const AdminDiagnostics = () => {
@@ -18,6 +20,24 @@ export const AdminDiagnostics = () => {
 
       {/* System Statistics */}
       <AdminSystemStats />
+
+      {/* Usage Analytics */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Usage Analytics</h3>
+        </div>
+        <UsageAnalyticsDashboard />
+      </Card>
+
+      {/* Content Filtering */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Content Safety</h3>
+        </div>
+        <ContentFilteringManagement />
+      </Card>
 
       {/* Diagnostic Tools Grid */}
       <div className="grid gap-6">
