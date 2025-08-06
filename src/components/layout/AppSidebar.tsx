@@ -292,6 +292,16 @@ export function AppSidebar() {
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <Avatar className="h-4 w-4 mr-2">
+                    <AvatarFallback className="text-xs">P</AvatarFallback>
+                  </Avatar>
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/bookmarks')}>
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  My Bookmarks
+                </DropdownMenuItem>
                 {isMasterAdmin() && (
                   <>
                     <DropdownMenuSeparator />
