@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Download, FileText, File } from "lucide-react"
-import { useConversations } from "@/hooks/useConversations"
+import { useConversationsContext } from "@/contexts/ConversationsContext"
 import { useBookmarks } from "@/hooks/useBookmarks"
 import { format } from "date-fns"
 
@@ -16,7 +16,7 @@ interface ExportDialogProps {
 }
 
 export const ExportDialog = ({ open, onOpenChange, conversationId }: ExportDialogProps) => {
-  const { conversations, messages } = useConversations()
+  const { conversations, messages } = useConversationsContext()
   const { bookmarks } = useBookmarks()
   const [exportType, setExportType] = useState<'conversation' | 'bookmarks' | 'all'>('conversation')
   const [exportFormat, setExportFormat] = useState<'txt' | 'json' | 'md'>('txt')

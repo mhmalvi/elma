@@ -222,10 +222,13 @@ export const useConversations = () => {
 
   // Start new conversation
   const startNewConversation = useCallback(async () => {
+    console.log('START NEW CONVERSATION - Clearing current state');
     setCurrentConversation(null);
     setMessages([]);
+    console.log('START NEW CONVERSATION - State cleared, refreshing conversations');
     // Refresh the conversations list to show any updates
     await loadConversations();
+    console.log('START NEW CONVERSATION - Conversations reloaded');
   }, [loadConversations]);
 
   // Add message to current conversation
