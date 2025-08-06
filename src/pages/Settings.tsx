@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info } from "lucide-react"
+import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -9,10 +9,12 @@ import { useToast } from "@/hooks/use-toast"
 import { VoiceTestSuite } from '@/components/voice/VoiceTestSuite'
 import { IslamicContentSeeder } from '@/components/database/IslamicContentSeeder'
 import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor'
+import { useRole } from '@/hooks/useRole'
 
 const Settings = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { isMasterAdmin } = useRole()
   
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [dailyReminders, setDailyReminders] = useState(true)
@@ -164,6 +166,17 @@ const Settings = () => {
             <BookmarksIcon className="w-4 h-4 mr-2" />
             My Bookmarks
           </Button>
+          
+          {isMasterAdmin() && (
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate('/admin')}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Admin Dashboard
+            </Button>
+          )}
           
           <Button 
             variant="outline" 
