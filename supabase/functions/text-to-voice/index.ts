@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('ElevenLabs API key not configured')
     }
 
-    // Use provided voice or default to Aria
+    // Use provided voice or default to Aria (9BWtsMINqrJLrRacOk9x)
     const voiceId = voice || '9BWtsMINqrJLrRacOk9x'
     const textLength = text.length
 

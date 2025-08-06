@@ -46,6 +46,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useRole } from '@/hooks/useRole';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { NotificationSystem } from '@/components/notifications/NotificationSystem';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -181,14 +182,7 @@ export function AppSidebar() {
               >
                 <Bookmark className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 hover-lift relative"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-destructive rounded-full animate-pulse"></span>
-              </Button>
+              <NotificationSystem />
             </div>
           )}
         </div>

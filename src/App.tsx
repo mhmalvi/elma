@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Bookmarks from "./pages/Bookmarks";
@@ -36,31 +37,33 @@ const App = () => (
           {/* Auth route without layout */}
           <Route path="/auth" element={<Auth />} />
           
-          {/* All other routes with sidebar layout */}
+          {/* All other routes with sidebar layout and auth guard */}
           <Route path="/*" element={
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/bookmarks" element={<Bookmarks />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/voice-test" element={<VoiceTestSuite />} />
-                <Route path="/voice-quality" element={<VoiceQuality />} />
-                <Route path="/performance" element={
-                  <div className="p-6 space-y-6">
-                    <VoiceOptimizer />
-                    <MobileBrowserTester />
-                  </div>
-                } />
-                <Route path="/offline" element={
-                  <div className="p-6">
-                    <OfflineContentManager />
-                  </div>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppLayout>
+            <AuthGuard>
+              <AppLayout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/bookmarks" element={<Bookmarks />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/voice-test" element={<VoiceTestSuite />} />
+                  <Route path="/voice-quality" element={<VoiceQuality />} />
+                  <Route path="/performance" element={
+                    <div className="p-6 space-y-6">
+                      <VoiceOptimizer />
+                      <MobileBrowserTester />
+                    </div>
+                  } />
+                  <Route path="/offline" element={
+                    <div className="p-6">
+                      <OfflineContentManager />
+                    </div>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AppLayout>
+            </AuthGuard>
           } />
         </Routes>
         </BrowserRouter>

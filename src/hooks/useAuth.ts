@@ -99,6 +99,9 @@ export const useAuth = () => {
         description: error.message,
         variant: "destructive"
       });
+    } else {
+      // Clear any cached data and redirect to auth page
+      window.location.href = '/auth';
     }
 
     return { error };

@@ -180,7 +180,7 @@ export const useVoiceIntegration = () => {
       const { data, error } = await supabase.functions.invoke('text-to-voice', {
         body: { 
           text: text.slice(0, 1000), // Limit text length
-          voice: 'Aria', // Use Aria voice for warm, calm speech
+          voice: '9BWtsMINqrJLrRacOk9x', // Use Aria voice ID for warm, calm speech
           options: {
             model_id: 'eleven_multilingual_v2',
             voice_settings: {
