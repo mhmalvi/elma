@@ -34,8 +34,11 @@ export const useBookmarks = () => {
         .from('bookmarks')
         .select(`
           *,
-          chat_messages!inner(content),
-          conversations!inner(title)
+          chat_messages!inner(
+            content,
+            conversation_id,
+            conversations!inner(title)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -45,7 +48,7 @@ export const useBookmarks = () => {
       const bookmarksWithMessages = data.map((bookmark: any) => ({
         ...bookmark,
         message_content: bookmark.chat_messages.content,
-        conversation_title: bookmark.conversations.title
+        conversation_title: bookmark.chat_messages.conversations.title
       }))
 
       setBookmarks(bookmarksWithMessages)
