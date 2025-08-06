@@ -143,7 +143,7 @@ export function AppSidebar() {
           <Button 
             onClick={handleNewChat}
             className={cn(
-              "w-full justify-start gap-3 h-12 font-semibold bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg hover-lift rounded-xl text-white border-2 border-accent",
+              "w-full justify-start gap-3 h-12 font-semibold bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg hover-lift rounded-xl text-white border-2 border-teal-400",
               collapsed && "w-12 h-12 p-0 justify-center"
             )}
           >
