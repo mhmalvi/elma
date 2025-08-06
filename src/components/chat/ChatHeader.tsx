@@ -1,6 +1,6 @@
 import React from 'react'
-import { Menu, Search, Download, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Menu, Search, Download, X, MessageCircle, Settings } from 'lucide-react'
+import { FuturisticButton } from '@/components/ui/futuristic-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ interface ChatHeaderProps {
   onMenuClick?: () => void
   onSearchClick?: () => void
   onExportClick?: () => void
+  onSettingsClick?: () => void
   onVoiceModeToggle?: () => void
   className?: string
 }
@@ -24,43 +25,48 @@ export const ChatHeader = ({
   onMenuClick,
   onSearchClick,
   onExportClick,
+  onSettingsClick,
   onVoiceModeToggle,
   className
 }: ChatHeaderProps) => {
   return (
     <header className={cn(
-      "sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/50",
-      "px-4 py-3 flex items-center justify-between",
+      "sticky top-0 z-40 glass border-b border-border/20 backdrop-blur-xl",
+      "px-6 py-4 flex items-center justify-between",
+      "bg-background/80 supports-[backdrop-filter]:bg-background/60",
       className
     )}>
       {/* Left Section */}
-      <div className="flex items-center gap-3">
-        <Button
+      <div className="flex items-center gap-4">
+        <FuturisticButton
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onMenuClick}
-          className="p-2 hover:bg-muted/50 rounded-full"
+          className="lg:hidden"
         >
           <Menu className="w-5 h-5" />
-        </Button>
+        </FuturisticButton>
         
         <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 ring-2 ring-primary/20">
-            <AvatarImage src={airchatbotLogo} alt="AirChatBot" />
-            <AvatarFallback>AC</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="w-10 h-10 ring-2 ring-primary/20 shadow-glow">
+              <AvatarImage src={airchatbotLogo} alt="AirChatBot" />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">AC</AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-background animate-pulse" />
+          </div>
           
           <div className="flex flex-col">
-            <h1 className="text-sm font-semibold text-foreground leading-none">
+            <h1 className="text-lg font-semibold text-foreground leading-none">
               {title}
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {subtitle}
               </p>
               {isVoiceMode && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
-                  Voice Mode
+                <Badge variant="secondary" className="text-xs px-2 py-1 bg-primary/10 text-primary border-primary/20 animate-pulse">
+                  🎤 Voice Mode
                 </Badge>
               )}
             </div>
@@ -69,34 +75,43 @@ export const ChatHeader = ({
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-1">
-        <Button
+      <div className="flex items-center gap-2">
+        <FuturisticButton
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onSearchClick}
-          className="p-2 hover:bg-muted/50 rounded-full"
+          className="hidden sm:flex"
         >
-          <Search className="w-4 h-4" />
-        </Button>
+          <Search className="w-5 h-5" />
+        </FuturisticButton>
         
-        <Button
+        <FuturisticButton
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onExportClick}
-          className="p-2 hover:bg-muted/50 rounded-full"
+          className="hidden sm:flex"
         >
-          <Download className="w-4 h-4" />
-        </Button>
+          <Download className="w-5 h-5" />
+        </FuturisticButton>
+
+        <FuturisticButton
+          variant="ghost"
+          size="icon"
+          onClick={onSettingsClick}
+          className="hidden sm:flex"
+        >
+          <Settings className="w-5 h-5" />
+        </FuturisticButton>
         
         {isVoiceMode && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <FuturisticButton
+            variant="secondary"
+            size="icon"
             onClick={onVoiceModeToggle}
-            className="p-2 hover:bg-muted/50 rounded-full"
+            className="ml-2"
           >
-            <X className="w-4 h-4" />
-          </Button>
+            <X className="w-5 h-5" />
+          </FuturisticButton>
         )}
       </div>
     </header>
