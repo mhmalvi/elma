@@ -8,7 +8,74 @@
 
 @layer base {
   :root {
-    /* Dark futuristic palette with neon accents */
+    /* Light theme as default - soft, eye-soothing palette */
+    --background: 0 0% 100%;
+    --foreground: 222 22% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 22% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 22% 15%;
+
+    /* Soft teal primary with gentle accents */
+    --primary: 174 60% 41%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 174 60% 51%;
+    
+    --secondary: 174 20% 96%;
+    --secondary-foreground: 222 22% 15%;
+
+    --muted: 220 13% 97%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 217 60% 55%;
+    --accent-foreground: 0 0% 98%;
+    
+    --spiritual: 45 85% 58%;
+    --spiritual-foreground: 222 22% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 95%;
+    --ring: 174 60% 41%;
+
+    /* Soft design tokens for eye comfort */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--muted)));
+    --gradient-spiritual: linear-gradient(135deg, hsl(var(--spiritual)), hsl(var(--primary)));
+    --gradient-glass: linear-gradient(135deg, hsl(var(--card) / 0.95), hsl(var(--muted) / 0.8));
+    --gradient-neon: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--spiritual)));
+    
+    /* Gentle lighting and shadows */
+    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+    --shadow-neon: 0 0 30px hsl(var(--primary) / 0.2), 0 0 60px hsl(var(--primary) / 0.1);
+    --shadow-deep: 0 25px 50px -12px hsl(var(--foreground) / 0.1);
+    --shadow-glass: 0 8px 32px hsl(var(--primary) / 0.08);
+    --shadow-floating: 0 20px 25px -5px hsl(var(--primary) / 0.1), 0 10px 10px -5px hsl(var(--primary) / 0.05);
+    
+    /* Smooth animations */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-elastic: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 1rem;
+
+    /* Sidebar tokens */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 222 22% 15%;
+    --sidebar-primary: 174 60% 41%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 13% 97%;
+    --sidebar-accent-foreground: 222 22% 15%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 174 60% 41%;
+  }
+
+  .dark {
+    /* Dark theme for when needed */
     --background: 222 22% 7%;
     --foreground: 210 40% 98%;
 
@@ -18,11 +85,10 @@
     --popover: 222 22% 12%;
     --popover-foreground: 210 40% 98%;
 
-    /* Neon teal primary with electric blue accent */
     --primary: 176 100% 44%;
     --primary-foreground: 222 22% 7%;
     --primary-glow: 176 100% 54%;
-    
+
     --secondary: 222 15% 15%;
     --secondary-foreground: 210 40% 98%;
 
@@ -31,7 +97,7 @@
 
     --accent: 217 100% 54%;
     --accent-foreground: 222 22% 7%;
-    
+
     --spiritual: 45 100% 60%;
     --spiritual-foreground: 222 22% 7%;
 
@@ -42,28 +108,10 @@
     --input: 222 15% 15%;
     --ring: 176 100% 44%;
 
-    /* Futuristic design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--muted)));
-    --gradient-spiritual: linear-gradient(135deg, hsl(var(--spiritual)), hsl(var(--primary)));
     --gradient-glass: linear-gradient(135deg, hsl(var(--card) / 0.8), hsl(var(--muted) / 0.6));
-    --gradient-neon: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--spiritual)));
-    
-    /* Advanced lighting and shadows */
     --shadow-glow: 0 0 20px hsl(var(--primary) / 0.3);
     --shadow-neon: 0 0 30px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.3);
-    --shadow-deep: 0 25px 50px -12px hsl(var(--background) / 0.8);
-    --shadow-glass: 0 8px 32px hsl(var(--primary) / 0.1);
-    --shadow-floating: 0 20px 25px -5px hsl(var(--primary) / 0.2), 0 10px 10px -5px hsl(var(--primary) / 0.1);
-    
-    /* Advanced animations */
-    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    --transition-elastic: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --radius: 1rem;
-
-    /* Sidebar tokens */
     --sidebar-background: 222 22% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 176 100% 44%;
@@ -71,54 +119,6 @@
     --sidebar-accent: 222 15% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 15% 18%;
-    --sidebar-ring: 176 100% 44%;
-  }
-
-  .light {
-    --background: 0 0% 100%;
-    --foreground: 222 22% 7%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 22% 7%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 22% 7%;
-
-    --primary: 176 100% 44%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 176 100% 54%;
-
-    --secondary: 220 13% 96%;
-    --secondary-foreground: 222 22% 7%;
-
-    --muted: 220 13% 96%;
-    --muted-foreground: 222 15% 45%;
-
-    --accent: 217 100% 54%;
-    --accent-foreground: 0 0% 98%;
-
-    --spiritual: 45 100% 50%;
-    --spiritual-foreground: 0 0% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 176 100% 44%;
-
-    /* Light mode gradients */
-    --gradient-glass: linear-gradient(135deg, hsl(var(--card) / 0.9), hsl(var(--muted) / 0.7));
-    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.2);
-    --shadow-neon: 0 0 30px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 222 22% 7%;
-    --sidebar-primary: 176 100% 44%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 220 13% 96%;
-    --sidebar-accent-foreground: 222 22% 7%;
-    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 176 100% 44%;
   }
 }

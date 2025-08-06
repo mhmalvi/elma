@@ -19,8 +19,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'sans': ['Nunito Sans', 'sans-serif'],
-				'display': ['Sora', 'sans-serif'],
+				'sans': ['Inter', 'sans-serif'],
+				'display': ['Inter', 'sans-serif'],
+				'mono': ['JetBrains Mono', 'monospace'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
