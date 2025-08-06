@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Minus, XCircle, Archive, Eye, EyeOff } from 'lucide-react';
 import { Button } from './button';
+import { DeleteConfirmationDialog } from './delete-confirmation-dialog';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
@@ -43,6 +44,9 @@ interface DeleteButtonProps
   loading?: boolean;
   confirmationRequired?: boolean;
   tooltip?: string;
+  itemType?: string;
+  deleteTitle?: string;
+  deleteDescription?: string;
 }
 
 export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteButtonProps>(
@@ -55,21 +59,32 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteButtonProp
     loading = false,
     confirmationRequired = true,
     tooltip = "Delete",
+    itemType = "item",
+    deleteTitle,
+    deleteDescription,
     onClick,
     ...props 
   }, ref) => {
+    const [showDialog, setShowDialog] = useState(false);
+
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       
       if (confirmationRequired) {
-        const confirmed = window.confirm("Are you sure you want to delete this item?");
-        if (!confirmed) return;
+        setShowDialog(true);
+        return;
       }
       
       if (onDelete) {
         onDelete();
       } else if (onClick) {
         onClick(e);
+      }
+    };
+
+    const handleConfirmDelete = () => {
+      if (onDelete) {
+        onDelete();
       }
     };
 
@@ -124,6 +139,15 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteButtonProp
             <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
+        
+        <DeleteConfirmationDialog
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          onConfirm={handleConfirmDelete}
+          title={deleteTitle}
+          description={deleteDescription}
+          itemType={itemType}
+        />
       </Button>
     );
   }
@@ -146,21 +170,32 @@ export const DeleteButtonWithText = React.forwardRef<HTMLButtonElement, DeleteBu
     onDelete, 
     loading = false,
     confirmationRequired = true,
+    itemType = "item",
+    deleteTitle,
+    deleteDescription,
     onClick,
     ...props 
   }, ref) => {
+    const [showDialog, setShowDialog] = useState(false);
+
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       
       if (confirmationRequired) {
-        const confirmed = window.confirm("Are you sure you want to delete this item?");
-        if (!confirmed) return;
+        setShowDialog(true);
+        return;
       }
       
       if (onDelete) {
         onDelete();
       } else if (onClick) {
         onClick(e);
+      }
+    };
+
+    const handleConfirmDelete = () => {
+      if (onDelete) {
+        onDelete();
       }
     };
 
@@ -203,6 +238,15 @@ export const DeleteButtonWithText = React.forwardRef<HTMLButtonElement, DeleteBu
         {loading && (
           <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin ml-1" />
         )}
+        
+        <DeleteConfirmationDialog
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          onConfirm={handleConfirmDelete}
+          title={deleteTitle}
+          description={deleteDescription}
+          itemType={itemType}
+        />
       </Button>
     );
   }

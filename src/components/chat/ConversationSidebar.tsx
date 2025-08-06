@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, MessageSquare, MoreVertical, Edit2, Search } from "lucide-react"
+import { Plus, MessageSquare, MoreVertical, Edit2, Search, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ModernCard } from "@/components/ui/modern-card"
@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { DeleteButton } from "@/components/ui/delete-button"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { cn } from "@/lib/utils"
 import { Conversation } from "@/hooks/useConversations"
 import { useConversationsContext } from "@/contexts/ConversationsContext"
@@ -32,6 +32,8 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
   const [searchQuery, setSearchQuery] = useState("")
   const [editingConversation, setEditingConversation] = useState<Conversation | null>(null)
   const [editTitle, setEditTitle] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null)
 
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -51,8 +53,14 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
   }
 
   const handleDeleteConversation = async (conversation: Conversation) => {
-    if (confirm("Are you sure you want to delete this conversation?")) {
-      await deleteConversation(conversation.id)
+    setConversationToDelete(conversation)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteConversation = async () => {
+    if (conversationToDelete) {
+      await deleteConversation(conversationToDelete.id)
+      setConversationToDelete(null)
     }
   }
 
@@ -148,12 +156,7 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
                         onClick={() => handleDeleteConversation(conversation)}
                         className="text-destructive focus:text-destructive focus:bg-destructive/10"
                       >
-                        <DeleteButton 
-                          variant="ghost" 
-                          size="xs" 
-                          className="mr-2 p-0 h-4 w-4"
-                          confirmationRequired={false}
-                        />
+                        <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -197,6 +200,16 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDeleteConversation}
+        title="Delete Conversation"
+        description={`Are you sure you want to delete "${conversationToDelete?.title}"? This action cannot be undone and all messages in this conversation will be permanently removed.`}
+        itemType="conversation"
+      />
     </div>
   )
 }
