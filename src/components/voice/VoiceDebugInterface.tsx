@@ -29,6 +29,13 @@ interface VoiceDebugInterfaceProps {
   autoSend?: boolean;
 }
 
+interface AudioLevelState {
+  currentLevel: number;
+  maxLevel: number;
+  isActive: boolean;
+  hasSound: boolean;
+}
+
 export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
   onTranscriptUpdate,
   onTranscriptFinal,
@@ -48,6 +55,14 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [permissionStatus, setPermissionStatus] = useState<'unknown' | 'granted' | 'denied' | 'prompt'>('unknown');
+  const [audioLevel, setAudioLevel] = useState<AudioLevelState>({
+    currentLevel: 0,
+    maxLevel: 0,
+    isActive: false,
+    hasSound: false
+  });
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
   // Add debug logging
   const addDebugLog = useCallback((message: string) => {
@@ -82,7 +97,82 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
     }
   }, [addDebugLog]);
 
-  // Test microphone access
+  // Real-time audio level monitoring
+  const startAudioLevelMonitoring = useCallback(async (stream: MediaStream) => {
+    try {
+      const ctx = new AudioContext();
+      const analyzerNode = ctx.createAnalyser();
+      const microphone = ctx.createMediaStreamSource(stream);
+      
+      analyzerNode.fftSize = 256;
+      analyzerNode.smoothingTimeConstant = 0.8;
+      microphone.connect(analyzerNode);
+      
+      setAudioContext(ctx);
+      setAnalyser(analyzerNode);
+      
+      const dataArray = new Uint8Array(analyzerNode.frequencyBinCount);
+      let maxDetected = 0;
+      let soundDetected = false;
+      
+      const updateLevel = () => {
+        if (!analyzerNode) return;
+        
+        analyzerNode.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        const normalizedLevel = Math.min(average / 128, 1); // Normalize to 0-1
+        
+        maxDetected = Math.max(maxDetected, normalizedLevel);
+        
+        // Detect if we're getting any sound at all
+        if (normalizedLevel > 0.01) {
+          soundDetected = true;
+        }
+        
+        setAudioLevel({
+          currentLevel: normalizedLevel,
+          maxLevel: maxDetected,
+          isActive: true,
+          hasSound: soundDetected
+        });
+        
+        // Log periodically
+        if (Math.random() < 0.1) { // 10% chance to log
+          addDebugLog(`Audio level: ${(normalizedLevel * 100).toFixed(1)}% (Max: ${(maxDetected * 100).toFixed(1)}%)`);
+          
+          if (!soundDetected && Date.now() % 5000 < 100) { // Every 5 seconds
+            addDebugLog('⚠️ No audio detected - check if mic is muted or disconnected');
+          }
+        }
+        
+        requestAnimationFrame(updateLevel);
+      };
+      
+      updateLevel();
+      addDebugLog('🎛️ Audio level monitoring started');
+      
+    } catch (error) {
+      addDebugLog(`❌ Audio monitoring failed: ${error}`);
+    }
+  }, [addDebugLog]);
+
+  // Stop audio monitoring
+  const stopAudioLevelMonitoring = useCallback(() => {
+    if (audioContext) {
+      audioContext.close();
+      setAudioContext(null);
+    }
+    setAnalyser(null);
+    setAudioLevel({
+      currentLevel: 0,
+      maxLevel: 0,
+      isActive: false,
+      hasSound: false
+    });
+    addDebugLog('🔇 Audio level monitoring stopped');
+  }, [audioContext, addDebugLog]);
+
+  // Test microphone access with audio level feedback
   const testMicrophoneAccess = useCallback(async () => {
     try {
       addDebugLog('Testing microphone access...');
@@ -91,27 +181,27 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: 44100
         }
       });
       
       addDebugLog('✅ Microphone access successful');
       
-      // Test audio levels
-      const audioContext = new AudioContext();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
+      // Start monitoring immediately for quick feedback
+      await startAudioLevelMonitoring(stream);
       
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(dataArray);
-      
-      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-      addDebugLog(`Audio level detected: ${average.toFixed(2)}`);
-      
-      // Cleanup
-      stream.getTracks().forEach(track => track.stop());
-      audioContext.close();
+      // Give a few seconds to detect audio
+      setTimeout(() => {
+        if (!audioLevel.hasSound && audioLevel.isActive) {
+          addDebugLog('⚠️ WARNING: No audio detected after 3 seconds!');
+          addDebugLog('💡 Troubleshooting: Check if microphone is muted, in use by another app, or physically disconnected');
+        }
+        
+        // Cleanup test
+        stream.getTracks().forEach(track => track.stop());
+        stopAudioLevelMonitoring();
+      }, 3000);
       
       return true;
     } catch (error) {
@@ -123,7 +213,7 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
       }
       return false;
     }
-  }, [addDebugLog]);
+  }, [addDebugLog, startAudioLevelMonitoring, stopAudioLevelMonitoring, audioLevel.hasSound, audioLevel.isActive]);
 
   // Enhanced start listening with comprehensive debugging
   const handleStartListening = useCallback(async () => {
@@ -137,17 +227,35 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
       return;
     }
 
-    // Step 2: Test microphone access
-    const micAccess = await testMicrophoneAccess();
-    if (!micAccess) {
-      addDebugLog('❌ Microphone access failed');
+    // Step 2: Quick mic test
+    addDebugLog('🔍 Quick microphone test...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+      
+      // Start monitoring immediately
+      await startAudioLevelMonitoring(stream);
+      
+      // Keep stream for STT but add a warning if no audio detected
+      setTimeout(() => {
+        if (audioLevel.isActive && !audioLevel.hasSound) {
+          addDebugLog('🚨 CRITICAL: No audio detected from microphone!');
+          addDebugLog('💡 Your mic may be muted, disconnected, or used by another app');
+          addDebugLog('💡 Please check: 1) Mic mute button 2) OS audio settings 3) Close other apps using mic');
+        }
+      }, 2000);
+      
+      stream.getTracks().forEach(track => track.stop()); // Clean up test stream
+    } catch (error) {
+      addDebugLog(`❌ Microphone test failed: ${error}`);
       return;
     }
 
     // Step 3: Start STT
     addDebugLog('🚀 Starting STT with language: ' + selectedLanguage);
     await startListening(selectedLanguage);
-  }, [checkMicrophonePermission, testMicrophoneAccess, selectedLanguage, startListening, addDebugLog]);
+  }, [checkMicrophonePermission, selectedLanguage, startListening, addDebugLog, startAudioLevelMonitoring, audioLevel.isActive, audioLevel.hasSound]);
 
   // Handle transcript updates with debugging
   useEffect(() => {
@@ -287,10 +395,49 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
           </Badge>
         </div>
 
+        {/* Audio Level Meter */}
+        {audioLevel.isActive && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>Real-time Audio Level:</span>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "font-mono text-xs px-2 py-1 rounded",
+                  audioLevel.hasSound ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                )}>
+                  {(audioLevel.currentLevel * 100).toFixed(0)}%
+                </span>
+                {!audioLevel.hasSound && audioLevel.isActive && (
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                )}
+              </div>
+            </div>
+            
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div 
+                className={cn(
+                  "h-full transition-all duration-150",
+                  audioLevel.hasSound ? "bg-green-500" : "bg-red-500"
+                )}
+                style={{ width: `${Math.max(audioLevel.currentLevel * 100, 2)}%` }}
+              />
+            </div>
+            
+            {!audioLevel.hasSound && audioLevel.isActive && (
+              <Alert variant="destructive" className="text-xs">
+                <AlertTriangle className="h-3 w-3" />
+                <AlertDescription>
+                  <strong>No audio detected!</strong> Check if your microphone is muted, disconnected, or being used by another app.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
         {/* Main Voice Button */}
         <div className="flex justify-center">
           <Button
-            onClick={sttState.isListening ? stopListening : handleStartListening}
+            onClick={sttState.isListening ? () => { stopListening(); stopAudioLevelMonitoring(); } : handleStartListening}
             disabled={sttState.isProcessing || !sttState.isSupported}
             className={cn(
               "w-20 h-20 rounded-full transition-all duration-300 shadow-lg",
@@ -298,11 +445,15 @@ export const VoiceDebugInterface: React.FC<VoiceDebugInterfaceProps> = ({
                 ? "bg-red-500 hover:bg-red-600 animate-pulse"
                 : sttState.error
                 ? "bg-orange-500 hover:bg-orange-600"
+                : audioLevel.isActive && !audioLevel.hasSound
+                ? "bg-yellow-500 hover:bg-yellow-600"
                 : "bg-primary hover:bg-primary/90"
             )}
           >
             {sttState.isListening ? (
               <MicOff className="w-8 h-8" />
+            ) : audioLevel.isActive && !audioLevel.hasSound ? (
+              <VolumeX className="w-8 h-8" />
             ) : (
               <Mic className="w-8 h-8" />
             )}
