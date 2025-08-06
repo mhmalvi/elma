@@ -35,7 +35,7 @@ export const useConversations = () => {
 
   // Load user conversations
   const loadConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) return;
 
     setLoading(true);
     try {
@@ -57,11 +57,11 @@ export const useConversations = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user?.id, toast]);
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (conversationId: string) => {
-    if (!user) {
+    if (!user?.id) {
       console.log('No user found, cannot load messages');
       return;
     }
@@ -88,7 +88,7 @@ export const useConversations = () => {
     } finally {
       setMessagesLoading(false);
     }
-  }, [user, toast]);
+  }, [user?.id, toast]);
 
   // Create new conversation
   const createConversation = useCallback(async (title: string, firstMessage?: string) => {
@@ -222,7 +222,7 @@ export const useConversations = () => {
     setMessages(prev => [...prev, message]);
   }, []);
 
-  // Real-time subscription to new messages and conversations
+  // Real-time subscription to conversations only
   useEffect(() => {
     if (!user) return;
 
@@ -230,13 +230,7 @@ export const useConversations = () => {
 
     // Subscribe to conversation changes
     const conversationChannel = supabase
-      .channel(`conversations-changes-${user.id}`, {
-        config: {
-          presence: {
-            key: user.id,
-          },
-        },
-      })
+      .channel(`conversations-changes-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -252,10 +246,8 @@ export const useConversations = () => {
             setConversations(prev => {
               // Check if conversation already exists to avoid duplicates
               if (prev.find(conv => conv.id === newConversation.id)) {
-                console.log('Conversation already exists, skipping duplicate');
                 return prev;
               }
-              console.log('Adding new conversation to list:', newConversation.title);
               return [newConversation, ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -273,16 +265,13 @@ export const useConversations = () => {
         if (err) {
           console.error('Conversation channel subscription error:', err);
         }
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to conversation changes');
-        }
       });
 
     return () => {
       console.log('Cleaning up conversation subscription');
       supabase.removeChannel(conversationChannel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   // Separate effect for message subscriptions
   useEffect(() => {
@@ -340,14 +329,14 @@ export const useConversations = () => {
 
   // Load conversations on user change
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadConversations();
     } else {
       setConversations([]);
       setCurrentConversation(null);
       setMessages([]);
     }
-  }, [user, loadConversations]);
+  }, [user?.id, loadConversations]);
 
   return {
     conversations,
