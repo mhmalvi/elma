@@ -61,8 +61,12 @@ export const useConversations = () => {
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (conversationId: string) => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, cannot load messages');
+      return;
+    }
 
+    console.log('Loading messages for conversation:', conversationId);
     setMessagesLoading(true);
     try {
       const { data, error } = await supabase
@@ -73,6 +77,7 @@ export const useConversations = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+      console.log('Loaded messages:', data?.length || 0, 'messages');
       setMessages((data || []) as ChatMessage[]);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -199,8 +204,10 @@ export const useConversations = () => {
 
   // Select conversation
   const selectConversation = useCallback(async (conversation: Conversation) => {
+    console.log('Selecting conversation:', conversation.title, conversation.id);
     setCurrentConversation(conversation);
     await loadMessages(conversation.id);
+    console.log('Conversation selected and messages loaded');
   }, [loadMessages]);
 
   // Start new conversation
