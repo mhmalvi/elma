@@ -23,7 +23,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
-import { useConversations } from '@/hooks/useConversations';
+import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -48,8 +48,8 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Use conversation management hook
-  const conversationHookResult = useConversations();
+  // Use conversation management context
+  const conversationHookResult = useConversationsContext();
   const {
     currentConversation,
     messages: conversationMessages,

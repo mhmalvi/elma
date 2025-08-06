@@ -18,6 +18,7 @@ import { VoiceOptimizer } from "./components/performance/VoiceOptimizer";
 import { OfflineContentManager } from "./components/offline/OfflineContentManager";
 import { MobileBrowserTester } from "./components/performance/MobileBrowserTester";
 import VoiceQuality from "./pages/VoiceQuality";
+import { ConversationsProvider } from "./contexts/ConversationsContext";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +41,8 @@ const App = () => (
           {/* All other routes with sidebar layout and auth guard */}
           <Route path="/*" element={
             <AuthGuard>
-              <AppLayout>
+              <ConversationsProvider>
+                <AppLayout>
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/chat" element={<Chat />} />
@@ -63,6 +65,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </AppLayout>
+              </ConversationsProvider>
             </AuthGuard>
           } />
         </Routes>
