@@ -478,7 +478,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about Islam, life guidance, Quran, Hadith..."
-                className="min-h-[50px] max-h-[120px] resize-none pr-12 py-3 border-2 border-teal-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/30 focus:ring-offset-1 transition-all duration-200"
+                className="min-h-[50px] max-h-[120px] resize-none pr-12 py-3 border-2 border-teal-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 focus:ring-offset-0 transition-all duration-200"
                 disabled={isProcessing}
               />
               
