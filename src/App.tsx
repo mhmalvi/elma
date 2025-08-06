@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { MobileLayout } from "@/components/layout/MobileLayout";
+import { WebLayout } from "@/components/layout/WebLayout";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Bookmarks from "./pages/Bookmarks";
@@ -19,7 +19,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <MobileLayout>
+        <WebLayout>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
@@ -28,7 +28,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </MobileLayout>
+        </WebLayout>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
