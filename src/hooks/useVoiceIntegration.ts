@@ -166,70 +166,115 @@ export const useVoiceIntegration = () => {
   const speakText = useCallback(async (text: string) => {
     if (!text.trim()) return
 
-    const startTime = performance.now()
-
     // Stop any currently playing audio
     if (currentAudioRef.current) {
       currentAudioRef.current.pause()
       currentAudioRef.current = null
     }
 
+    // Stop any ongoing speech synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+
     setIsPlayingAudio(true)
 
     try {
-      const { data, error } = await supabase.functions.invoke('text-to-voice', {
-        body: { 
-          text: text.slice(0, 1000), // Limit text length
-          voice: '9BWtsMINqrJLrRacOk9x', // Use Aria voice ID for warm, calm speech
-          options: {
-            model_id: 'eleven_multilingual_v2',
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-              style: 0.5,
-              use_speaker_boost: true
+      // Try ElevenLabs API first, fallback to Web Speech API
+      const shouldUseElevenLabs = false // Set to true when API key is available
+      
+      if (shouldUseElevenLabs) {
+        const startTime = performance.now()
+        
+        const { data, error } = await supabase.functions.invoke('text-to-voice', {
+          body: { 
+            text: text.slice(0, 1000), // Limit text length
+            voice: '9BWtsMINqrJLrRacOk9x', // Use Aria voice ID for warm, calm speech
+            options: {
+              model_id: 'eleven_multilingual_v2',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.5,
+                use_speaker_boost: true
+              }
             }
           }
-        }
-      })
-
-      const generationTime = performance.now() - startTime
-
-      if (error) throw error
-
-      // Create audio element and play
-      const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
-      currentAudioRef.current = audio
-      
-      const audioSize = data.metadata?.size || 0
-      
-      audio.onloadstart = () => {
-        setSpeechMetrics({
-          generationTime,
-          audioSize,
-          playbackStarted: true,
         })
-      }
-      
-      audio.onended = () => {
-        setIsPlayingAudio(false)
-        currentAudioRef.current = null
-      }
 
-      audio.onerror = () => {
-        setIsPlayingAudio(false)
-        currentAudioRef.current = null
-        throw new Error('Audio playback failed')
-      }
+        const generationTime = performance.now() - startTime
 
-      await audio.play()
+        if (error) throw error
+
+        // Create audio element and play
+        const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
+        currentAudioRef.current = audio
+        
+        const audioSize = data.metadata?.size || 0
+        
+        audio.onloadstart = () => {
+          setSpeechMetrics({
+            generationTime,
+            audioSize,
+            playbackStarted: true,
+          })
+        }
+        
+        audio.onended = () => {
+          setIsPlayingAudio(false)
+          currentAudioRef.current = null
+        }
+
+        audio.onerror = () => {
+          setIsPlayingAudio(false)
+          currentAudioRef.current = null
+          throw new Error('Audio playback failed')
+        }
+
+        await audio.play()
+      } else {
+        // Fallback to Web Speech API
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text)
+          
+          // Configure voice settings
+          utterance.rate = 0.9
+          utterance.pitch = 1
+          utterance.volume = 0.8
+          
+          // Try to use a pleasant voice
+          const voices = window.speechSynthesis.getVoices()
+          const preferredVoice = voices.find(voice => 
+            voice.name.includes('Google') || 
+            voice.name.includes('Microsoft') ||
+            voice.lang.startsWith('en')
+          )
+          if (preferredVoice) {
+            utterance.voice = preferredVoice
+          }
+          
+          utterance.onstart = () => {
+            setIsPlayingAudio(true)
+          }
+          
+          utterance.onend = () => {
+            setIsPlayingAudio(false)
+          }
+          
+          utterance.onerror = (error) => {
+            console.error('Speech synthesis error:', error)
+            setIsPlayingAudio(false)
+          }
+          
+          window.speechSynthesis.speak(utterance)
+        } else {
+          throw new Error('Speech synthesis not supported in this browser')
+        }
+      }
       
     } catch (error) {
-      const generationTime = performance.now() - startTime
       console.error('Error playing audio:', error)
       setIsPlayingAudio(false)
-      
-      setSpeechMetrics(prev => ({ ...prev, generationTime }))
       
       toast({
         title: "Audio Error",
@@ -240,11 +285,18 @@ export const useVoiceIntegration = () => {
   }, [toast])
 
   const stopAudio = useCallback(() => {
+    // Stop audio element
     if (currentAudioRef.current) {
       currentAudioRef.current.pause()
       currentAudioRef.current = null
-      setIsPlayingAudio(false)
     }
+    
+    // Stop speech synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+    
+    setIsPlayingAudio(false)
   }, [])
 
   return {
