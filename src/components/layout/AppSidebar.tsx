@@ -13,7 +13,11 @@ import {
   Shield,
   Home,
   ChevronRight,
-  Bot
+  Bot,
+  Edit3,
+  Star,
+  Pin,
+  Copy
 } from 'lucide-react';
 import {
   Sidebar,
@@ -39,6 +43,13 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from '@/components/ui/context-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
@@ -49,22 +60,23 @@ import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
-// Remove voice features from sidebar - they'll be in settings now
-
 export function AppSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === 'collapsed';
-  const { user, signOut } = useAuth();
-  const { profile } = useProfile();
-  const { isMasterAdmin } = useRole();
-  const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversationsContext();
-  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPath = location.pathname;
-  
-  const [showAllConversations, setShowAllConversations] = useState(false);
+  const { user, signOut } = useAuth();
+  const { profile } = useProfile();
+  const { role } = useRole();
+  const { conversations, currentConversation, startNewConversation, selectConversation, deleteConversation } = useConversationsContext();
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const { theme, setTheme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showAllConversations, setShowAllConversations] = useState(false);
+
+  const currentPath = location.pathname;
+  const isMasterAdmin = () => role === 'master_admin';
 
   // Listen for global search keyboard shortcut
   React.useEffect(() => {
@@ -74,12 +86,7 @@ export function AppSidebar() {
   }, []);
 
   const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    cn(
-      "transition-all duration-200 hover:bg-sidebar-accent/50 rounded-lg",
-      isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-sm"
-    );
-
+  
   const recentConversations = showAllConversations 
     ? conversations 
     : conversations.slice(0, 8);
@@ -88,7 +95,6 @@ export function AppSidebar() {
     console.log('NEW CHAT CLICKED - Starting new conversation');
     await startNewConversation();
     console.log('NEW CHAT - startNewConversation completed');
-    // Navigate to chat if not already there
     if (currentPath !== '/chat') {
       console.log('NEW CHAT - Navigating to /chat');
       navigate('/chat');
@@ -97,13 +103,35 @@ export function AppSidebar() {
     }
   };
 
-  const handleConversationClick = async (conversationId: string) => {
+  const handleConversationClick = (conversationId: string) => {
     const conversation = conversations.find(c => c.id === conversationId);
     if (conversation) {
-      await selectConversation(conversation);
-      if (currentPath !== '/chat') {
-        navigate('/chat');
+      selectConversation(conversation);
+      navigate('/chat');
+    }
+  };
+
+  // Long press handling for mobile delete
+  const handleMouseDown = (conversationId: string, e: React.MouseEvent) => {
+    const timer = setTimeout(() => {
+      if (window.confirm('Delete this conversation?')) {
+        deleteConversation(conversationId);
       }
+    }, 800); // 800ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleMouseUp = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
   };
 
@@ -112,7 +140,6 @@ export function AppSidebar() {
   };
 
   const handleLogoClick = () => {
-    // Role-based routing
     if (isMasterAdmin()) {
       navigate('/admin');
     } else {
@@ -278,45 +305,139 @@ export function AppSidebar() {
               <SidebarMenu className="space-y-2">
                 {recentConversations.map((conversation) => (
                   <SidebarMenuItem key={conversation.id}>
-                    <div className="group relative">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleConversationClick(conversation.id)}
-                          className={cn(
-                            "w-full transition-all duration-300 hover-lift group",
-                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
-                            "hover:scale-[1.02] active:scale-[0.98] rounded-xl",
-                            collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-auto p-3"
-                          )}
-                          title={collapsed ? (conversation.title || 'New Conversation') : undefined}
-                        >
-                          <MessageSquare className={cn(
-                            "flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110",
-                            collapsed ? "h-4 w-4" : "h-4 w-4"
-                          )} />
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <div className="group relative">
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleConversationClick(conversation.id)}
+                            onMouseDown={(e) => handleMouseDown(conversation.id, e)}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseLeave}
+                            className={cn(
+                              "w-full transition-all duration-300 hover-lift group",
+                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
+                              "hover:scale-[1.02] active:scale-[0.98] rounded-xl",
+                              collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-auto p-3",
+                              currentConversation?.id === conversation.id && "bg-sidebar-accent text-sidebar-accent-foreground"
+                            )}
+                            title={collapsed ? (conversation.title || 'New Conversation') : undefined}
+                          >
+                            <MessageSquare className={cn(
+                              "flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110",
+                              collapsed ? "h-4 w-4" : "h-4 w-4"
+                            )} />
+                            {!collapsed && (
+                              <div className="flex-1 text-left min-w-0">
+                                <div className="truncate text-sm font-medium text-sidebar-foreground transition-colors duration-300">
+                                  {conversation.title || 'New Conversation'}
+                                </div>
+                                <div className="text-xs text-sidebar-foreground/60 transition-colors duration-300 group-hover:text-sidebar-foreground/80">
+                                  {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                                </div>
+                              </div>
+                            )}
+                          </Button>
+                          
+                          {/* Dropdown menu trigger */}
                           {!collapsed && (
-                            <div className="flex-1 text-left min-w-0">
-                              <div className="truncate text-sm font-medium text-sidebar-foreground transition-colors duration-300">
-                                {conversation.title || 'New Conversation'}
-                              </div>
-                              <div className="text-xs text-sidebar-foreground/60 transition-colors duration-300 group-hover:text-sidebar-foreground/80">
-                                {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
-                              </div>
-                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-sidebar-accent rounded-lg"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                >
+                                  <MoreHorizontal className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem onClick={() => handleConversationClick(conversation.id)}>
+                                  <MessageSquare className="w-4 h-4 mr-2" />
+                                  Open Chat
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Edit3 className="w-4 h-4 mr-2" />
+                                  Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Pin className="w-4 h-4 mr-2" />
+                                  Pin to Top
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Export Chat
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                  <Archive className="w-4 h-4 mr-2" />
+                                  Archive
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => deleteConversation(conversation.id)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <DeleteButton 
+                                    iconStyle="minus"
+                                    size="xs"
+                                    variant="ghost"
+                                    className="w-4 h-4 mr-2 p-0"
+                                    confirmationRequired={false}
+                                  />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
-                        </Button>
-                      {!collapsed && (
-                        <DeleteButton
-                          variant="minimal" 
-                          size="xs"
-                          iconStyle="xcircle"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                          onDelete={() => deleteConversation(conversation.id)}
-                          confirmationRequired={true}
-                          tooltip="Remove conversation"
-                        />
-                      )}
-                    </div>
+                        </div>
+                      </ContextMenuTrigger>
+                      
+                      {/* Context menu for right-click */}
+                      <ContextMenuContent className="w-48">
+                        <ContextMenuItem onClick={() => handleConversationClick(conversation.id)}>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Open Chat
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          <Edit3 className="w-4 h-4 mr-2" />
+                          Rename
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          <Star className="w-4 h-4 mr-2" />
+                          Add to Favorites
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Export Chat
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem>
+                          <Archive className="w-4 h-4 mr-2" />
+                          Archive
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this conversation?')) {
+                              deleteConversation(conversation.id);
+                            }
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <DeleteButton 
+                            iconStyle="minus"
+                            size="xs"
+                            variant="ghost"
+                            className="w-4 h-4 mr-2 p-0"
+                            confirmationRequired={false}
+                          />
+                          Delete Conversation
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
