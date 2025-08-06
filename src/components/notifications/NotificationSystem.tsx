@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -176,10 +176,9 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
                     variant="outline"
                     size="sm"
                     onClick={() => setIsOpen(false)}
-                    className="h-8 px-3 border border-border/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-300"
+                    className="h-8 w-8 p-0 border border-border/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-300"
                   >
-                    <X className="w-3 h-3 mr-1" />
-                    Close
+                    <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
