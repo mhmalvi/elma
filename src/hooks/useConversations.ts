@@ -191,47 +191,83 @@ export const useConversations = () => {
   }, [loadMessages]);
 
   // Start new conversation
-  const startNewConversation = useCallback(() => {
+  const startNewConversation = useCallback(async () => {
     setCurrentConversation(null);
     setMessages([]);
-  }, []);
+    // Refresh the conversations list to show any updates
+    await loadConversations();
+  }, [loadConversations]);
 
   // Add message to current conversation
   const addMessage = useCallback((message: ChatMessage) => {
     setMessages(prev => [...prev, message]);
   }, []);
 
-  // Real-time subscription to new messages
+  // Real-time subscription to new messages and conversations
   useEffect(() => {
-    if (!user || !currentConversation) return;
+    if (!user) return;
 
-    const channel = supabase
-      .channel('chat-messages')
+    // Subscribe to conversation changes
+    const conversationChannel = supabase
+      .channel('conversations-changes')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
-          table: 'chat_messages',
-          filter: `conversation_id=eq.${currentConversation.id}`
+          table: 'conversations',
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          const newMessage = payload.new as ChatMessage;
-          if (newMessage.user_id === user.id) {
-            setMessages(prev => {
-              // Avoid duplicates
-              if (prev.find(msg => msg.id === newMessage.id)) {
-                return prev;
-              }
-              return [...prev, newMessage];
-            });
+          if (payload.eventType === 'INSERT') {
+            const newConversation = payload.new as Conversation;
+            setConversations(prev => [newConversation, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedConversation = payload.new as Conversation;
+            setConversations(prev => 
+              prev.map(conv => conv.id === updatedConversation.id ? updatedConversation : conv)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setConversations(prev => prev.filter(conv => conv.id !== payload.old.id));
           }
         }
       )
       .subscribe();
 
+    // Subscribe to messages for current conversation
+    let messageChannel: any = null;
+    if (currentConversation) {
+      messageChannel = supabase
+        .channel('chat-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `conversation_id=eq.${currentConversation.id}`
+          },
+          (payload) => {
+            const newMessage = payload.new as ChatMessage;
+            if (newMessage.user_id === user.id) {
+              setMessages(prev => {
+                // Avoid duplicates
+                if (prev.find(msg => msg.id === newMessage.id)) {
+                  return prev;
+                }
+                return [...prev, newMessage];
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(conversationChannel);
+      if (messageChannel) {
+        supabase.removeChannel(messageChannel);
+      }
     };
   }, [user, currentConversation]);
 
