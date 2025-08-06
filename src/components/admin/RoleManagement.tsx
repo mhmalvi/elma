@@ -103,7 +103,7 @@ export const RoleManagement = () => {
   const getRoleColor = (role: AppRole) => {
     switch (role) {
       case 'master_admin': return 'destructive';
-      case 'tenant_admin': return 'default';
+      case 'admin': return 'default';
       case 'moderator': return 'secondary';
       default: return 'outline';
     }
@@ -182,7 +182,7 @@ export const RoleManagement = () => {
                   <SelectContent>
                     <SelectItem value="user">User</SelectItem>
                     <SelectItem value="moderator">Moderator</SelectItem>
-                    <SelectItem value="tenant_admin">Tenant Admin</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="master_admin">Master Admin</SelectItem>
                   </SelectContent>
                 </Select>
@@ -203,7 +203,7 @@ export const RoleManagement = () => {
 
       {/* Role Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {(['master_admin', 'tenant_admin', 'moderator', 'user'] as AppRole[]).map((role) => (
+        {(['master_admin', 'admin', 'moderator', 'user'] as AppRole[]).map((role) => (
           <Card key={role} className="p-4">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
-import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info, Shield, Mic } from "lucide-react"
+import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info, Shield, Mic, TestTube, Zap } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/hooks/useAuth"
@@ -224,6 +225,26 @@ const Settings = () => {
           </div>
         </Card>
 
+        {/* Master Admin Credentials - Only show during development */}
+        {import.meta.env.DEV && (
+          <Card className="p-4 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Development Credentials
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="p-3 bg-background/60 rounded border">
+                <p className="font-medium">Master Admin Login:</p>
+                <p className="font-mono">Email: admin@airchatbot.com</p>
+                <p className="font-mono">Password: MasterAdmin2024!</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                These credentials are only shown in development mode for testing purposes.
+              </p>
+            </div>
+          </Card>
+        )}
+
         {/* Admin Tools - Only for Master Admin */}
         {isMasterAdmin() && (
           <Card className="p-4 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30">
@@ -238,6 +259,45 @@ const Settings = () => {
             </div>
           </Card>
         )}
+
+        {/* Voice Features - Now moved here from sidebar */}
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <TestTube className="w-5 h-5" />
+            Voice Features
+          </h3>
+          <div className="space-y-3">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate('/voice-test')}
+            >
+              <TestTube className="w-4 h-4 mr-2" />
+              Voice Test
+              <Badge variant="outline" className="ml-auto text-xs bg-primary/10 text-primary border-primary/20">
+                Beta
+              </Badge>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate('/voice-quality')}
+            >
+              <Volume2 className="w-4 h-4 mr-2" />
+              Voice Quality
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate('/performance')}
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Performance
+            </Button>
+          </div>
+        </Card>
 
         {/* Navigation */}
         <div className="space-y-2">
