@@ -37,6 +37,7 @@ export const useConversations = () => {
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
 
+    console.log('LOAD CONVERSATIONS - Starting for user:', user.id);
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -46,6 +47,8 @@ export const useConversations = () => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
+      console.log('LOAD CONVERSATIONS - Raw data from DB:', data?.length, 'conversations');
+      console.log('LOAD CONVERSATIONS - Setting conversations state');
       setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -56,6 +59,7 @@ export const useConversations = () => {
       });
     } finally {
       setLoading(false);
+      console.log('LOAD CONVERSATIONS - Completed');
     }
   }, [user?.id, toast]);
 
