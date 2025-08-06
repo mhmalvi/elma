@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { Play, Pause, Square, BookmarkPlus, BookmarkCheck, Copy, RotateCcw } from "lucide-react"
+import { Play, Pause, BookmarkPlus, BookmarkCheck, Copy, RotateCcw, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModernCard } from "@/components/ui/modern-card"
 import { Badge } from "@/components/ui/badge"
+import { BookmarkDialog } from "@/components/bookmarks/BookmarkDialog"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { ChatMessage } from "@/hooks/useConversations"
@@ -13,6 +14,7 @@ interface EnhancedChatBubbleProps {
   onBookmark?: (messageId: string) => void
   onRegenerate?: (messageId: string) => void
   isBookmarked?: boolean
+  onReaction?: (messageId: string, reaction: string) => void
   className?: string
 }
 
@@ -21,9 +23,12 @@ export const EnhancedChatBubble = ({
   onBookmark,
   onRegenerate,
   isBookmarked = false,
+  onReaction,
   className
 }: EnhancedChatBubbleProps) => {
   const [isPlaying, setIsPlaying] = useState(false)
+  const [showBookmarkDialog, setShowBookmarkDialog] = useState(false)
+  const [reactions, setReactions] = useState<Record<string, number>>({})
   const { toast } = useToast()
 
   const isUser = message.role === 'user'
@@ -47,10 +52,18 @@ export const EnhancedChatBubble = ({
   }
 
   const handleBookmark = () => {
-    onBookmark?.(message.id)
+    setShowBookmarkDialog(true)
+  }
+
+  const handleReaction = (reaction: string) => {
+    setReactions(prev => ({
+      ...prev,
+      [reaction]: (prev[reaction] || 0) + 1
+    }))
+    onReaction?.(message.id, reaction)
     toast({
-      title: isBookmarked ? "Bookmark removed" : "Message bookmarked",
-      description: isBookmarked ? "Removed from your bookmarks" : "Added to your bookmarks"
+      title: "Reaction added",
+      description: `You reacted with ${reaction}`,
     })
   }
 
@@ -160,6 +173,15 @@ export const EnhancedChatBubble = ({
                   {isBookmarked ? <BookmarkCheck className="w-3 h-3" /> : <BookmarkPlus className="w-3 h-3" />}
                 </Button>
 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleReaction('❤️')}
+                  className="w-8 h-8 p-0 bg-background/90 backdrop-blur-sm hover:bg-background shadow-sm"
+                >
+                  <Heart className="w-3 h-3" />
+                </Button>
+
                 {onRegenerate && (
                   <Button
                     variant="ghost"
@@ -175,6 +197,17 @@ export const EnhancedChatBubble = ({
           </div>
         </ModernCard>
 
+        {/* Reactions Display */}
+        {Object.keys(reactions).length > 0 && (
+          <div className="flex gap-1 mt-2">
+            {Object.entries(reactions).map(([reaction, count]) => (
+              <Badge key={reaction} variant="secondary" className="text-xs">
+                {reaction} {count}
+              </Badge>
+            ))}
+          </div>
+        )}
+
         {/* Timestamp */}
         <p className={cn(
           "text-xs text-muted-foreground px-2",
@@ -183,6 +216,15 @@ export const EnhancedChatBubble = ({
           {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
         </p>
       </div>
+
+      {/* Bookmark Dialog */}
+      <BookmarkDialog
+        open={showBookmarkDialog}
+        onOpenChange={setShowBookmarkDialog}
+        messageId={message.id}
+        messageContent={message.content}
+        onSave={() => setShowBookmarkDialog(false)}
+      />
     </div>
   )
 }
