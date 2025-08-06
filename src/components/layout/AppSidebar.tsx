@@ -329,10 +329,10 @@ export function AppSidebar() {
             title={collapsed ? "New Chat" : undefined}
           >
             <Plus className={cn(
-              "text-white transition-transform duration-300 group-hover:rotate-90",
+              "text-foreground transition-transform duration-300 group-hover:rotate-90",
               collapsed ? "h-4 w-4" : "h-5 w-5"
             )} />
-            {!collapsed && <span className="text-white font-semibold">New Chat</span>}
+            {!collapsed && <span className="text-foreground font-semibold">New Chat</span>}
           </Button>
 
           {/* Search Button */}
