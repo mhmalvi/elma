@@ -238,7 +238,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {displayMessages.length === 0 ? (
+          {displayMessages.length === 0 && !messagesLoading ? (
             // Welcome State
             <div className="text-center py-12">
               <div className="mb-8">
