@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -122,13 +123,13 @@ export const NotificationSystem = () => {
   const getIcon = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-primary" />;
       case 'warning':
-        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+        return <AlertCircle className="w-4 h-4 text-spiritual" />;
       case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <AlertCircle className="w-4 h-4 text-destructive" />;
       default:
-        return <Info className="w-4 h-4 text-blue-500" />;
+        return <Info className="w-4 h-4 text-primary" />;
     }
   };
 
@@ -138,13 +139,16 @@ export const NotificationSystem = () => {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2"
+        className={cn(
+          "relative p-2 hover:bg-sidebar-accent hover:text-primary transition-all duration-300",
+          "hover:scale-105 active:scale-95 rounded-lg"
+        )}
+        title="Notifications"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4 text-primary transition-all duration-300 hover:rotate-12" />
         {unreadCount > 0 && (
           <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
+            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-primary text-primary-foreground border-none animate-pulse"
           >
             {unreadCount > 99 ? '99+' : unreadCount}
           </Badge>
@@ -152,14 +156,22 @@ export const NotificationSystem = () => {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 z-50">
-          <Card className="p-4 shadow-lg border">
+        <div className="fixed inset-0 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:mt-2 lg:w-80">
+          {/* Mobile backdrop */}
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Notification panel */}
+          <Card className="relative m-4 lg:m-0 p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Notifications</h3>
+              <h3 className="font-semibold text-card-foreground">Notifications</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsOpen(false)}
+                className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
               >
                 <X className="w-4 h-4" />
               </Button>
