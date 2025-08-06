@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { Conversation, useConversations } from "@/hooks/useConversations"
+import { Conversation } from "@/hooks/useConversations"
+import { useConversationsContext } from "@/contexts/ConversationsContext"
 import { formatDistanceToNow } from "date-fns"
 
 interface ConversationSidebarProps {
@@ -25,7 +26,7 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
     startNewConversation,
     updateConversation,
     deleteConversation
-  } = useConversations()
+  } = useConversationsContext()
   
   const [searchQuery, setSearchQuery] = useState("")
   const [editingConversation, setEditingConversation] = useState<Conversation | null>(null)
