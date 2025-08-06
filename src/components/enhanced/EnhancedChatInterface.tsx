@@ -22,8 +22,10 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +48,8 @@ interface EnhancedChatInterfaceProps {
 
 export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps) => {
   const { user } = useAuth();
+  const { profile } = useProfile();
+  const { addBookmark, isBookmarked } = useBookmarks();
   const { toast } = useToast();
   
   // Use conversation management context
@@ -400,9 +404,10 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => addBookmark(message.id, message.text.substring(0, 50))}
                           className="h-6 px-2 text-xs"
                         >
-                          <Bookmark className="w-3 h-3" />
+                          <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
                         </Button>
                       </div>
                     )}
@@ -414,9 +419,9 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
 
                   {message.isUser && (
                     <Avatar className="w-8 h-8 mt-1">
-                      <AvatarImage src={user?.user_metadata?.avatar_url} />
+                      <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                        {user?.email?.charAt(0).toUpperCase()}
+                        {profile?.display_name?.[0]?.toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   )}

@@ -179,6 +179,11 @@ export const useBookmarks = () => {
     return [...new Set(allTags)].sort()
   }
 
+  // Check if a message is bookmarked
+  const isBookmarked = (messageId: string) => {
+    return bookmarks.some(bookmark => bookmark.message_id === messageId)
+  }
+
   useEffect(() => {
     if (user) {
       loadBookmarks()
@@ -194,6 +199,7 @@ export const useBookmarks = () => {
     searchBookmarks,
     filterByTags,
     getAllTags,
+    isBookmarked,
     loadBookmarks
   }
 }
