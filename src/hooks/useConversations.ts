@@ -358,16 +358,30 @@ export const useConversations = () => {
     };
   }, [user, currentConversation]);
 
-  // Load conversations on user change
+  // Load conversations on user change and auto-select first one
   useEffect(() => {
     if (user?.id) {
-      loadConversations();
+      loadConversations().then(() => {
+        // Auto-select the first conversation if none is selected
+        if (!currentConversation && conversations.length > 0) {
+          console.log('Auto-selecting first conversation:', conversations[0].title);
+          selectConversation(conversations[0]);
+        }
+      });
     } else {
       setConversations([]);
       setCurrentConversation(null);
       setMessages([]);
     }
   }, [user?.id, loadConversations]);
+
+  // Auto-select first conversation when conversations are loaded
+  useEffect(() => {
+    if (!currentConversation && conversations.length > 0) {
+      console.log('Auto-selecting first conversation from list:', conversations[0].title);
+      selectConversation(conversations[0]);
+    }
+  }, [conversations, currentConversation, selectConversation]);
 
   return {
     conversations,
