@@ -62,7 +62,7 @@ export const useRealtimeSTT = () => {
       isSupported: webSpeechSupported || mediaRecorderSupported
     }));
 
-    console.log('STT Support Check:', {
+    console.log('[STT] Support Check:', {
       webSpeech: webSpeechSupported,
       mediaRecorder: mediaRecorderSupported,
       userAgent: navigator.userAgent
@@ -91,7 +91,7 @@ export const useRealtimeSTT = () => {
     }
 
     recognition.onstart = () => {
-      console.log('🎤 Web Speech Recognition STARTED successfully');
+      console.log('[STT] Web Speech Recognition started successfully');
       setSTTState(prev => ({
         ...prev,
         isListening: true,
@@ -112,7 +112,7 @@ export const useRealtimeSTT = () => {
 
         if (result.isFinal) {
           finalTranscript += transcript;
-          console.log('Final transcript:', transcript, 'Confidence:', confidence);
+          console.log('[STT] Final transcript:', transcript, 'Confidence:', confidence);
         } else {
           interimTranscript += transcript;
         }
@@ -138,11 +138,11 @@ export const useRealtimeSTT = () => {
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[STT] Speech recognition error:', event.error);
       
       // Handle specific errors
       if (event.error === 'no-speech') {
-        console.log('No speech detected, switching to MediaRecorder fallback');
+        console.log('[STT] No speech detected, switching to MediaRecorder fallback');
         // Auto-fallback to MediaRecorder for better audio detection
         setTimeout(() => {
           startListeningWithMediaRecorder(language);
@@ -169,7 +169,7 @@ export const useRealtimeSTT = () => {
     };
 
     recognition.onend = () => {
-      console.log('Web Speech Recognition ended');
+      console.log('[STT] Web Speech Recognition ended');
       setSTTState(prev => ({
         ...prev,
         isListening: false,
@@ -230,7 +230,7 @@ export const useRealtimeSTT = () => {
       return transcript;
 
     } catch (error) {
-      console.error('Whisper processing error:', error);
+      console.error('[STT] Whisper processing error:', error);
       setSTTState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Failed to process audio',
@@ -243,7 +243,7 @@ export const useRealtimeSTT = () => {
   // MediaRecorder fallback method
   const startListeningWithMediaRecorder = useCallback(async (language: string) => {
     try {
-      console.log('Starting MediaRecorder fallback for language:', language);
+      console.log('[STT] Starting MediaRecorder fallback for language:', language);
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -294,7 +294,7 @@ export const useRealtimeSTT = () => {
       });
 
     } catch (error) {
-      console.error('MediaRecorder fallback error:', error);
+      console.error('[STT] MediaRecorder fallback error:', error);
       setSTTState(prev => ({
         ...prev,
         error: 'Failed to access microphone',
@@ -306,7 +306,7 @@ export const useRealtimeSTT = () => {
 
   // Stop listening
   const stopListening = useCallback(() => {
-    console.log('Stopping STT');
+    console.log('[STT] Stopping STT');
 
     // Clear timeouts
     if (recordingTimeoutRef.current) {
@@ -346,7 +346,7 @@ export const useRealtimeSTT = () => {
   // Start listening with best available method
   const startListening = useCallback(async (language: string = 'en') => {
     try {
-      console.log('Starting STT with language:', language);
+      console.log('[STT] Starting STT with language:', language);
       
       setSTTState(prev => ({
         ...prev,
@@ -372,7 +372,7 @@ export const useRealtimeSTT = () => {
       }
 
       // Fallback to MediaRecorder + Whisper
-      console.log('Falling back to MediaRecorder + Whisper');
+      console.log('[STT] Falling back to MediaRecorder + Whisper');
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -422,7 +422,7 @@ export const useRealtimeSTT = () => {
       });
 
     } catch (error) {
-      console.error('Error starting STT:', error);
+      console.error('[STT] Error starting STT:', error);
       
       let errorMessage = 'Failed to start voice input';
       if (error instanceof Error) {
