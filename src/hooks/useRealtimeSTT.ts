@@ -84,8 +84,10 @@ export const useRealtimeSTT = () => {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = selectedLang?.webSpeechCode || 'en-US';
+    
+    // Increase timeout to give more time for speech detection
     if ('maxAlternatives' in recognition) {
-      (recognition as any).maxAlternatives = 1;
+      (recognition as any).maxAlternatives = 3;
     }
 
     recognition.onstart = () => {
@@ -136,6 +138,27 @@ export const useRealtimeSTT = () => {
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
+      
+      // Handle specific errors
+      if (event.error === 'no-speech') {
+        console.log('No speech detected, switching to MediaRecorder fallback');
+        // Auto-fallback to MediaRecorder for better audio detection
+        setTimeout(() => {
+          startListeningWithMediaRecorder(language);
+        }, 500);
+        return;
+      }
+      
+      if (event.error === 'audio-capture') {
+        setSTTState(prev => ({
+          ...prev,
+          error: 'Microphone access failed. Please check permissions.',
+          isListening: false,
+          isProcessing: false
+        }));
+        return;
+      }
+      
       setSTTState(prev => ({
         ...prev,
         error: `Speech recognition error: ${event.error}`,
@@ -214,6 +237,109 @@ export const useRealtimeSTT = () => {
       }));
       return null;
     }
+  }, []);
+
+  // MediaRecorder fallback method
+  const startListeningWithMediaRecorder = useCallback(async (language: string) => {
+    try {
+      console.log('Starting MediaRecorder fallback for language:', language);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100,
+          channelCount: 1
+        }
+      });
+
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processWithWhisper(audioBlob, language);
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
+
+      setSTTState(prev => ({
+        ...prev,
+        isListening: true,
+        isProcessing: false,
+        error: null
+      }));
+
+      // Auto-stop after 15 seconds for fallback
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopListening();
+      }, 15000);
+
+      toast({
+        title: "🎤 Recording (Fallback Mode)",
+        description: `Speak now in ${SUPPORTED_LANGUAGES.find(l => l.code === language)?.name || 'English'}`,
+      });
+
+    } catch (error) {
+      console.error('MediaRecorder fallback error:', error);
+      setSTTState(prev => ({
+        ...prev,
+        error: 'Failed to access microphone',
+        isListening: false,
+        isProcessing: false
+      }));
+    }
+  }, [processWithWhisper, toast]);
+
+  // Stop listening
+  const stopListening = useCallback(() => {
+    console.log('Stopping STT');
+
+    // Clear timeouts
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+    
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
+    // Stop Web Speech Recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    // Stop MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+
+    // Stop media stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    setSTTState(prev => ({
+      ...prev,
+      isListening: false,
+      interimTranscript: ''
+    }));
   }, []);
 
   // Start listening with best available method
@@ -323,44 +449,6 @@ export const useRealtimeSTT = () => {
     }
   }, [initializeWebSpeech, processWithWhisper, toast]);
 
-  // Stop listening
-  const stopListening = useCallback(() => {
-    console.log('Stopping STT');
-
-    // Clear timeouts
-    if (recordingTimeoutRef.current) {
-      clearTimeout(recordingTimeoutRef.current);
-      recordingTimeoutRef.current = null;
-    }
-    
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-
-    // Stop Web Speech Recognition
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-
-    // Stop MediaRecorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-
-    // Stop media stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-
-    setSTTState(prev => ({
-      ...prev,
-      isListening: false,
-      interimTranscript: ''
-    }));
-  }, []);
 
   // Clear transcript
   const clearTranscript = useCallback(() => {
