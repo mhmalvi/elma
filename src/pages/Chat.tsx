@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ChatLayout } from '@/components/layout/ChatLayout';
+import { EnhancedChatInterface } from '@/components/enhanced/EnhancedChatInterface';
 
 const Chat = () => {
   const { user, loading } = useAuth();
@@ -18,7 +18,11 @@ const Chat = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  return <ChatLayout className="h-full" />;
+  return (
+    <div className="h-full flex flex-col">
+      <EnhancedChatInterface className="flex-1" />
+    </div>
+  );
 };
 
 export default Chat;
