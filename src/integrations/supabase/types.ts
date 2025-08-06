@@ -96,6 +96,44 @@ export type Database = {
           },
         ]
       }
+      content_verification: {
+        Row: {
+          content_id: string
+          content_type: string
+          id: string
+          verification_notes: string | null
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          id?: string
+          verification_notes?: string | null
+          verification_status: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          id?: string
+          verification_notes?: string | null
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_verification_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "islamic_scholars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -123,6 +161,87 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      hadith_collection: {
+        Row: {
+          arabic_text: string
+          book_number: number | null
+          collection_name: string
+          created_at: string | null
+          grade: string | null
+          hadith_number: number
+          id: string
+          narrator: string
+          reference: string
+          topic: string | null
+          translation_english: string
+          updated_at: string | null
+        }
+        Insert: {
+          arabic_text: string
+          book_number?: number | null
+          collection_name: string
+          created_at?: string | null
+          grade?: string | null
+          hadith_number: number
+          id?: string
+          narrator: string
+          reference: string
+          topic?: string | null
+          translation_english: string
+          updated_at?: string | null
+        }
+        Update: {
+          arabic_text?: string
+          book_number?: number | null
+          collection_name?: string
+          created_at?: string | null
+          grade?: string | null
+          hadith_number?: number
+          id?: string
+          narrator?: string
+          reference?: string
+          topic?: string | null
+          translation_english?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      islamic_scholars: {
+        Row: {
+          biography: string | null
+          birth_year: number | null
+          created_at: string | null
+          death_year: number | null
+          full_name: string | null
+          id: string
+          name: string
+          school_of_thought: string | null
+          specialization: string[] | null
+        }
+        Insert: {
+          biography?: string | null
+          birth_year?: number | null
+          created_at?: string | null
+          death_year?: number | null
+          full_name?: string | null
+          id?: string
+          name: string
+          school_of_thought?: string | null
+          specialization?: string[] | null
+        }
+        Update: {
+          biography?: string | null
+          birth_year?: number | null
+          created_at?: string | null
+          death_year?: number | null
+          full_name?: string | null
+          id?: string
+          name?: string
+          school_of_thought?: string | null
+          specialization?: string[] | null
         }
         Relationships: []
       }
@@ -156,12 +275,60 @@ export type Database = {
         }
         Relationships: []
       }
+      quran_verses: {
+        Row: {
+          arabic_text: string
+          created_at: string | null
+          id: string
+          revelation_order: number | null
+          surah_name: string
+          surah_number: number
+          translation_english: string
+          transliteration: string | null
+          updated_at: string | null
+          verse_number: number
+        }
+        Insert: {
+          arabic_text: string
+          created_at?: string | null
+          id?: string
+          revelation_order?: number | null
+          surah_name: string
+          surah_number: number
+          translation_english: string
+          transliteration?: string | null
+          updated_at?: string | null
+          verse_number: number
+        }
+        Update: {
+          arabic_text?: string
+          created_at?: string | null
+          id?: string
+          revelation_order?: number | null
+          surah_name?: string
+          surah_number?: number
+          translation_english?: string
+          transliteration?: string | null
+          updated_at?: string | null
+          verse_number?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_islamic_content: {
+        Args: { search_query: string; result_limit?: number }
+        Returns: {
+          content_type: string
+          id: string
+          content: string
+          reference: string
+          relevance_score: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
