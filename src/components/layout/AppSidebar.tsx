@@ -94,9 +94,15 @@ export function AppSidebar() {
   };
 
   const handleConversationClick = (conversationId: string) => {
-    selectConversation(conversations.find(c => c.id === conversationId)!);
-    if (currentPath !== '/chat') {
-      navigate('/chat');
+    const conversation = conversations.find(c => c.id === conversationId);
+    if (conversation) {
+      selectConversation(conversation);
+      // Always navigate to chat and force refresh if already on chat
+      if (currentPath === '/chat') {
+        window.location.reload();
+      } else {
+        navigate('/chat');
+      }
     }
   };
 
