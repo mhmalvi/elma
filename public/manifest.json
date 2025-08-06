@@ -1,0 +1,55 @@
+{
+  "name": "AirChatBot - Islamic AI Assistant",
+  "short_name": "AirChatBot",
+  "description": "Your Islamic AI companion for spiritual guidance and Quranic wisdom",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#22c55e",
+  "orientation": "portrait-primary",
+  "categories": ["education", "lifestyle", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/airchatbot-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/airchatbot-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "features": [
+    "AI-powered Islamic guidance",
+    "Voice interaction",
+    "Quranic and Hadith references",
+    "Multilingual support",
+    "Offline functionality",
+    "Content filtering"
+  ],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "prefer_related_applications": false,
+  "scope": "/",
+  "id": "airchatbot-islamic-assistant"
+}
