@@ -5,7 +5,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { SophisticatedSTTInterface } from '@/components/voice/SophisticatedSTTInterface';
+import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
+import { DictationModeInterface } from '@/components/voice/DictationModeInterface';
+import { LiveConversationInterface } from '@/components/voice/LiveConversationInterface';
 import { 
   Send, 
   Mic,
@@ -28,6 +30,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { useVoiceMode } from '@/contexts/VoiceModeContext';
+import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +57,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   const { profile } = useProfile();
   const { addBookmark, isBookmarked } = useBookmarks();
   const { toast } = useToast();
+  const { currentMode } = useVoiceMode();
   
   // Use conversation management context
   const conversationHookResult = useConversationsContext();
@@ -72,24 +77,10 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     hookResult: conversationHookResult
   });
   
-  const {
-    isRecording,
-    isProcessingVoice,
-    isPlayingAudio,
-    transcript,
-    startRecording,
-    stopRecording,
-    speakText,
-    stopAudio,
-    setTranscript
-  } = useVoiceIntegration();
-  
-  // Voice mode state
-  const [showVoiceInterface, setShowVoiceInterface] = useState(false);
+  const { speakText, isPlayingAudio, stopAudio } = useVoiceIntegration();
 
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -123,13 +114,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     scrollToBottom();
   }, [displayMessages, scrollToBottom]);
 
-  // Handle transcript from voice input
-  useEffect(() => {
-    if (transcript && transcript.trim()) {
-      setInputValue(transcript);
-      setTranscript(''); // Clear transcript after using it
-    }
-  }, [transcript, setTranscript]);
+  // This effect will be moved after voice modes hook declaration
 
   // Send message to AI
   const sendMessage = async (messageText: string) => {
@@ -198,8 +183,8 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         };
         addMessage(aiMessage);
 
-        // Auto-speak the response if voice mode is active
-        if (isListening && (data.answer || data.response)) {
+        // Auto-speak the response if live voice mode is active
+        if (currentMode === 'live' && (data.answer || data.response)) {
           await speakText(data.answer || data.response);
         }
       }
@@ -232,15 +217,20 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     }
   };
 
-  const handleVoiceToggle = async () => {
-    if (isRecording) {
-      await stopRecording();
-      setIsListening(false);
-    } else {
-      setIsListening(true);
-      await startRecording();
+  // Voice mode handlers
+  const {
+    handleDictationComplete,
+    handleLiveTranscriptStream,
+    handleLiveInterrupt,
+    currentTranscript,
+  } = useVoiceModes(sendMessage);
+
+  // Handle current transcript from voice modes
+  useEffect(() => {
+    if (currentTranscript && currentTranscript.trim()) {
+      setInputValue(currentTranscript);
     }
-  };
+  }, [currentTranscript]);
 
   const handleSpeakMessage = async (text: string) => {
     if (isPlayingAudio) {
@@ -463,42 +453,29 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         </div>
       </ScrollArea>
 
-      {/* Voice Mode Indicator */}
-      {isListening && (
-        <div className="border-t bg-primary/5 p-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Voice Mode Active</span>
-            </div>
-            {transcript && (
-              <div className="text-sm text-muted-foreground">
-                "{transcript}"
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Sophisticated Voice Interface */}
-      {showVoiceInterface && (
+      {/* Voice Mode Interface */}
+      {currentMode && (
         <div className="border-t bg-muted/5 p-6">
-          <div className="max-w-4xl mx-auto">
-            <SophisticatedSTTInterface 
-              onTranscriptFinal={(transcript) => {
-                console.log('💬 CHAT: Received final transcript:', transcript);
-                setInputValue(transcript);
-                setShowVoiceInterface(false);
-              }}
-              onTranscriptUpdate={(transcript, isFinal) => {
-                console.log('💬 CHAT: Transcript update:', { transcript, isFinal });
-                if (!isFinal) {
-                  // Show real-time transcript preview in input
-                  setInputValue(transcript);
-                }
-              }}
-              autoSend={false}
-            />
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-foreground">
+                {currentMode === 'dictation' ? '🎤 Voice Memo Mode' : '🗣️ Live Conversation Mode'}
+              </h3>
+              <VoiceModeSelector />
+            </div>
+            
+            {currentMode === 'dictation' ? (
+              <DictationModeInterface
+                onTranscriptComplete={handleDictationComplete}
+                className="space-y-3"
+              />
+            ) : currentMode === 'live' ? (
+              <LiveConversationInterface
+                onTranscriptStream={handleLiveTranscriptStream}
+                onInterrupt={handleLiveInterrupt}
+                className="space-y-3"
+              />
+            ) : null}
           </div>
         </div>
       )}
@@ -518,38 +495,30 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 disabled={isProcessing}
               />
               
-              {/* Voice mode toggle button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowVoiceInterface(!showVoiceInterface)}
-                className={cn(
-                  "absolute right-2 top-2 h-8 w-8 p-0 transition-all duration-300",
-                  showVoiceInterface && "text-primary bg-primary/10"
-                )}
-                title="Toggle advanced voice interface"
-              >
-                <Mic className="w-4 h-4" />
-              </Button>
+              {/* Voice Mode Selector in input area */}
+              {!currentMode && (
+                <div className="absolute right-2 top-2">
+                  <VoiceModeSelector />
+                </div>
+              )}
             </div>
 
-            {/* Enhanced Voice Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm" 
-              onClick={() => setShowVoiceInterface(!showVoiceInterface)}
-              className={cn(
-                "h-[50px] px-4 border-2 transition-all duration-300",
-                showVoiceInterface 
-                  ? "border-primary bg-primary/10 text-primary" 
-                  : "border-border hover:border-primary/50"
-              )}
-              title={showVoiceInterface ? "Hide voice interface" : "Show advanced voice interface"}
-            >
-              <Mic className="w-5 h-5" />
-            </Button>
+            {/* Voice Mode Quick Access */}
+            {!currentMode ? (
+              <VoiceModeSelector className="h-[50px]" />
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm" 
+                onClick={() => {}}
+                className="h-[50px] px-4 border-2 border-primary bg-primary/10 text-primary opacity-50"
+                disabled
+                title={`${currentMode === 'dictation' ? 'Voice Memo' : 'Live Talk'} mode active`}
+              >
+                <Mic className="w-5 h-5" />
+              </Button>
+            )}
 
             <Button
               type="submit"
@@ -567,7 +536,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
           <div className="mt-2 text-center">
             <p className="text-xs text-muted-foreground">
               Press Enter to send • Shift+Enter for new line • 
-              {showVoiceInterface ? " Advanced voice mode active" : " Click mic for advanced voice"}
+              {currentMode ? ` ${currentMode === 'dictation' ? 'Voice Memo' : 'Live Talk'} mode active` : " Select voice mode to get started"}
             </p>
           </div>
         </form>
