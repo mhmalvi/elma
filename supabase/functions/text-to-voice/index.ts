@@ -44,79 +44,67 @@ serve(async (req) => {
 
     const modelId = options?.model_id || 'eleven_multilingual_v2'
 
-    // Enhanced API call with retry logic
-    let retryCount = 0
-    const maxRetries = 2
     
-    while (retryCount <= maxRetries) {
-      try {
-        const elevenlabsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': ELEVENLABS_API_KEY,
-          },
-          body: JSON.stringify({
-            text,
-            model_id: modelId,
-            voice_settings: voiceSettings,
-            output_format: 'mp3_44100_128'
-          }),
-        })
+    const makeRequest = async (attempt: number): Promise<Response> => {
+      const elevenlabsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVENLABS_API_KEY,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: modelId,
+          voice_settings: voiceSettings,
+          output_format: 'mp3_44100_128'
+        }),
+      })
 
-        if (!elevenlabsResponse.ok) {
-          const error = await elevenlabsResponse.text()
-          console.error('ElevenLabs API error:', error)
-          
-          if (retryCount < maxRetries && elevenlabsResponse.status >= 500) {
-            retryCount++
-            console.log(`Retrying request (${retryCount}/${maxRetries})...`)
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
-            continue
-          }
-          
-          throw new Error(`ElevenLabs API error (${elevenlabsResponse.status}): ${error}`)
+      if (!elevenlabsResponse.ok) {
+        const error = await elevenlabsResponse.text()
+        console.error('ElevenLabs API error:', error)
+        
+        if (attempt < maxRetries && elevenlabsResponse.status >= 500) {
+          console.log(`Retrying request (${attempt + 1}/${maxRetries})...`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+          return makeRequest(attempt + 1)
         }
-
-        // Convert audio buffer to base64
-        const arrayBuffer = await elevenlabsResponse.arrayBuffer()
-        const audioSize = arrayBuffer.byteLength
-        const base64Audio = btoa(
-          String.fromCharCode(...new Uint8Array(arrayBuffer))
-        )
-
-        console.log('Successfully generated speech audio:', {
-          size: audioSize,
-          duration: Math.round(audioSize / 16000), // Rough estimate
-          model: modelId,
-          voice: voiceId
-        })
-
-        return new Response(
-          JSON.stringify({ 
-            audioContent: base64Audio,
-            metadata: {
-              size: audioSize,
-              voice: voiceId,
-              model: modelId,
-              textLength
-            }
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
-        )
-      } catch (fetchError) {
-        if (retryCount < maxRetries) {
-          retryCount++
-          console.log(`Request failed, retrying (${retryCount}/${maxRetries})...`, fetchError)
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
-          continue
-        }
-        throw fetchError
+        
+        throw new Error(`ElevenLabs API error (${elevenlabsResponse.status}): ${error}`)
       }
+
+      // Convert audio buffer to base64
+      const arrayBuffer = await elevenlabsResponse.arrayBuffer()
+      const audioSize = arrayBuffer.byteLength
+      const base64Audio = btoa(
+        String.fromCharCode(...new Uint8Array(arrayBuffer))
+      )
+
+      console.log('Successfully generated speech audio:', {
+        size: audioSize,
+        duration: Math.round(audioSize / 16000), // Rough estimate
+        model: modelId,
+        voice: voiceId
+      })
+
+      return new Response(
+        JSON.stringify({ 
+          audioContent: base64Audio,
+          metadata: {
+            size: audioSize,
+            voice: voiceId,
+            model: modelId,
+            textLength
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      )
     }
+
+    return await makeRequest(0)
   } catch (error) {
     console.error('Error in text-to-voice function:', error)
     return new Response(

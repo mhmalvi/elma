@@ -163,7 +163,7 @@ export const useVoiceIntegration = () => {
     return Math.max(0, Math.min(100, (snr + 60) * 100 / 60))
   }
 
-  const speakText = useCallback(async (text: string) => {
+  const speakText = useCallback(async (text: string, useHighQuality = true) => {
     if (!text.trim()) return
 
     // Stop any currently playing audio
@@ -180,23 +180,23 @@ export const useVoiceIntegration = () => {
     setIsPlayingAudio(true)
 
     try {
-      // Try ElevenLabs API first, fallback to Web Speech API
-      const shouldUseElevenLabs = false // Set to true when API key is available
+      // Try ElevenLabs API first for high quality, fallback to Web Speech API
+      const shouldUseElevenLabs = useHighQuality // Enable ElevenLabs for sophisticated TTS
       
       if (shouldUseElevenLabs) {
         const startTime = performance.now()
         
         const { data, error } = await supabase.functions.invoke('text-to-voice', {
           body: { 
-            text: text.slice(0, 1000), // Limit text length
-            voice: '9BWtsMINqrJLrRacOk9x', // Use Aria voice ID for warm, calm speech
+            text: text.slice(0, 1000), // Limit text length for API efficiency
+            voice: '9BWtsMINqrJLrRacOk9x', // Aria voice - warm, natural, engaging
             options: {
-              model_id: 'eleven_multilingual_v2',
+              model_id: 'eleven_multilingual_v2', // High-quality multilingual model
               voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.5,
-                use_speaker_boost: true
+                stability: 0.6,        // More stable, less random
+                similarity_boost: 0.8, // Higher voice consistency
+                style: 0.4,            // Moderate expressiveness
+                use_speaker_boost: true // Enhanced clarity
               }
             }
           }
