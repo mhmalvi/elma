@@ -309,10 +309,11 @@ export function AppSidebar() {
                         <DeleteButton
                           variant="minimal" 
                           size="xs"
+                          iconStyle="xcircle"
                           className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300"
                           onDelete={() => deleteConversation(conversation.id)}
                           confirmationRequired={true}
-                          tooltip="Delete conversation"
+                          tooltip="Remove conversation"
                         />
                       )}
                     </div>
