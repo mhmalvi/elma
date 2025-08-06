@@ -26,13 +26,13 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshot-mobile.png",
+      "src": "/airchatbot-logo.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/screenshot-desktop.png",
+      "src": "/airchatbot-logo.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
@@ -44,7 +44,8 @@
     "Quranic and Hadith references",
     "Multilingual support",
     "Offline functionality",
-    "Content filtering"
+    "Content filtering",
+    "Push notifications"
   ],
   "launch_handler": {
     "client_mode": ["navigate-existing", "auto"]

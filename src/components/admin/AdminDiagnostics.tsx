@@ -1,10 +1,12 @@
-import { Monitor, Database, Server, Activity, Shield, BarChart3 } from 'lucide-react';
+import { Monitor, Database, Server, Activity, Shield, BarChart3, Bell, Share } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { VoiceTestSuite } from '@/components/voice/VoiceTestSuite';
 import { IslamicContentSeeder } from '@/components/database/IslamicContentSeeder';
 import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor';
 import { ContentFilteringManagement } from './ContentFilteringManagement';
 import { UsageAnalyticsDashboard } from './UsageAnalyticsDashboard';
+import { PushNotificationSystem } from './PushNotificationSystem';
+import { ConversationSharingSystem } from './ConversationSharingSystem';
 import { AdminSystemStats } from './AdminSystemStats';
 
 export const AdminDiagnostics = () => {
@@ -37,6 +39,24 @@ export const AdminDiagnostics = () => {
           <h3 className="text-lg font-semibold">Content Safety</h3>
         </div>
         <ContentFilteringManagement />
+      </Card>
+
+      {/* Push Notifications */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Bell className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Push Notification System</h3>
+        </div>
+        <PushNotificationSystem />
+      </Card>
+
+      {/* Conversation Sharing */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Share className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Conversation Sharing</h3>
+        </div>
+        <ConversationSharingSystem />
       </Card>
 
       {/* Diagnostic Tools Grid */}
