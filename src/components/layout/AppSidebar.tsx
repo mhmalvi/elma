@@ -86,10 +86,15 @@ export function AppSidebar() {
     : conversations.slice(0, 8);
 
   const handleNewChat = async () => {
+    console.log('NEW CHAT CLICKED - Starting new conversation');
     await startNewConversation();
+    console.log('NEW CHAT - startNewConversation completed');
     // Navigate to chat if not already there
     if (currentPath !== '/chat') {
+      console.log('NEW CHAT - Navigating to /chat');
       navigate('/chat');
+    } else {
+      console.log('NEW CHAT - Already on /chat');
     }
   };
 

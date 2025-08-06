@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Search, MessageSquare, FileText, Calendar } from "lucide-react"
 import { useSearch, SearchResult } from "@/hooks/useSearch"
-import { useConversations } from "@/hooks/useConversations"
+import { useConversationsContext } from "@/contexts/ConversationsContext"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
@@ -17,7 +17,7 @@ interface GlobalSearchProps {
 export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
   const [query, setQuery] = useState("")
   const { results, loading, search, clearResults } = useSearch()
-  const { selectConversation, conversations } = useConversations()
+  const { selectConversation, conversations } = useConversationsContext()
 
   // Debounced search
   useEffect(() => {
