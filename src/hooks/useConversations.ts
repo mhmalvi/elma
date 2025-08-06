@@ -104,6 +104,9 @@ export const useConversations = () => {
   const createConversation = useCallback(async (title: string, firstMessage?: string) => {
     if (!user) return null;
 
+    // Clear the prevent auto-select flag when creating a new conversation
+    localStorage.removeItem('prevent_auto_select');
+
     try {
       const { data, error } = await supabase
         .from('conversations')
@@ -215,6 +218,9 @@ export const useConversations = () => {
   const selectConversation = useCallback(async (conversation: Conversation) => {
     console.log('Selecting conversation:', conversation.title, conversation.id);
     
+    // Clear the prevent auto-select flag when manually selecting a conversation
+    localStorage.removeItem('prevent_auto_select');
+    
     // CRITICAL: Set the current conversation FIRST
     setCurrentConversation(conversation);
     console.log('Current conversation set to:', conversation.id);
@@ -229,7 +235,9 @@ export const useConversations = () => {
     console.log('START NEW CONVERSATION - Clearing current state');
     setCurrentConversation(null);
     setMessages([]);
-    console.log('START NEW CONVERSATION - State cleared');
+    // Set a flag to prevent auto-selection for new chat
+    localStorage.setItem('prevent_auto_select', 'true');
+    console.log('START NEW CONVERSATION - State cleared, auto-selection prevented');
   }, []);
 
   // Add message to current conversation
@@ -362,8 +370,9 @@ export const useConversations = () => {
   useEffect(() => {
     if (user?.id) {
       loadConversations().then(() => {
-        // Auto-select the first conversation if none is selected
-        if (!currentConversation && conversations.length > 0) {
+        // Auto-select the first conversation if none is selected and auto-selection is not prevented
+        const shouldPreventAutoSelect = localStorage.getItem('prevent_auto_select') === 'true';
+        if (!currentConversation && conversations.length > 0 && !shouldPreventAutoSelect) {
           console.log('Auto-selecting first conversation:', conversations[0].title);
           selectConversation(conversations[0]);
         }
@@ -377,9 +386,12 @@ export const useConversations = () => {
 
   // Auto-select first conversation when conversations are loaded
   useEffect(() => {
-    if (!currentConversation && conversations.length > 0) {
+    const shouldPreventAutoSelect = localStorage.getItem('prevent_auto_select') === 'true';
+    if (!currentConversation && conversations.length > 0 && !shouldPreventAutoSelect) {
       console.log('Auto-selecting first conversation from list:', conversations[0].title);
       selectConversation(conversations[0]);
+    } else if (shouldPreventAutoSelect) {
+      console.log('Auto-selection prevented for new chat');
     }
   }, [conversations, currentConversation, selectConversation]);
 
