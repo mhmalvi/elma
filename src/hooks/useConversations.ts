@@ -104,7 +104,13 @@ export const useConversations = () => {
       if (error) throw error;
       
       const newConversation = data as Conversation;
-      setConversations(prev => [newConversation, ...prev]);
+      
+      // Don't update local state here - let real-time subscription handle it
+      // to avoid duplicates, but do set as current conversation
+      setCurrentConversation(newConversation);
+      setMessages([]); // Clear messages for new conversation
+      
+      console.log('Created new conversation:', newConversation);
       return newConversation;
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -219,9 +225,16 @@ export const useConversations = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('Realtime conversation event:', payload.eventType, payload);
           if (payload.eventType === 'INSERT') {
             const newConversation = payload.new as Conversation;
-            setConversations(prev => [newConversation, ...prev]);
+            setConversations(prev => {
+              // Check if conversation already exists to avoid duplicates
+              if (prev.find(conv => conv.id === newConversation.id)) {
+                return prev;
+              }
+              return [newConversation, ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
             const updatedConversation = payload.new as Conversation;
             setConversations(prev => 
