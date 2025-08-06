@@ -156,6 +156,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       }
 
       console.log('AI response received:', data);
+      console.log('AI response structure:', JSON.stringify(data, null, 2));
 
       // Auto-speak the response if voice mode is active
       if (isListening && data.answer) {

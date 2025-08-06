@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { question, conversationId } = await req.json();
+    const { question, conversation_id, user_id } = await req.json();
     
     if (!question) {
       throw new Error('Question is required');
@@ -180,7 +180,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
     // Step 3: Store conversation in Supabase if user is authenticated
     if (user) {
       try {
-        let currentConversationId = conversationId;
+        let currentConversationId = conversation_id;
 
         // Create or get conversation
         if (!currentConversationId) {
@@ -234,10 +234,11 @@ Source: Quran 2:155, Sahih Bukhari"`;
     console.log('Successfully generated response');
     return new Response(
       JSON.stringify({ 
+        answer: response,
         response,
         success: true,
         contextUsed: contextText.length > 0,
-        conversationId: conversationId || null
+        conversationId: conversation_id || null
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
