@@ -213,9 +213,11 @@ export const useConversations = () => {
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up real-time subscriptions for user:', user.id);
+
     // Subscribe to conversation changes
     const conversationChannel = supabase
-      .channel('conversations-changes')
+      .channel(`conversations-changes-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -231,8 +233,10 @@ export const useConversations = () => {
             setConversations(prev => {
               // Check if conversation already exists to avoid duplicates
               if (prev.find(conv => conv.id === newConversation.id)) {
+                console.log('Conversation already exists, skipping duplicate');
                 return prev;
               }
+              console.log('Adding new conversation to list:', newConversation.title);
               return [newConversation, ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -245,13 +249,16 @@ export const useConversations = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Conversation channel subscription status:', status);
+      });
 
     // Subscribe to messages for current conversation
     let messageChannel: any = null;
     if (currentConversation) {
+      console.log('Setting up message subscription for conversation:', currentConversation.id);
       messageChannel = supabase
-        .channel('chat-messages')
+        .channel(`chat-messages-${currentConversation.id}`)
         .on(
           'postgres_changes',
           {
@@ -261,22 +268,28 @@ export const useConversations = () => {
             filter: `conversation_id=eq.${currentConversation.id}`
           },
           (payload) => {
+            console.log('Realtime message event:', payload);
             const newMessage = payload.new as ChatMessage;
             if (newMessage.user_id === user.id) {
               setMessages(prev => {
                 // Avoid duplicates
                 if (prev.find(msg => msg.id === newMessage.id)) {
+                  console.log('Message already exists, skipping duplicate');
                   return prev;
                 }
+                console.log('Adding new message:', newMessage.content.substring(0, 50) + '...');
                 return [...prev, newMessage];
               });
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Message channel subscription status:', status);
+        });
     }
 
     return () => {
+      console.log('Cleaning up real-time subscriptions');
       supabase.removeChannel(conversationChannel);
       if (messageChannel) {
         supabase.removeChannel(messageChannel);
