@@ -67,7 +67,7 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const { role } = useRole();
-  const { conversations, currentConversation, startNewConversation, selectConversation, deleteConversation } = useConversationsContext();
+  const { conversations, currentConversation, startNewConversation, selectConversation, deleteConversation, updateConversation } = useConversationsContext();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { theme, setTheme } = useTheme();
@@ -75,6 +75,8 @@ export function AppSidebar() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAllConversations, setShowAllConversations] = useState(false);
+  const [editingConversation, setEditingConversation] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const currentPath = location.pathname;
   const isMasterAdmin = () => role === 'master_admin';
@@ -134,6 +136,50 @@ export function AppSidebar() {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
+  };
+
+  // Conversation actions
+  const handleRenameConversation = (conversation: any) => {
+    setEditingConversation(conversation.id);
+    setEditTitle(conversation.title || 'New Conversation');
+  };
+
+  const handleSaveRename = async (conversationId: string) => {
+    if (editTitle.trim()) {
+      await updateConversation(conversationId, { title: editTitle.trim() });
+      setEditingConversation(null);
+      setEditTitle('');
+    }
+  };
+
+  const handleExportChat = (conversation: any) => {
+    // Create a simple text export
+    const exportData = {
+      title: conversation.title || 'New Conversation',
+      created: conversation.created_at,
+      updated: conversation.updated_at,
+      // Add message data when available
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `chat-${conversation.title || 'conversation'}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const handleArchiveConversation = (conversationId: string) => {
+    // For now, we'll show a message about archiving
+    alert('Archive functionality will be available soon!');
+  };
+
+  const handlePinConversation = (conversationId: string) => {
+    // For now, we'll show a message about pinning
+    alert('Pin to top functionality will be available soon!');
   };
 
   const toggleTheme = () => {
@@ -361,20 +407,44 @@ export function AppSidebar() {
                                   <MessageSquare className="w-4 h-4 mr-2" />
                                   Open Chat
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRenameConversation(conversation);
+                                  }}
+                                >
                                   <Edit3 className="w-4 h-4 mr-2" />
                                   Rename
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handlePinConversation(conversation.id);
+                                  }}
+                                >
                                   <Pin className="w-4 h-4 mr-2" />
                                   Pin to Top
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleExportChat(conversation);
+                                  }}
+                                >
                                   <Copy className="w-4 h-4 mr-2" />
                                   Export Chat
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleArchiveConversation(conversation.id);
+                                  }}
+                                >
                                   <Archive className="w-4 h-4 mr-2" />
                                   Archive
                                 </DropdownMenuItem>
@@ -399,24 +469,54 @@ export function AppSidebar() {
                       
                       {/* Context menu for right-click */}
                       <ContextMenuContent className="w-48">
-                        <ContextMenuItem onClick={() => handleConversationClick(conversation.id)}>
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleConversationClick(conversation.id);
+                          }}
+                        >
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Open Chat
                         </ContextMenuItem>
-                        <ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRenameConversation(conversation);
+                          }}
+                        >
                           <Edit3 className="w-4 h-4 mr-2" />
                           Rename
                         </ContextMenuItem>
-                        <ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handlePinConversation(conversation.id);
+                          }}
+                        >
                           <Star className="w-4 h-4 mr-2" />
                           Add to Favorites
                         </ContextMenuItem>
-                        <ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleExportChat(conversation);
+                          }}
+                        >
                           <Copy className="w-4 h-4 mr-2" />
                           Export Chat
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleArchiveConversation(conversation.id);
+                          }}
+                        >
                           <Archive className="w-4 h-4 mr-2" />
                           Archive
                         </ContextMenuItem>
