@@ -59,10 +59,12 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
     <div className={cn("flex flex-col items-center gap-4", className)}>
       {/* Voice Status Indicator */}
       <VoiceStatusIndicator
-        isConnected={voiceState.isConnected}
-        isListening={voiceState.isListening}
-        isProcessing={voiceState.isProcessing}
-        isSpeaking={voiceState.isSpeaking}
+        status={
+          voiceState.isSpeaking ? 'speaking' :
+          voiceState.isListening ? 'listening' :
+          voiceState.isProcessing ? 'processing' :
+          voiceState.isConnected ? 'idle' : 'error'
+        }
         className="mb-2"
       />
 

@@ -1,9 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Mic, Square, Send, Edit3, X } from 'lucide-react';
+import { Mic, Square, Send, Edit3, X, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useRealtimeSTT } from '@/hooks/useRealtimeSTT';
+import { AIAvatar } from './AIAvatar';
+import { RealTimeWaveform } from './RealTimeWaveform';
+import { VoiceStatusIndicator } from './VoiceStatusIndicator';
 import { cn } from '@/lib/utils';
 
 interface DictationModeInterfaceProps {
@@ -94,26 +97,54 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
   const currentTranscript = editMode ? editedText : (finalTranscript || sttState.transcript);
 
   return (
-    <div className={cn("space-y-6", className)}>
-      {/* Voice Mode Header */}
-      <div className="text-center space-y-2 animate-fade-in">
-        <div className="flex items-center justify-center gap-2">
-          <Mic className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Voice Memo Mode</h3>
+    <div className={cn("space-y-8", className)}>
+      {/* Enhanced Header with Language Support */}
+      <div className="text-center space-y-3 animate-fade-in">
+        <div className="flex items-center justify-center gap-3">
+          <AIAvatar 
+            isListening={isRecording}
+            isThinking={showProcessing}
+            size="md"
+          />
+          <div>
+            <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              Voice Memo Mode
+            </h3>
+            <p className="text-sm text-muted-foreground">Record, review, and send with precision</p>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">Record your message, then review and send</p>
+        
+        {/* Language indicator */}
+        <div className="flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/30 backdrop-blur-sm">
+          <Languages className="w-3 h-3 text-muted-foreground" />
+          <span className="text-xs font-medium text-muted-foreground">Auto-detect</span>
+        </div>
       </div>
 
-      {/* Central Recording Area */}
-      <div className="flex items-center justify-center relative">
-        {/* Animated Background Rings */}
+      {/* Enhanced Central Recording Area */}
+      <div className="relative flex items-center justify-center">
+        {/* Ambient Effects */}
+        {isRecording && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <RealTimeWaveform 
+              isActive={true}
+              variant="circular"
+              color="primary"
+              size="lg"
+              className="animate-pulse"
+            />
+          </div>
+        )}
+        
+        {/* Outer Ring Effects */}
         {isRecording && (
           <>
-            <div className="absolute w-32 h-32 border-2 border-primary/30 rounded-full animate-ping" />
-            <div className="absolute w-40 h-40 border border-primary/20 rounded-full animate-pulse" 
-                 style={{ animationDelay: '0.5s' }} />
-            <div className="absolute w-48 h-48 border border-primary/10 rounded-full animate-pulse" 
-                 style={{ animationDelay: '1s' }} />
+            <div className="absolute w-40 h-40 border border-primary/20 rounded-full animate-ping" 
+                 style={{ animationDuration: '2s' }} />
+            <div className="absolute w-52 h-52 border border-primary/10 rounded-full animate-pulse" 
+                 style={{ animationDelay: '0.5s', animationDuration: '3s' }} />
+            <div className="absolute w-64 h-64 border border-primary/5 rounded-full animate-pulse" 
+                 style={{ animationDelay: '1s', animationDuration: '4s' }} />
           </>
         )}
         
@@ -123,117 +154,164 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
             onClick={handleStartRecording}
             size="lg"
             className={cn(
-              "w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80",
-              "hover:from-primary/90 hover:to-primary/70 transition-all duration-500",
-              "shadow-2xl hover:shadow-primary/25 hover:scale-110",
-              "border-4 border-background relative overflow-hidden"
+              "relative w-24 h-24 rounded-full transition-all duration-500",
+              "bg-gradient-to-br from-primary via-primary-glow to-primary/90",
+              "hover:from-primary/95 hover:to-primary-glow/80",
+              "shadow-2xl hover:shadow-primary/30 hover:scale-110",
+              "border-4 border-background overflow-hidden group"
             )}
           >
-            <Mic className="w-8 h-8 text-primary-foreground relative z-10" />
-            <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-300" />
+            <Mic className="w-9 h-9 text-primary-foreground relative z-10 group-hover:animate-pulse" />
+            
+            {/* Breathing effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500" />
+            
+            {/* Ripple on hover */}
+            <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 ease-out" />
           </Button>
         ) : isRecording ? (
           <Button
             onClick={handleStopRecording}
             size="lg"
-            variant="destructive"
             className={cn(
-              "w-20 h-20 rounded-full transition-all duration-500 shadow-2xl",
-              "animate-pulse hover:scale-105 relative overflow-hidden",
-              "bg-gradient-to-br from-destructive to-destructive/80"
+              "relative w-24 h-24 rounded-full transition-all duration-500",
+              "bg-gradient-to-br from-destructive via-destructive/90 to-destructive/80",
+              "animate-pulse hover:scale-105 shadow-2xl shadow-destructive/30",
+              "border-4 border-background overflow-hidden"
             )}
           >
-            <Square className="w-8 h-8 relative z-10" />
+            <Square className="w-9 h-9 text-destructive-foreground relative z-10" />
             <div className="absolute inset-0 bg-white/20 rounded-full animate-ping" />
           </Button>
         ) : (
-          /* Success State */
-          <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center animate-scale-in shadow-2xl">
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full" />
+          /* Enhanced Success State */
+          <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center animate-scale-in shadow-2xl shadow-green-500/30">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+              <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
             </div>
+            {/* Success glow */}
+            <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
           </div>
         )}
       </div>
 
-      {/* Dynamic Status Display */}
-      <div className="text-center min-h-[3rem] flex items-center justify-center">
+      {/* Enhanced Status Display */}
+      <div className="flex flex-col items-center space-y-4">
+        {/* Status Indicator */}
+        <VoiceStatusIndicator
+          status={
+            isRecording ? 'listening' :
+            showProcessing ? 'processing' :
+            finalTranscript ? 'idle' : 'idle'
+          }
+          transcript={isRecording ? sttState.transcript : undefined}
+          confidence={0.85}
+          className="max-w-md"
+        />
+        
+        {/* Real-time Audio Visualization */}
         {isRecording && (
-          <div className="space-y-2 animate-fade-in">
-            <p className="text-primary font-medium flex items-center justify-center gap-2">
-              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-              Listening... Speak your message
+          <div className="flex flex-col items-center space-y-3 animate-fade-in">
+            <RealTimeWaveform 
+              isActive={true}
+              variant="linear"
+              color="primary"
+              size="md"
+              bars={9}
+            />
+            <p className="text-sm text-primary font-medium animate-pulse">
+              Speak clearly for best results
             </p>
-            {/* Audio Wave Visualization */}
-            <div className="flex items-center justify-center space-x-1">
-              {[...Array(7)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-primary rounded-full animate-pulse"
-                  style={{
-                    height: `${Math.random() * 16 + 8}px`,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: `${0.5 + Math.random() * 0.5}s`
-                  }}
-                />
-              ))}
-            </div>
           </div>
         )}
+        
+        {/* Processing State */}
         {showProcessing && !isRecording && (
-          <div className="animate-fade-in">
-            <p className="text-muted-foreground flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Processing your voice...
-            </p>
+          <div className="flex flex-col items-center space-y-2 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-spiritual rounded-full animate-ping" />
+              <div className="w-2 h-2 bg-spiritual rounded-full animate-ping" style={{ animationDelay: '0.2s' }} />
+              <div className="w-2 h-2 bg-spiritual rounded-full animate-ping" style={{ animationDelay: '0.4s' }} />
+            </div>
+            <p className="text-sm text-muted-foreground">Transforming speech to text...</p>
           </div>
         )}
+        
+        {/* Success State */}
         {finalTranscript && !editMode && !showProcessing && (
-          <div className="animate-scale-in">
-            <p className="text-green-600 font-medium flex items-center justify-center gap-2">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </div>
-              Ready to send
-            </p>
+          <div className="flex items-center gap-2 animate-scale-in">
+            <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-2 h-2 bg-white rounded-full" />
+            </div>
+            <p className="text-green-600 font-medium">Perfect! Ready to send</p>
           </div>
         )}
       </div>
 
       {/* Enhanced Transcript Display/Edit */}
       {currentTranscript && (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-5 animate-fade-in">
           {editMode ? (
-            <div className="space-y-3">
-              <Textarea
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                placeholder="Edit your message..."
-                className="min-h-[120px] resize-none border-2 border-primary/20 focus:border-primary/40 transition-colors duration-300"
-                autoFocus
-              />
-              <div className="flex gap-2 justify-center">
+            <div className="space-y-4">
+              <div className="relative">
+                <Textarea
+                  value={editedText}
+                  onChange={(e) => setEditedText(e.target.value)}
+                  placeholder="Polish your message..."
+                  className={cn(
+                    "min-h-[140px] resize-none transition-all duration-300",
+                    "bg-gradient-to-br from-card to-secondary/20",
+                    "border-2 border-primary/20 focus:border-primary/50",
+                    "rounded-xl p-4 text-base leading-relaxed",
+                    "placeholder:text-muted-foreground/60"
+                  )}
+                  autoFocus
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                  {editedText.length} characters
+                </div>
+              </div>
+              
+              <div className="flex gap-3 justify-center">
                 <Button 
                   onClick={handleSaveEdit} 
                   size="sm" 
-                  variant="default"
-                  className="transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-primary to-primary-glow hover:scale-105 transition-all duration-300 shadow-lg"
                 >
+                  <Edit3 className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>
                 <Button 
                   onClick={() => setEditMode(false)} 
                   size="sm" 
                   variant="outline"
-                  className="transition-all duration-300 hover:scale-105"
+                  className="hover:scale-105 transition-all duration-300"
                 >
                   Cancel
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-br from-secondary/60 to-secondary/40 rounded-xl p-6 border border-border/50 shadow-lg">
-              <p className="text-foreground whitespace-pre-wrap leading-relaxed">{currentTranscript}</p>
+            <div className={cn(
+              "relative group cursor-pointer",
+              "bg-gradient-to-br from-card/80 to-secondary/30",
+              "rounded-2xl p-6 border border-border/30 shadow-xl",
+              "backdrop-blur-sm hover:shadow-2xl",
+              "transition-all duration-500 hover:scale-[1.02]"
+            )}>
+              {/* Transcript content */}
+              <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-base">
+                {currentTranscript}
+              </p>
+              
+              {/* Hover overlay */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Word count */}
+              <div className="mt-3 text-xs text-muted-foreground/70 flex items-center justify-between">
+                <span>{currentTranscript.split(' ').length} words</span>
+                <span>Ready for review</span>
+              </div>
             </div>
           )}
 
@@ -244,25 +322,37 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
                 onClick={handleEdit} 
                 size="sm" 
                 variant="outline"
-                className="transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className={cn(
+                  "group relative overflow-hidden",
+                  "border-primary/30 hover:border-primary/50",
+                  "transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                )}
               >
-                <Edit3 className="w-4 h-4 mr-2" />
-                Edit
+                <Edit3 className="w-4 h-4 mr-2 group-hover:animate-pulse" />
+                Polish
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Button>
+              
               <Button 
                 onClick={handleSendTranscript} 
-                size="sm" 
-                variant="default"
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                size="sm"
+                className={cn(
+                  "group relative overflow-hidden",
+                  "bg-gradient-to-r from-primary via-primary-glow to-primary/90",
+                  "hover:from-primary/95 hover:to-primary-glow/80",
+                  "transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-primary/20"
+                )}
               >
-                <Send className="w-4 h-4 mr-2" />
-                Send
+                <Send className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
+                Send Message
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Button>
+              
               <Button 
                 onClick={handleReset} 
                 size="sm" 
                 variant="ghost"
-                className="transition-all duration-300 hover:scale-105"
+                className="hover:scale-105 transition-all duration-300 hover:bg-destructive/10 hover:text-destructive"
               >
                 <X className="w-4 h-4 mr-2" />
                 Clear
