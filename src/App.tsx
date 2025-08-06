@@ -15,6 +15,7 @@ import { VoiceTestSuite } from "./components/voice/VoiceTestSuite";
 import { VoiceOptimizer } from "./components/performance/VoiceOptimizer";
 import { OfflineContentManager } from "./components/offline/OfflineContentManager";
 import { MobileBrowserTester } from "./components/performance/MobileBrowserTester";
+import VoiceQuality from "./pages/VoiceQuality";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/voice-test" element={<VoiceTestSuite />} />
+                <Route path="/voice-quality" element={<VoiceQuality />} />
                 <Route path="/performance" element={
                   <div className="p-6 space-y-6">
                     <VoiceOptimizer />
