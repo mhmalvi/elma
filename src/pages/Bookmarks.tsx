@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { Navigate } from "react-router-dom"
-import { Search, Tag, Edit3, Trash2, Download } from "lucide-react"
+import { Search, Tag, Edit3, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { TopAppBar } from "@/components/ui/top-app-bar"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import { BookmarkDialog } from "@/components/bookmarks/BookmarkDialog"
 import { ExportDialog } from "@/components/export/ExportDialog"
+import { DeleteButton } from "@/components/ui/delete-button"
 import { useAuth } from "@/hooks/useAuth"
 import { useBookmarks } from "@/hooks/useBookmarks"
 import { formatDistanceToNow } from "date-fns"
@@ -203,14 +204,13 @@ const Bookmarks = () => {
                       >
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteBookmark(bookmark.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <DeleteButton
+                        variant="minimal"
+                        size="sm" 
+                        onDelete={() => handleDeleteBookmark(bookmark.id)}
+                        tooltip="Delete bookmark"
+                        className="opacity-70 hover:opacity-100"
+                      />
                     </div>
                   </div>
                 </ModernCard>
