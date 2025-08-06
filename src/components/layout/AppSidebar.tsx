@@ -125,7 +125,7 @@ export function AppSidebar() {
       collapsible="icon"
       className={cn(
         "border-r border-sidebar-border bg-sidebar backdrop-blur-xl transition-all duration-300",
-        "w-80 data-[state=collapsed]:w-16"
+        "w-80 data-[state=collapsed]:w-16 min-w-16"
       )}
     >
       <SidebarHeader className="border-b border-sidebar-border/50 p-4">
@@ -199,15 +199,18 @@ export function AppSidebar() {
           </Button>
 
           {/* Quick Actions */}
-          <div className={cn("grid gap-2", collapsed ? "grid-cols-1" : "grid-cols-3")}>
+          <div className={cn(
+            "grid gap-2 transition-all duration-300",
+            collapsed ? "grid-cols-1 space-y-1" : "grid-cols-3"
+          )}>
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
               className={cn(
-                "hover-lift rounded-lg transition-all duration-300 group relative overflow-hidden",
+                "hover-lift rounded-lg transition-all duration-300 group relative overflow-hidden min-h-10",
                 "hover:bg-sidebar-accent hover:shadow-sm hover:scale-105 active:scale-95",
-                collapsed && "w-10 h-10 p-0"
+                collapsed && "w-10 h-10 p-0 mx-auto"
               )}
               title={collapsed ? (theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode') : undefined}
             >
@@ -225,16 +228,19 @@ export function AppSidebar() {
               size="sm"
               onClick={() => navigate('/bookmarks')}
               className={cn(
-                "hover-lift rounded-lg transition-all duration-300 group",
+                "hover-lift rounded-lg transition-all duration-300 group min-h-10",
                 "hover:bg-sidebar-accent hover:shadow-sm hover:scale-105 active:scale-95",
-                collapsed && "w-10 h-10 p-0"
+                collapsed && "w-10 h-10 p-0 mx-auto"
               )}
               title={collapsed ? 'Bookmarks' : undefined}
             >
               <Bookmark className="h-4 w-4 text-primary transition-all duration-300 group-hover:scale-110 group-hover:-rotate-12" />
             </Button>
             
-            <div className={cn("flex justify-center", collapsed && "mt-2")}>
+            <div className={cn(
+              "flex justify-center items-center min-h-10",
+              collapsed && "mx-auto"
+            )}>
               <NotificationSystem />
             </div>
           </div>
