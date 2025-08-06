@@ -1,182 +1,237 @@
-import { useState } from "react"
-import { ArrowLeft, BookOpen, Trash2, Share, Play } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useState, useMemo } from "react"
+import { Navigate } from "react-router-dom"
+import { Search, Tag, Edit3, Trash2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-
-interface Bookmark {
-  id: string
-  message: string
-  source?: {
-    verse?: string
-    hadith?: string
-    reference?: string
-  }
-  savedAt: string
-}
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { ModernCard } from "@/components/ui/modern-card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { TopAppBar } from "@/components/ui/top-app-bar"
+import { LoadingDots } from "@/components/ui/loading-dots"
+import { BookmarkDialog } from "@/components/bookmarks/BookmarkDialog"
+import { ExportDialog } from "@/components/export/ExportDialog"
+import { useAuth } from "@/hooks/useAuth"
+import { useBookmarks } from "@/hooks/useBookmarks"
+import { formatDistanceToNow } from "date-fns"
+import { cn } from "@/lib/utils"
 
 const Bookmarks = () => {
-  const navigate = useNavigate()
-  const { toast } = useToast()
-  
-  // Sample bookmarks data
-  const [bookmarks] = useState<Bookmark[]>([
-    {
-      id: '1',
-      message: 'In Islam, forgiveness is highly valued. Allah says in the Quran: "But whoever forgives and makes reconciliation, his reward is with Allah." Forgiveness brings us closer to righteousness and earns Allah\'s mercy.',
-      source: {
-        verse: "Ash-Shura 42:40",
-        hadith: "Sahih Bukhari 6853",
-        reference: "The virtue of forgiveness in Islam"
-      },
-      savedAt: "2 hours ago"
-    },
-    {
-      id: '2',
-      message: 'Prayer (Salah) is the second pillar of Islam and a direct connection between the believer and Allah. It purifies the soul and provides guidance throughout the day.',
-      source: {
-        verse: "Al-Baqarah 2:45",
-        reference: "The importance of prayer in Islam"
-      },
-      savedAt: "1 day ago"
-    },
-    {
-      id: '3',
-      message: 'Seeking knowledge is obligatory upon every Muslim. The Prophet (PBUH) said: "Seek knowledge from the cradle to the grave."',
-      source: {
-        hadith: "Ibn Majah 224",
-        reference: "The virtue of seeking knowledge"
-      },
-      savedAt: "3 days ago"
-    }
-  ])
+  const { user, loading: authLoading } = useAuth()
+  const { bookmarks, loading, deleteBookmark, getAllTags } = useBookmarks()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [editingBookmark, setEditingBookmark] = useState<any>(null)
+  const [showExport, setShowExport] = useState(false)
 
-  const handleShare = (bookmark: Bookmark) => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Islamic Knowledge from AirChatBot',
-        text: bookmark.message,
-        url: window.location.href
-      })
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(bookmark.message)
-      toast({
-        title: "Copied to clipboard",
-        description: "The message has been copied to your clipboard"
-      })
-    }
+  // Redirect if not authenticated
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />
   }
 
-  const handleDelete = (bookmarkId: string) => {
-    toast({
-      title: "Bookmark removed",
-      description: "The bookmark has been deleted"
-    })
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingDots />
+      </div>
+    )
+  }
+
+  const allTags = getAllTags()
+
+  const filteredBookmarks = useMemo(() => {
+    let filtered = bookmarks
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(bookmark =>
+        bookmark.title.toLowerCase().includes(query) ||
+        bookmark.message_content.toLowerCase().includes(query) ||
+        bookmark.tags.some(tag => tag.toLowerCase().includes(query)) ||
+        bookmark.notes?.toLowerCase().includes(query)
+      )
+    }
+
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(bookmark =>
+        selectedTags.some(tag => bookmark.tags.includes(tag))
+      )
+    }
+
+    return filtered
+  }, [bookmarks, searchQuery, selectedTags])
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    )
+  }
+
+  const handleDeleteBookmark = async (id: string) => {
+    if (confirm("Are you sure you want to delete this bookmark?")) {
+      await deleteBookmark(id)
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => navigate('/chat')}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-lg font-semibold">My Bookmarks</h1>
-        <div className="w-16" /> {/* Spacer */}
-      </div>
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        {bookmarks.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              No bookmarks yet
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Save important verses and answers from your conversations
-            </p>
-            <Button onClick={() => navigate('/chat')}>
-              Start Chat
+      <TopAppBar
+        title="Bookmarks"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExport(true)}
+              disabled={bookmarks.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
             </Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-6">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Saved Knowledge</h2>
-              <span className="text-sm text-muted-foreground">
-                ({bookmarks.length})
-              </span>
-            </div>
+        }
+      />
 
-            {bookmarks.map((bookmark) => (
-              <Card key={bookmark.id} className="p-4 shadow-soft">
-                <div className="space-y-3">
-                  <p className="text-sm leading-relaxed">
-                    {bookmark.message}
-                  </p>
-                  
-                  {bookmark.source && (
-                    <div className="text-xs text-muted-foreground border-t pt-3 space-y-1">
-                      {bookmark.source.verse && (
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          <span>Quran: {bookmark.source.verse}</span>
-                        </div>
+      <div className="container mx-auto py-6 px-4 max-w-4xl">
+        {/* Search and Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search bookmarks..."
+              className="pl-10"
+            />
+          </div>
+
+          {allTags.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filter by tags:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer hover:opacity-80"
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bookmarks List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <LoadingDots />
+          </div>
+        ) : filteredBookmarks.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+              <Search className="w-8 h-8 text-muted-foreground" />
+            </div>
+            {bookmarks.length === 0 ? (
+              <>
+                <h3 className="text-lg font-semibold mb-2">No bookmarks yet</h3>
+                <p className="text-muted-foreground">
+                  Start bookmarking important messages from your conversations
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold mb-2">No matching bookmarks</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or filter criteria
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <div className="space-y-4">
+              {filteredBookmarks.map((bookmark) => (
+                <ModernCard key={bookmark.id} className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold truncate">{bookmark.title}</h3>
+                        {bookmark.tags.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {bookmark.tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        {bookmark.message_content}
+                      </p>
+                      
+                      {bookmark.notes && (
+                        <p className="text-sm italic text-muted-foreground mb-2 line-clamp-1">
+                          "{bookmark.notes}"
+                        </p>
                       )}
-                      {bookmark.source.hadith && (
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          <span>Hadith: {bookmark.source.hadith}</span>
-                        </div>
-                      )}
-                      {bookmark.source.reference && (
-                        <div className="text-xs opacity-70">
-                          {bookmark.source.reference}
-                        </div>
-                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>From: {bookmark.conversation_title}</span>
+                        <span>
+                          Saved {formatDistanceToNow(new Date(bookmark.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-muted-foreground">
-                      Saved {bookmark.savedAt}
-                    </span>
                     
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleShare(bookmark)}
-                        className="h-8 px-2"
+                        onClick={() => setEditingBookmark(bookmark)}
                       >
-                        <Share className="w-3 h-3" />
+                        <Edit3 className="w-4 h-4" />
                       </Button>
-                      
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(bookmark.id)}
-                        className="h-8 px-2 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteBookmark(bookmark.id)}
+                        className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </ModernCard>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </div>
+
+      {/* Edit Bookmark Dialog */}
+      <BookmarkDialog
+        open={!!editingBookmark}
+        onOpenChange={(open) => !open && setEditingBookmark(null)}
+        existingBookmark={editingBookmark}
+        onSave={() => setEditingBookmark(null)}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+      />
     </div>
   )
 }

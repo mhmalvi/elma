@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Navigate } from "react-router-dom"
-import { Send, Volume2, Menu, X } from "lucide-react"
+import { Send, Volume2, Menu, X, Search as SearchIcon, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingDots } from "@/components/ui/loading-dots"
@@ -14,6 +14,8 @@ import { useVoiceChat } from "@/hooks/useVoiceChat"
 import { useConversations } from "@/hooks/useConversations"
 import { ConversationSidebar } from "@/components/chat/ConversationSidebar"
 import { EnhancedChatBubble } from "@/components/chat/EnhancedChatBubble"
+import { GlobalSearch } from "@/components/search/GlobalSearch"
+import { ExportDialog } from "@/components/export/ExportDialog"
 import { supabase } from "@/integrations/supabase/client"
 import { cn } from "@/lib/utils"
 
@@ -40,6 +42,8 @@ const Chat = () => {
   const [textInput, setTextInput] = useState("")
   const [showVoiceMode, setShowVoiceMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showExport, setShowExport] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -125,6 +129,21 @@ const Chat = () => {
           title={currentConversation?.title || "New Conversation"}
           actions={
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSearch(true)}
+              >
+                <SearchIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExport(true)}
+                disabled={!currentConversation}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="sm" onClick={signOut}>
                 Sign Out
               </Button>
@@ -221,6 +240,19 @@ const Chat = () => {
           </div>
         </div>
       )}
+
+      {/* Global Search Dialog */}
+      <GlobalSearch
+        open={showSearch}
+        onOpenChange={setShowSearch}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        conversationId={currentConversation?.id}
+      />
     </div>
   )
 }
