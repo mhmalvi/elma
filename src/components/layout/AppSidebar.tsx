@@ -43,7 +43,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useConversations } from '@/hooks/useConversations';
+import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useRole } from '@/hooks/useRole';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { NotificationSystem } from '@/components/notifications/NotificationSystem';
@@ -58,7 +58,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { user, signOut } = useAuth();
   const { isMasterAdmin } = useRole();
-  const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversations();
+  const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversationsContext();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
