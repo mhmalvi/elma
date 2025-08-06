@@ -64,6 +64,7 @@ export const useAdvancedVoice = () => {
   // Start voice recording with enhanced features
   const startListening = useCallback(async () => {
     try {
+      console.log('USE ADVANCED VOICE - Starting listening...');
       setVoiceState(prev => ({ ...prev, error: null, isProcessing: true }));
 
       // Initialize audio if needed

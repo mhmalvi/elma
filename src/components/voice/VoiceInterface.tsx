@@ -21,7 +21,13 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
 
   // Handle transcript updates
   React.useEffect(() => {
+    console.log('VOICE INTERFACE - Transcript update:', {
+      transcript: voiceState.transcript,
+      hasCallback: !!onTranscriptReceived
+    });
+    
     if (voiceState.transcript && onTranscriptReceived) {
+      console.log('VOICE INTERFACE - Calling onTranscriptReceived with:', voiceState.transcript);
       onTranscriptReceived(voiceState.transcript);
     }
   }, [voiceState.transcript, onTranscriptReceived]);
@@ -34,9 +40,17 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   }, [voiceState.isSpeaking, onSpeakingChange]);
 
   const handleVoiceToggle = async () => {
+    console.log('VOICE INTERFACE - Voice toggle clicked, current state:', {
+      isListening: voiceState.isListening,
+      isConnected: voiceState.isConnected,
+      isProcessing: voiceState.isProcessing
+    });
+    
     if (voiceState.isListening) {
+      console.log('VOICE INTERFACE - Stopping listening');
       stopListening();
     } else {
+      console.log('VOICE INTERFACE - Starting listening');
       await startListening();
     }
   };
