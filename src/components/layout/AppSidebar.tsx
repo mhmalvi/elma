@@ -4,7 +4,6 @@ import {
   MessageSquare, 
   Plus,
   Archive,
-  Trash2,
   MoreHorizontal,
   Settings,
   Search,
@@ -31,6 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DeleteButton } from '@/components/ui/delete-button';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -306,18 +306,14 @@ export function AppSidebar() {
                           )}
                         </Button>
                       {!collapsed && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-destructive/10 hover:text-destructive rounded-lg hover:scale-110 active:scale-95"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            deleteConversation(conversation.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3 transition-transform duration-300 hover:rotate-12" />
-                        </Button>
+                        <DeleteButton
+                          variant="minimal" 
+                          size="xs"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300"
+                          onDelete={() => deleteConversation(conversation.id)}
+                          confirmationRequired={true}
+                          tooltip="Delete conversation"
+                        />
                       )}
                     </div>
                   </SidebarMenuItem>
