@@ -119,14 +119,23 @@ export function AppSidebar() {
 
   const handleNewChat = async () => {
     console.log('NEW CHAT CLICKED - Starting new conversation');
+    
+    // Clear current conversation first
     await startNewConversation();
     console.log('NEW CHAT - startNewConversation completed');
-    if (currentPath !== '/chat') {
-      console.log('NEW CHAT - Navigating to /chat');
-      navigate('/chat');
+    
+    // Force navigation to ensure clean state
+    if (currentPath === '/chat') {
+      // If already on chat, force a refresh of the route
+      navigate('/');
+      setTimeout(() => {
+        navigate('/chat');
+      }, 10);
     } else {
-      console.log('NEW CHAT - Already on /chat');
+      navigate('/chat');
     }
+    
+    console.log('NEW CHAT - Navigation completed');
   };
 
   const handleConversationClick = (conversationId: string) => {
