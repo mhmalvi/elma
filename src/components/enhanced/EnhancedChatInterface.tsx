@@ -5,9 +5,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { VoiceInterface } from '@/components/voice/VoiceInterface';
 import { 
   Send, 
-  Mic, 
+  Mic,
   Square, 
   Play, 
   Pause, 
@@ -82,6 +83,9 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     stopAudio,
     setTranscript
   } = useVoiceIntegration();
+  
+  // Voice mode state
+  const [showVoiceInterface, setShowVoiceInterface] = useState(false);
 
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -476,6 +480,23 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         </div>
       )}
 
+      {/* Voice Interface Toggle */}
+      {showVoiceInterface && (
+        <div className="border-t bg-muted/5 p-6">
+          <div className="max-w-4xl mx-auto">
+            <VoiceInterface 
+              onTranscriptReceived={(transcript) => {
+                setInputValue(transcript);
+                setShowVoiceInterface(false);
+              }}
+              onSpeakingChange={(isSpeaking) => {
+                // Handle speaking state changes
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="border-t bg-background/80 backdrop-blur p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
@@ -491,22 +512,38 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 disabled={isProcessing}
               />
               
-              {/* Voice button inside textarea */}
+              {/* Voice mode toggle button */}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={handleVoiceToggle}
-                disabled={isProcessingVoice}
+                onClick={() => setShowVoiceInterface(!showVoiceInterface)}
                 className={cn(
-                  "absolute right-2 top-2 h-8 w-8 p-0 transition-colors",
-                  isRecording && "text-red-500",
-                  isProcessingVoice && "animate-pulse"
+                  "absolute right-2 top-2 h-8 w-8 p-0 transition-all duration-300",
+                  showVoiceInterface && "text-primary bg-primary/10"
                 )}
+                title="Toggle advanced voice interface"
               >
-                {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <Mic className="w-4 h-4" />
               </Button>
             </div>
+
+            {/* Enhanced Voice Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm" 
+              onClick={() => setShowVoiceInterface(!showVoiceInterface)}
+              className={cn(
+                "h-[50px] px-4 border-2 transition-all duration-300",
+                showVoiceInterface 
+                  ? "border-primary bg-primary/10 text-primary" 
+                  : "border-border hover:border-primary/50"
+              )}
+              title={showVoiceInterface ? "Hide voice interface" : "Show advanced voice interface"}
+            >
+              <Mic className="w-5 h-5" />
+            </Button>
 
             <Button
               type="submit"
@@ -523,7 +560,8 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
 
           <div className="mt-2 text-center">
             <p className="text-xs text-muted-foreground">
-              Press Enter to send • Shift+Enter for new line • Voice input available
+              Press Enter to send • Shift+Enter for new line • 
+              {showVoiceInterface ? " Advanced voice mode active" : " Click mic for advanced voice"}
             </p>
           </div>
         </form>
