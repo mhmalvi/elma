@@ -9,7 +9,8 @@ import {
   Send, 
   Mic, 
   Square, 
-  Volume2, 
+  Play, 
+  Pause, 
   VolumeX, 
   Copy, 
   Share,
@@ -391,7 +392,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                           onClick={() => handleSpeakMessage(message.text)}
                           className="h-6 px-2 text-xs"
                         >
-                          {isPlayingAudio ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                          {isPlayingAudio ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                         </Button>
                         <Button
                           variant="ghost"
