@@ -186,8 +186,11 @@ export const useVoiceIntegration = () => {
       if (shouldUseElevenLabs) {
         const startTime = performance.now()
         
+        // Reduce text length to save credits and avoid quota issues
+        const shortText = text.slice(0, 200) // Much shorter for credit efficiency
+        
         const requestPayload = { 
-          text: text.slice(0, 1000), // Limit text length for API efficiency
+          text: shortText, // Limit to 200 chars to save credits
           voice: '9BWtsMINqrJLrRacOk9x', // Aria voice - warm, natural, engaging
           options: {
             model_id: 'eleven_multilingual_v2', // High-quality multilingual model
@@ -202,18 +205,20 @@ export const useVoiceIntegration = () => {
         
         console.log('Sending TTS request:', requestPayload)
         
-        const { data, error } = await supabase.functions.invoke('text-to-voice', {
-          body: requestPayload
-        })
+        try {
+          const { data, error } = await supabase.functions.invoke('text-to-voice', {
+            body: requestPayload
+          })
 
-        const generationTime = performance.now() - startTime
+          const generationTime = performance.now() - startTime
 
-        if (error) {
-          console.error('TTS Edge Function Error:', error)
-          throw error
-        }
+          if (error) {
+            console.error('TTS Edge Function Error:', error)
+            console.log('Falling back to browser speech synthesis due to ElevenLabs error')
+            throw error
+          }
 
-        console.log('TTS Response received:', data)
+          console.log('TTS Response received:', data)
 
         // Create audio element and play
         const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
@@ -240,10 +245,16 @@ export const useVoiceIntegration = () => {
           throw new Error('Audio playback failed')
         }
 
-        await audio.play()
-      } else {
-        // Fallback to Web Speech API
-        if ('speechSynthesis' in window) {
+          await audio.play()
+        } catch (elevenlabsError) {
+          console.log('ElevenLabs failed, falling back to browser speech synthesis:', elevenlabsError)
+          // Fall through to browser speech synthesis
+        }
+      } 
+      
+      // Use browser speech synthesis as fallback when ElevenLabs fails
+      console.log('Using browser speech synthesis')
+      if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(text)
           
           // Configure voice settings
@@ -277,17 +288,37 @@ export const useVoiceIntegration = () => {
           
           window.speechSynthesis.speak(utterance)
         } else {
+          console.error('Speech synthesis not supported in this browser')
           throw new Error('Speech synthesis not supported in this browser')
         }
-      }
       
     } catch (error) {
       console.error('Error playing audio:', error)
       setIsPlayingAudio(false)
       
+      // Final fallback: Try browser speech synthesis if it wasn't tried yet
+      if (useHighQuality && 'speechSynthesis' in window) {
+        console.log('Attempting final fallback to browser TTS')
+        try {
+          const utterance = new SpeechSynthesisUtterance(text)
+          utterance.rate = 0.9
+          utterance.pitch = 1
+          utterance.volume = 0.8
+          
+          utterance.onstart = () => setIsPlayingAudio(true)
+          utterance.onend = () => setIsPlayingAudio(false)
+          utterance.onerror = () => setIsPlayingAudio(false)
+          
+          window.speechSynthesis.speak(utterance)
+          return // Exit early if fallback works
+        } catch (fallbackError) {
+          console.error('Fallback TTS also failed:', fallbackError)
+        }
+      }
+      
       toast({
         title: "Audio Error",
-        description: error instanceof Error ? error.message : "Failed to play audio response",
+        description: "Failed to play audio. ElevenLabs quota exceeded - using browser fallback failed too.",
         variant: "destructive"
       })
     }
