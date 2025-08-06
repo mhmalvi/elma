@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { Send, Volume2, VolumeX } from "lucide-react"
+import { Send, Volume2, VolumeX, Pause, Play, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChatBubble } from "@/components/ui/chat-bubble"
@@ -37,10 +37,15 @@ const Chat = () => {
     isListening,
     isProcessing,
     transcript,
+    isSpeaking,
+    isPaused,
     startListening,
     stopListening,
     sendTextMessage,
     speakText,
+    stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
     clearMessages
   } = useVoiceChat()
   
@@ -93,11 +98,18 @@ const Chat = () => {
   }
 
   const handleToggleAudio = () => {
-    // Toggle audio playback for all messages
-    toast({
-      title: "Audio toggled",
-      description: "Voice responses have been toggled"
-    })
+    if (isSpeaking) {
+      stopSpeaking()
+      toast({
+        title: "Speech stopped",
+        description: "Voice playback has been stopped"
+      })
+    } else {
+      toast({
+        title: "No active speech",
+        description: "No voice is currently playing"
+      })
+    }
   }
 
   return (
@@ -147,6 +159,53 @@ const Chat = () => {
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Speech Control Bar */}
+      {isSpeaking && (
+        <div className="fixed top-16 left-4 right-4 z-40 animate-in slide-in-from-top duration-300">
+          <ModernCard className="p-3 bg-card/90 backdrop-blur-md border border-border/50">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-foreground truncate">
+                  {isPaused ? "Speech Paused" : "Speaking..."}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {isPaused ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={resumeSpeaking}
+                    className="w-8 h-8 p-0 hover:bg-primary/10"
+                  >
+                    <Play className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={pauseSpeaking}
+                    className="w-8 h-8 p-0 hover:bg-primary/10"
+                  >
+                    <Pause className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={stopSpeaking}
+                  className="w-8 h-8 p-0 hover:bg-destructive/10 text-destructive"
+                >
+                  <Square className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </ModernCard>
+        </div>
+      )}
 
       {/* Voice Mode Overlay */}
       {showVoiceMode && (
