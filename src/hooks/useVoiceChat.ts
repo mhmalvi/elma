@@ -44,7 +44,7 @@ export const useVoiceChat = () => {
 
     recognitionRef.current.onresult = (event) => {
       const result = event.results[event.results.length - 1];
-      const transcriptText = result.transcript;
+      const transcriptText = result[0].transcript;
       setTranscript(transcriptText);
       
       if (result.isFinal) {
