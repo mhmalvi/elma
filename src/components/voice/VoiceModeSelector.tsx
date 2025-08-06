@@ -19,22 +19,6 @@ export const VoiceModeSelector = ({
     setMode(mode);
   };
   return <div className={cn("relative flex bg-secondary/30 rounded-full p-1.5 backdrop-blur-sm border border-border/20", className)}>
-      {/* Text Mode Button */}
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={() => setMode(null)} 
-        disabled={isActive} 
-        className={cn(
-          "relative z-10 transition-all duration-300 rounded-full p-3",
-          currentMode === null ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground",
-          isActive && "opacity-50 cursor-not-allowed"
-        )} 
-        title="Text chat"
-      >
-        <Type className="w-5 h-5" />
-      </Button>
-
       {/* Dictation Mode Button */}
       <Button 
         variant="ghost" 
@@ -69,10 +53,9 @@ export const VoiceModeSelector = ({
 
       {/* Animated Background Slider */}
       <div className={cn(
-        "absolute top-1.5 bottom-1.5 bg-primary rounded-full transition-all duration-300 ease-out shadow-lg",
-        currentMode === null ? "left-1.5 w-12" :
-        currentMode === 'dictation' ? "left-1/3 w-12 transform -translate-x-1/2" :
-        currentMode === 'live' ? "right-1.5 w-12" :
+        "absolute top-1.5 bottom-1.5 bg-primary rounded-full transition-all duration-300 ease-out shadow-lg w-12",
+        currentMode === 'dictation' ? "left-1.5" :
+        currentMode === 'live' ? "right-1.5" :
         "opacity-0"
       )} />
     </div>;
