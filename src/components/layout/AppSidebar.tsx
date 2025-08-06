@@ -80,7 +80,7 @@ export function AppSidebar() {
   
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'rename' | 'pin' | 'archive' | 'export'>('rename');
+  const [dialogType, setDialogType] = useState<'rename' | 'pin' | 'archive' | 'export' | 'delete' | 'unpin'>('rename');
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
   const currentPath = location.pathname;
@@ -111,7 +111,7 @@ export function AppSidebar() {
     ? sortedConversations 
     : sortedConversations.slice(0, 8);
 
-  const openDialog = (type: 'rename' | 'pin' | 'archive' | 'export', conversation: any) => {
+  const openDialog = (type: 'rename' | 'pin' | 'archive' | 'export' | 'delete' | 'unpin', conversation: any) => {
     setSelectedConversation(conversation);
     setDialogType(type);
     setDialogOpen(true);
@@ -185,6 +185,17 @@ export function AppSidebar() {
           });
           break;
 
+        case 'unpin':
+          const unpinMetadata = selectedConversation.metadata || {};
+          await updateConversation(selectedConversation.id, { 
+            metadata: { 
+              ...unpinMetadata,
+              pinned: false,
+              unpinnedAt: new Date().toISOString()
+            } 
+          });
+          break;
+
         case 'archive':
           const archiveMetadata = selectedConversation.metadata || {};
           await updateConversation(selectedConversation.id, { 
@@ -199,6 +210,10 @@ export function AppSidebar() {
 
         case 'export':
           await handleExportChat(selectedConversation);
+          break;
+
+        case 'delete':
+          await deleteConversation(selectedConversation.id);
           break;
       }
     } catch (error) {
@@ -484,7 +499,7 @@ export function AppSidebar() {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    openDialog('pin', conversation);
+                                    openDialog(conversation.metadata?.pinned ? 'unpin' : 'pin', conversation);
                                   }}
                                 >
                                   <Pin className="w-4 h-4 mr-2" />
@@ -515,9 +530,7 @@ export function AppSidebar() {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    if (window.confirm('Are you sure you want to delete this conversation?')) {
-                                      deleteConversation(conversation.id);
-                                    }
+                                    openDialog('delete', conversation);
                                   }}
                                   className="text-destructive focus:text-destructive"
                                 >
@@ -556,7 +569,7 @@ export function AppSidebar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            openDialog('pin', conversation);
+                            openDialog(conversation.metadata?.pinned ? 'unpin' : 'pin', conversation);
                           }}
                         >
                           <Star className="w-4 h-4 mr-2" />
@@ -587,9 +600,7 @@ export function AppSidebar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this conversation?')) {
-                              deleteConversation(conversation.id);
-                            }
+                            openDialog('delete', conversation);
                           }}
                           className="text-destructive focus:text-destructive"
                         >
