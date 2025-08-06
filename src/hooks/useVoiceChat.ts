@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useVoiceIntegration } from './useVoiceIntegration';
 
 interface Message {
   id: string;
@@ -15,6 +16,7 @@ interface Message {
 
 export const useVoiceChat = () => {
   const { toast } = useToast();
+  const voiceIntegration = useVoiceIntegration();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,29 +82,19 @@ export const useVoiceChat = () => {
     return false;
   }, []);
 
-  // Start voice recording
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current && !initSpeechRecognition()) {
-      return;
-    }
-
-    try {
-      setIsListening(true);
-      setTranscript('');
-      recognitionRef.current?.start();
-    } catch (error) {
-      console.error('Error starting speech recognition:', error);
-      setIsListening(false);
-    }
-  }, [initSpeechRecognition]);
+  // Start voice recording with enhanced voice integration
+  const startListening = useCallback(async () => {
+    // Use enhanced voice integration for better accuracy
+    await voiceIntegration.startRecording();
+    setIsListening(true);
+    setTranscript('');
+  }, [voiceIntegration]);
 
   // Stop voice recording
   const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    voiceIntegration.stopRecording();
     setIsListening(false);
-  }, []);
+  }, [voiceIntegration]);
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -134,63 +126,14 @@ export const useVoiceChat = () => {
     }
   }, [isPaused]);
 
-  // Speak text using TTS
-  const speakText = useCallback((text: string) => {
-    if (!synthRef.current && !initTextToSpeech()) {
-      return;
-    }
+  // Speak text using enhanced TTS
+  const speakText = useCallback(async (text: string) => {
+    setIsSpeaking(true);
+    await voiceIntegration.speakText(text);
+    setIsSpeaking(false);
+  }, [voiceIntegration]);
 
-    // Stop any ongoing speech first
-    stopSpeaking();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-
-    // Add event listeners
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
-    };
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      currentUtteranceRef.current = null;
-    };
-
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      currentUtteranceRef.current = null;
-    };
-
-    utterance.onpause = () => {
-      setIsPaused(true);
-    };
-
-    utterance.onresume = () => {
-      setIsPaused(false);
-    };
-
-    // Try to use a natural voice
-    const voices = synthRef.current?.getVoices() || [];
-    const preferredVoice = voices.find(voice => 
-      voice.name.includes('Google') || 
-      voice.name.includes('Microsoft') ||
-      voice.lang.startsWith('en')
-    );
-    
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-
-    currentUtteranceRef.current = utterance;
-    synthRef.current?.speak(utterance);
-  }, [initTextToSpeech, stopSpeaking]);
-
-  // Handle user message (voice or text)
+  // Handle user message (voice or text)  
   const handleUserMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
@@ -202,10 +145,11 @@ export const useVoiceChat = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setTranscript('');
+    voiceIntegration.setTranscript('');
     setIsProcessing(true);
 
     try {
-      // Call Supabase Edge Function
+      // Call enhanced AI chat function with RAG
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { question: text.trim() }
       });
@@ -223,14 +167,14 @@ export const useVoiceChat = () => {
         text: data.response,
         isUser: false,
         source: {
-          reference: "Quran and Hadith"
+          reference: data.islamicSourcesFound > 0 ? "Quran and Hadith" : "General Islamic Knowledge"
         }
       };
 
       setMessages(prev => [...prev, aiMessage]);
       
-      // Speak the AI response
-      speakText(data.response);
+      // Use enhanced TTS for response
+      await speakText(data.response);
 
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -254,7 +198,7 @@ export const useVoiceChat = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [speakText, toast]);
+  }, [speakText, toast, voiceIntegration]);
 
   // Send text message
   const sendTextMessage = useCallback((text: string) => {
@@ -295,12 +239,15 @@ export const useVoiceChat = () => {
     };
   }, [stopSpeaking, stopListening]);
 
+  // Sync transcript from voice integration
+  const currentTranscript = voiceIntegration.transcript || transcript;
+
   return {
     messages,
-    isListening,
-    isProcessing,
-    transcript,
-    isSpeaking,
+    isListening: isListening || voiceIntegration.isRecording,
+    isProcessing: isProcessing || voiceIntegration.isProcessingVoice,
+    transcript: currentTranscript,
+    isSpeaking: isSpeaking || voiceIntegration.isPlayingAudio,
     isPaused,
     startListening,
     stopListening,
