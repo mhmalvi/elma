@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useRole } from '@/hooks/useRole';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
@@ -57,6 +58,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
   const { isMasterAdmin } = useRole();
   const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversationsContext();
   const { theme, setTheme } = useTheme();
@@ -269,14 +271,14 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-200 cursor-pointer group hover-lift">
                   <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarImage src={profile?.avatar_url} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
-                      {user.email?.charAt(0).toUpperCase()}
+                      {profile?.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate text-sidebar-foreground">
-                      {user.user_metadata?.display_name || user.email?.split('@')[0]}
+                      {profile?.display_name || user.email?.split('@')[0]}
                     </p>
                     <p className="text-xs text-sidebar-foreground/60 truncate">
                       {isMasterAdmin() ? 'Master Admin' : 'User'}
@@ -322,9 +324,9 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <div className="flex justify-center">
                   <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover-lift cursor-pointer">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarImage src={profile?.avatar_url} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
-                      {user.email?.charAt(0).toUpperCase()}
+                      {profile?.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
