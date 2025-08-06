@@ -1,11 +1,14 @@
-import { useState } from "react"
-import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info, Shield } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ArrowLeft, Moon, Sun, Bell, Globe, Volume2, LogOut, Info, Shield, Mic } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
+import { useTheme } from "next-themes"
+import { useAuth } from "@/hooks/useAuth"
 import { VoiceTestSuite } from '@/components/voice/VoiceTestSuite'
 import { IslamicContentSeeder } from '@/components/database/IslamicContentSeeder'
 import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor'
@@ -14,29 +17,51 @@ import { useRole } from '@/hooks/useRole'
 const Settings = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
+  const { signOut } = useAuth()
   const { isMasterAdmin } = useRole()
   
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [dailyReminders, setDailyReminders] = useState(true)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
-  const [voiceSpeed, setVoiceSpeed] = useState("normal")
+  const [voiceSettings, setVoiceSettings] = useState({
+    voice: "alloy",
+    speed: 1.0,
+    autoPlay: true
+  })
 
   const handleThemeToggle = () => {
-    setIsDarkMode(!isDarkMode)
-    document.documentElement.classList.toggle('dark')
+    setTheme(theme === 'dark' ? 'light' : 'dark')
     toast({
       title: "Theme updated",
-      description: `Switched to ${!isDarkMode ? 'dark' : 'light'} mode`
+      description: `Switched to ${theme === 'dark' ? 'light' : 'dark'} mode`
     })
   }
 
-  const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out"
-    })
-    // Add logout logic here
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out"
+      })
+      navigate('/auth')
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive"
+      })
+    }
   }
+
+  const voices = [
+    { id: 'alloy', name: 'Alloy (Default)', description: 'Neutral and clear' },
+    { id: 'echo', name: 'Echo', description: 'Warm and expressive' },
+    { id: 'fable', name: 'Fable', description: 'Calm and soothing' },
+    { id: 'onyx', name: 'Onyx', description: 'Deep and authoritative' },
+    { id: 'nova', name: 'Nova', description: 'Bright and energetic' },
+    { id: 'shimmer', name: 'Shimmer', description: 'Gentle and melodic' }
+  ]
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +85,7 @@ const Settings = () => {
         {/* Appearance */}
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            {isDarkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             Appearance
           </h3>
           
@@ -70,7 +95,7 @@ const Settings = () => {
               <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
             </div>
             <Switch
-              checked={isDarkMode}
+              checked={theme === 'dark'}
               onCheckedChange={handleThemeToggle}
             />
           </div>
@@ -121,40 +146,98 @@ const Settings = () => {
           </div>
         </Card>
 
-        {/* Voice */}
+        {/* Voice Settings - Enhanced */}
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Volume2 className="w-5 h-5" />
-            Voice Settings
+            <Mic className="w-5 h-5" />
+            Voice Preferences
           </h3>
           
-          <div>
-            <p className="font-medium mb-2">Voice Speed</p>
-            <Select value={voiceSpeed} onValueChange={setVoiceSpeed}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="slow">Slow</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="fast">Fast</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-6">
+            {/* Voice Selection */}
+            <div>
+              <p className="font-medium mb-2">Voice</p>
+              <p className="text-sm text-muted-foreground mb-3">Choose your preferred AI voice</p>
+              <Select 
+                value={voiceSettings.voice} 
+                onValueChange={(value) => setVoiceSettings(prev => ({...prev, voice: value}))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {voices.map((voice) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{voice.name}</span>
+                        <span className="text-xs text-muted-foreground">{voice.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Voice Speed */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-medium">Speech Speed</p>
+                <span className="text-sm text-muted-foreground">{voiceSettings.speed}x</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">Adjust how fast the AI speaks</p>
+              <Slider
+                value={[voiceSettings.speed]}
+                onValueChange={([value]) => setVoiceSettings(prev => ({...prev, speed: value}))}
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Slow</span>
+                <span>Normal</span>
+                <span>Fast</span>
+              </div>
+            </div>
+
+            {/* Auto-play */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Auto-play Responses</p>
+                <p className="text-sm text-muted-foreground">Automatically play voice responses</p>
+              </div>
+              <Switch
+                checked={voiceSettings.autoPlay}
+                onCheckedChange={(checked) => setVoiceSettings(prev => ({...prev, autoPlay: checked}))}
+              />
+            </div>
+
+            {/* Voice Test */}
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/voice-test')}
+            >
+              <Volume2 className="w-4 h-4 mr-2" />
+              Test Voice Settings
+            </Button>
           </div>
         </Card>
 
-        {/* System Diagnostics - High Priority Testing */}
-        <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Info className="w-5 h-5" />
-            System Diagnostics
-          </h3>
-          <div className="space-y-6">
-            <VoiceTestSuite />
-            <IslamicContentSeeder />
-            <EdgeFunctionMonitor />
-          </div>
-        </Card>
+        {/* Admin Tools - Only for Master Admin */}
+        {isMasterAdmin() && (
+          <Card className="p-4 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Admin Tools
+            </h3>
+            <div className="space-y-6">
+              <VoiceTestSuite />
+              <IslamicContentSeeder />
+              <EdgeFunctionMonitor />
+            </div>
+          </Card>
+        )}
 
         {/* Navigation */}
         <div className="space-y-2">
