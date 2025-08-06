@@ -1,57 +1,65 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
 
 /* Islamic-inspired design system for AirChatBot */
 
 @layer base {
   :root {
-    --background: 196 50% 97%;
-    --foreground: 200 20% 15%;
+    /* Modern Duolingo-inspired palette */
+    --background: 0 0% 98%;
+    --foreground: 220 15% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 200 20% 15%;
+    --card-foreground: 220 15% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 20% 15%;
+    --popover-foreground: 220 15% 20%;
 
-    --primary: 174 64% 35%;
+    /* Teal primary with warm gold accent */
+    --primary: 174 64% 39%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 174 64% 45%;
+    --primary-glow: 174 64% 49%;
+    
+    --secondary: 174 25% 95%;
+    --secondary-foreground: 220 15% 20%;
 
-    --secondary: 174 20% 90%;
-    --secondary-foreground: 200 20% 15%;
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 10% 50%;
 
-    --muted: 196 30% 92%;
-    --muted-foreground: 200 15% 45%;
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 98%;
+    
+    --spiritual: 45 90% 65%;
+    --spiritual-foreground: 220 15% 20%;
 
-    --accent: 174 30% 85%;
-    --accent-foreground: 200 20% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --spiritual: 45 80% 70%;
-    --spiritual-foreground: 200 20% 15%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 174 64% 39%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 196 30% 88%;
-    --input: 196 30% 88%;
-    --ring: 174 64% 35%;
-
-    /* Islamic design tokens */
+    /* Modern design tokens */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-spiritual: linear-gradient(135deg, hsl(var(--spiritual)), hsl(var(--primary)));
+    --gradient-spiritual: linear-gradient(135deg, hsl(var(--spiritual)), hsl(var(--accent)));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+    --gradient-calm: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
     
-    /* Shadows with spiritual glow */
-    --shadow-spiritual: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-soft: 0 4px 20px -4px hsl(var(--primary) / 0.15);
-    --shadow-mic: 0 0 30px hsl(var(--primary) / 0.4);
+    /* Sophisticated shadows */
+    --shadow-soft: 0 1px 3px 0 hsl(var(--primary) / 0.1), 0 1px 2px 0 hsl(var(--primary) / 0.06);
+    --shadow-medium: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
+    --shadow-large: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    --shadow-spiritual: 0 10px 30px -10px hsl(var(--primary) / 0.25);
+    --shadow-mic: 0 0 40px hsl(var(--primary) / 0.4);
+    --shadow-floating: 0 20px 25px -5px hsl(var(--primary) / 0.1), 0 10px 10px -5px hsl(var(--primary) / 0.04);
     
-    /* Animations */
+    /* Modern animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --radius: 0.5rem;
 
@@ -130,12 +138,23 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Nunito Sans', sans-serif;
+    line-height: 1.6;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
   }
 }
 
-/* Custom animations for voice interaction */
+/* Modern animations and components */
 @layer components {
+  /* Breathing effect for buttons */
+  .breathe {
+    animation: breathe 3s ease-in-out infinite;
+  }
+  
   .mic-pulse {
     animation: micPulse 2s ease-in-out infinite;
   }
@@ -146,9 +165,22 @@
   }
   
   .chat-bubble-enter {
-    animation: chatBubbleEnter 0.5s var(--transition-bounce);
+    animation: chatBubbleEnter 0.5s var(--transition-spring);
   }
   
+  .float-up {
+    animation: floatUp 0.6s var(--transition-bounce);
+  }
+  
+  .scale-bounce {
+    animation: scaleBounce 0.4s var(--transition-bounce);
+  }
+  
+  .glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+  
+  /* Gradient classes */
   .spiritual-gradient {
     background: var(--gradient-spiritual);
   }
@@ -157,8 +189,72 @@
     background: var(--gradient-primary);
   }
   
+  .calm-gradient {
+    background: var(--gradient-calm);
+  }
+  
   .subtle-gradient {
     background: var(--gradient-subtle);
+  }
+  
+  /* Modern shadow utilities */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+  
+  .shadow-floating {
+    box-shadow: var(--shadow-floating);
+  }
+  
+  /* Neumorphism effect */
+  .neu-inset {
+    background: hsl(var(--background));
+    box-shadow: 
+      inset 2px 2px 5px hsl(var(--border)),
+      inset -2px -2px 5px hsl(var(--card));
+  }
+  
+  .neu-raised {
+    background: hsl(var(--background));
+    box-shadow: 
+      2px 2px 5px hsl(var(--border)),
+      -2px -2px 5px hsl(var(--card));
+  }
+  
+  /* Floating particles effect */
+  .particles::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 20% 80%, hsl(var(--primary) / 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, hsl(var(--spiritual) / 0.05) 0%, transparent 50%);
+    animation: floatingParticles 20s linear infinite;
+    pointer-events: none;
+  }
+}
+
+/* Keyframe animations */
+@keyframes breathe {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.9;
+    transform: scale(1.02);
   }
 }
 
@@ -176,21 +272,62 @@
 @keyframes micRecording {
   0%, 100% { 
     transform: scale(1);
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
   }
   50% { 
     transform: scale(1.1);
-    box-shadow: 0 0 40px hsl(var(--primary) / 0.6);
+    box-shadow: 0 0 60px hsl(var(--primary) / 0.8);
   }
 }
 
 @keyframes chatBubbleEnter {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(30px) scale(0.9);
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleBounce {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px hsl(var(--primary) / 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px hsl(var(--primary) / 0.6));
+  }
+}
+
+@keyframes floatingParticles {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-20px) rotate(360deg);
   }
 }
