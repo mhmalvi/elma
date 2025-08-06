@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
   Mic,
@@ -10,7 +10,14 @@ import {
   Trash2,
   MoreHorizontal,
   Zap,
-  Settings
+  Settings,
+  Search,
+  Bell,
+  Moon,
+  Sun,
+  Bookmark,
+  Shield,
+  Home
 } from 'lucide-react';
 import {
   Sidebar,
@@ -27,8 +34,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
+import { useRole } from '@/hooks/useRole';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -41,12 +59,23 @@ const voiceNavItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const { isMasterAdmin } = useRole();
   const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversations();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   
   const [showAllConversations, setShowAllConversations] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Listen for global search keyboard shortcut
+  React.useEffect(() => {
+    const handleGlobalSearch = () => setSearchOpen(true);
+    window.addEventListener('open-global-search', handleGlobalSearch);
+    return () => window.removeEventListener('open-global-search', handleGlobalSearch);
+  }, []);
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -70,8 +99,12 @@ export function AppSidebar() {
   const handleConversationClick = (conversationId: string) => {
     selectConversation(conversations.find(c => c.id === conversationId)!);
     if (currentPath !== '/chat') {
-      window.location.href = '/chat';
+      navigate('/chat');
     }
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   return (
@@ -100,8 +133,8 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="flex-1 p-4 space-y-6">
-        {/* New Chat Button */}
-        <div>
+        {/* Action Buttons */}
+        <div className="space-y-3">
           <Button 
             onClick={handleNewChat}
             className={cn(
@@ -112,6 +145,56 @@ export function AppSidebar() {
             <Plus className="h-5 w-5" />
             {!collapsed && "New Chat"}
           </Button>
+
+          {/* Search Button */}
+          <Button
+            variant="outline"
+            onClick={() => setSearchOpen(true)}
+            className={cn(
+              "w-full justify-start gap-3 h-10 hover-lift rounded-lg",
+              collapsed && "w-10 h-10 p-0 justify-center"
+            )}
+          >
+            <Search className="h-4 w-4" />
+            {!collapsed && (
+              <div className="flex items-center justify-between flex-1">
+                <span>Search</span>
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </div>
+            )}
+          </Button>
+
+          {/* Quick Actions */}
+          {!collapsed && (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleTheme}
+                className="flex-1 hover-lift"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/bookmarks')}
+                className="flex-1 hover-lift"
+              >
+                <Bookmark className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 hover-lift relative"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 bg-destructive rounded-full animate-pulse"></span>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Recent Conversations */}
@@ -185,29 +268,27 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-2">
               {voiceNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                    >
-                      <div className={cn(
-                        "flex items-center gap-3 px-3 py-3 w-full transition-all duration-200 hover-lift rounded-xl",
-                        collapsed && "justify-center"
-                      )}>
-                        <item.icon className="h-5 w-5 text-sidebar-primary" />
-                        {!collapsed && (
-                          <div className="flex items-center justify-between flex-1">
-                            <span className="text-sm font-medium text-sidebar-foreground">{item.title}</span>
-                            {item.badge && (
-                              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 rounded-lg">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(item.url)}
+                    className={cn(
+                      "w-full justify-start gap-3 h-auto p-3 rounded-xl transition-all duration-200 hover-lift hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      isActive(item.url) && "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-sm",
+                      collapsed && "w-12 h-12 p-0 justify-center"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {!collapsed && (
+                      <div className="flex items-center justify-between flex-1">
+                        <span className="text-sm font-medium">{item.title}</span>
+                        {item.badge && (
+                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 rounded-lg">
+                            {item.badge}
+                          </Badge>
                         )}
                       </div>
-                    </NavLink>
-                  </SidebarMenuButton>
+                    )}
+                  </Button>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -215,45 +296,89 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      {/* User Profile Footer - Elegant and Modern */}
+      {/* User Profile Footer - Modern with Dropdown */}
       {user && (
         <div className="border-t border-sidebar-border/50 p-4">
           {!collapsed ? (
-            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-200 cursor-pointer group hover-lift">
-              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={user.user_metadata?.avatar_url} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
-                  {user.email?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-sidebar-foreground">
-                  {user.user_metadata?.display_name || user.email?.split('@')[0]}
-                </p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  Islamic AI Assistant
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-200 cursor-pointer group hover-lift">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate text-sidebar-foreground">
+                      {user.user_metadata?.display_name || user.email?.split('@')[0]}
+                    </p>
+                    <p className="text-xs text-sidebar-foreground/60 truncate">
+                      {isMasterAdmin() ? 'Master Admin' : 'User'}
+                    </p>
+                  </div>
+                  <Settings className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/')}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/bookmarks')}>
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  Bookmarks
+                </DropdownMenuItem>
+                {isMasterAdmin() && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-destructive">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <div className="flex justify-center">
-              <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover-lift cursor-pointer">
-                <AvatarImage src={user.user_metadata?.avatar_url} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
-                  {user.email?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex justify-center">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover-lift cursor-pointer">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut} className="text-destructive">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       )}
+      
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </Sidebar>
   );
 }
