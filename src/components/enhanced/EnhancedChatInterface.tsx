@@ -85,6 +85,14 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     source: msg.sources?.[0] || (msg.metadata as any)?.source
   }));
 
+  // Debug logging for message display
+  React.useEffect(() => {
+    console.log('CHAT INTERFACE - Current conversation:', currentConversation?.title);
+    console.log('CHAT INTERFACE - Raw conversation messages:', conversationMessages.length, conversationMessages);
+    console.log('CHAT INTERFACE - Display messages:', displayMessages.length, displayMessages);
+    console.log('CHAT INTERFACE - Messages loading:', messagesLoading);
+  }, [currentConversation, conversationMessages, displayMessages, messagesLoading]);
+
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
