@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, MessageSquare, X } from 'lucide-react';
+import { Mic, MessageCircle, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { cn } from '@/lib/utils';
@@ -18,25 +18,62 @@ export const VoiceModeSelector = ({
     if (isActive) return; // Prevent mode switching during active session
     setMode(mode);
   };
-  return <div className={cn("relative flex bg-secondary/30 rounded-full p-1 backdrop-blur-sm border border-border/20", className)}>
-      {/* Exit Voice Mode Button */}
-      <Button variant="ghost" size="sm" onClick={() => setMode(null)} disabled={isActive} className={cn("relative z-10 flex items-center gap-1 transition-all duration-300 rounded-full px-3 py-2 mr-1", "text-muted-foreground hover:text-foreground hover:bg-destructive/10", isActive && "opacity-50 cursor-not-allowed")} title="Exit voice mode">
-        
+  return <div className={cn("relative flex bg-secondary/30 rounded-full p-1.5 backdrop-blur-sm border border-border/20", className)}>
+      {/* Text Mode Button */}
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => setMode(null)} 
+        disabled={isActive} 
+        className={cn(
+          "relative z-10 transition-all duration-300 rounded-full p-3",
+          currentMode === null ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground",
+          isActive && "opacity-50 cursor-not-allowed"
+        )} 
+        title="Text chat"
+      >
+        <Type className="w-5 h-5" />
       </Button>
 
-      {/* Animated Background Slider */}
-      <div className={cn("absolute top-1 bottom-1 bg-primary rounded-full transition-all duration-300 ease-out shadow-lg", currentMode === 'dictation' ? "left-12 right-1/2 mr-0.5" : currentMode === 'live' ? "right-1 left-1/2 ml-8" : "opacity-0")} />
-      
       {/* Dictation Mode Button */}
-      <Button variant="ghost" size="sm" onClick={() => handleModeSelect('dictation')} disabled={isActive} className={cn("relative z-10 flex items-center gap-2 transition-all duration-300 rounded-full px-4 py-2", currentMode === 'dictation' ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground", isActive && "opacity-50 cursor-not-allowed")}>
-        <Mic className="w-4 h-4" />
-        <span className="font-medium">Dictation</span>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => handleModeSelect('dictation')} 
+        disabled={isActive} 
+        className={cn(
+          "relative z-10 transition-all duration-300 rounded-full p-3",
+          currentMode === 'dictation' ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground",
+          isActive && "opacity-50 cursor-not-allowed"
+        )}
+        title="Voice memo"
+      >
+        <Mic className="w-5 h-5" />
       </Button>
 
       {/* Live Conversation Mode Button */}
-      <Button variant="ghost" size="sm" onClick={() => handleModeSelect('live')} disabled={isActive} className={cn("relative z-10 flex items-center gap-2 transition-all duration-300 rounded-full px-4 py-2", currentMode === 'live' ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground", isActive && "opacity-50 cursor-not-allowed")}>
-        <MessageSquare className="w-4 h-4" />
-        <span className="font-medium">Live Talk</span>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => handleModeSelect('live')} 
+        disabled={isActive} 
+        className={cn(
+          "relative z-10 transition-all duration-300 rounded-full p-3",
+          currentMode === 'live' ? "text-primary-foreground shadow-none" : "text-muted-foreground hover:text-foreground",
+          isActive && "opacity-50 cursor-not-allowed"
+        )}
+        title="Live conversation"
+      >
+        <MessageCircle className="w-5 h-5" />
       </Button>
+
+      {/* Animated Background Slider */}
+      <div className={cn(
+        "absolute top-1.5 bottom-1.5 bg-primary rounded-full transition-all duration-300 ease-out shadow-lg",
+        currentMode === null ? "left-1.5 w-12" :
+        currentMode === 'dictation' ? "left-1/3 w-12 transform -translate-x-1/2" :
+        currentMode === 'live' ? "right-1.5 w-12" :
+        "opacity-0"
+      )} />
     </div>;
 };
