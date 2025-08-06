@@ -42,34 +42,67 @@ export const useAuth = () => {
   }, [toast]);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    setLoading(true);
     
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          display_name: displayName
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            display_name: displayName || null
+          }
         }
-      }
-    });
+      });
 
-    if (error) {
+      if (error) {
+        // Handle specific signup errors with better messaging
+        let errorMessage = error.message;
+        
+        if (error.message.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (error.message.includes('weak password')) {
+          errorMessage = 'Password is too weak. Please use at least 6 characters with numbers and letters.';
+        } else if (error.message.includes('invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        }
+        
+        toast({
+          title: "Sign up failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return { data: null, error };
+      }
+
+      // If signup successful but email confirmation is disabled, user will be signed in immediately
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link to complete your registration. You can also continue without confirming."
+        });
+      } else if (data.user) {
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to AirChatBot. You're now signed in."
+        });
+      }
+
+      return { data, error: null };
+    } catch (err) {
+      const unexpectedError = err instanceof Error ? err.message : 'An unexpected error occurred';
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: unexpectedError,
         variant: "destructive"
       });
-      return { data: null, error };
+      return { data: null, error: err as any };
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Check your email",
-      description: "We've sent you a confirmation link to complete your registration."
-    });
-
-    return { data, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
