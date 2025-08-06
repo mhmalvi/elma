@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, MessageSquare, MoreVertical, Trash2, Edit2, Search } from "lucide-react"
+import { Plus, MessageSquare, MoreVertical, Edit2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ModernCard } from "@/components/ui/modern-card"
@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DeleteButton } from "@/components/ui/delete-button"
 import { cn } from "@/lib/utils"
 import { Conversation } from "@/hooks/useConversations"
 import { useConversationsContext } from "@/contexts/ConversationsContext"
@@ -145,9 +146,14 @@ export const ConversationSidebar = ({ className }: ConversationSidebarProps) => 
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => handleDeleteConversation(conversation)}
-                        className="text-destructive"
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <DeleteButton 
+                          variant="ghost" 
+                          size="xs" 
+                          className="mr-2 p-0 h-4 w-4"
+                          confirmationRequired={false}
+                        />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>

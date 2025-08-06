@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Building, Settings, Users } from 'lucide-react';
+import { Plus, Edit, Building, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { DeleteButton } from '@/components/ui/delete-button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -209,13 +210,12 @@ export const TenantManagement = () => {
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button
-                  size="sm"
+                <DeleteButton
                   variant="destructive"
-                  onClick={() => handleDelete(tenant.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                  size="sm"
+                  onDelete={() => handleDelete(tenant.id)}
+                  tooltip="Delete tenant"
+                />
               </div>
             </div>
           </Card>
