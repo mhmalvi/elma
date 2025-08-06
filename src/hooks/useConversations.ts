@@ -76,9 +76,17 @@ export const useConversations = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+      
+      console.log('RAW SUPABASE RESPONSE:', data);
       console.log('Loaded messages:', data?.length || 0, 'messages');
+      console.log('Messages data:', data);
+      
       setMessages((data || []) as ChatMessage[]);
+      console.log('Messages set in state');
     } catch (error) {
       console.error('Error loading messages:', error);
       toast({
@@ -88,6 +96,7 @@ export const useConversations = () => {
       });
     } finally {
       setMessagesLoading(false);
+      console.log('Message loading completed');
     }
   }, [user, toast]);
 
