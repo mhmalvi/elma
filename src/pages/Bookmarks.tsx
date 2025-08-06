@@ -23,19 +23,7 @@ const Bookmarks = () => {
   const [editingBookmark, setEditingBookmark] = useState<any>(null)
   const [showExport, setShowExport] = useState(false)
 
-  // Redirect if not authenticated
-  if (!authLoading && !user) {
-    return <Navigate to="/auth" replace />
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingDots />
-      </div>
-    )
-  }
-
+  // Move all hooks to top level before any conditionals
   const allTags = getAllTags()
 
   const filteredBookmarks = useMemo(() => {
@@ -74,6 +62,19 @@ const Bookmarks = () => {
     if (confirm("Are you sure you want to delete this bookmark?")) {
       await deleteBookmark(id)
     }
+  }
+
+  // Now handle early returns after all hooks
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingDots />
+      </div>
+    )
   }
 
   return (
