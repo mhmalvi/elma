@@ -291,7 +291,7 @@ export function AppSidebar() {
             !collapsed && "shadow-primary/20"
           )}>
             <img 
-              src="/src/assets/airchatbot-logo.png" 
+              src="/airchatbot-logo.png" 
               alt="AirChatBot"
               className={cn(
                 "object-contain transition-transform duration-300 group-hover:rotate-12",
