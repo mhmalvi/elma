@@ -280,17 +280,9 @@ export function AppSidebar() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/')}>
-                  <Home className="h-4 w-4 mr-2" />
-                  Home
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/bookmarks')}>
-                  <Bookmark className="h-4 w-4 mr-2" />
-                  Bookmarks
                 </DropdownMenuItem>
                 {isMasterAdmin() && (
                   <>
