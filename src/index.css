@@ -75,50 +75,50 @@
   }
 
   .dark {
-    /* Dark theme for when needed */
-    --background: 222 22% 7%;
+    /* Dark theme - vibrant and modern */
+    --background: 224 17% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222 22% 10%;
+    --card: 224 17% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 22% 12%;
+    --popover: 224 17% 12%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 176 100% 44%;
-    --primary-foreground: 222 22% 7%;
+    --primary-foreground: 224 17% 8%;
     --primary-glow: 176 100% 54%;
 
-    --secondary: 222 15% 15%;
+    --secondary: 224 15% 15%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 222 15% 12%;
-    --muted-foreground: 210 30% 65%;
+    --muted: 224 15% 12%;
+    --muted-foreground: 210 30% 70%;
 
-    --accent: 217 100% 54%;
-    --accent-foreground: 222 22% 7%;
+    --accent: 217 100% 60%;
+    --accent-foreground: 224 17% 8%;
 
-    --spiritual: 45 100% 60%;
-    --spiritual-foreground: 222 22% 7%;
+    --spiritual: 45 100% 65%;
+    --spiritual-foreground: 224 17% 8%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 222 15% 18%;
-    --input: 222 15% 15%;
+    --border: 224 15% 20%;
+    --input: 224 15% 15%;
     --ring: 176 100% 44%;
 
     --gradient-glass: linear-gradient(135deg, hsl(var(--card) / 0.8), hsl(var(--muted) / 0.6));
-    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.3);
-    --shadow-neon: 0 0 30px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.3);
+    --shadow-glow: 0 0 25px hsl(var(--primary) / 0.4);
+    --shadow-neon: 0 0 40px hsl(var(--primary) / 0.6), 0 0 80px hsl(var(--primary) / 0.3);
 
-    --sidebar-background: 222 22% 8%;
+    --sidebar-background: 224 17% 9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 176 100% 44%;
-    --sidebar-primary-foreground: 222 22% 7%;
-    --sidebar-accent: 222 15% 15%;
+    --sidebar-primary-foreground: 224 17% 8%;
+    --sidebar-accent: 224 15% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 15% 18%;
+    --sidebar-border: 224 15% 20%;
     --sidebar-ring: 176 100% 44%;
   }
 }

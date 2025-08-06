@@ -9,7 +9,8 @@ import {
   Archive,
   Trash2,
   MoreHorizontal,
-  Zap
+  Zap,
+  Settings
 } from 'lucide-react';
 import {
   Sidebar,
@@ -29,6 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
 
 const voiceNavItems = [
   { title: 'Voice Test', url: '/voice-test', icon: TestTube, badge: 'Beta' },
@@ -40,7 +42,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { user } = useAuth();
-  const { conversations, startNewConversation, deleteConversation } = useConversations();
+  const { conversations, startNewConversation, deleteConversation, selectConversation } = useConversations();
   const location = useLocation();
   const currentPath = location.pathname;
   
@@ -49,13 +51,13 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "transition-all duration-200 hover:bg-accent/50",
-      isActive && "bg-accent text-accent-foreground font-medium"
+      "transition-all duration-200 hover:bg-sidebar-accent/50 rounded-lg",
+      isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-sm"
     );
 
   const recentConversations = showAllConversations 
     ? conversations 
-    : conversations.slice(0, 5);
+    : conversations.slice(0, 8);
 
   const handleNewChat = () => {
     startNewConversation();
@@ -65,41 +67,49 @@ export function AppSidebar() {
     }
   };
 
+  const handleConversationClick = (conversationId: string) => {
+    selectConversation(conversations.find(c => c.id === conversationId)!);
+    if (currentPath !== '/chat') {
+      window.location.href = '/chat';
+    }
+  };
+
   return (
     <Sidebar
       collapsible="icon"
       className={cn(
-        "glass-strong border-r border-sidebar-border bg-sidebar/95 backdrop-blur-xl transition-all duration-300"
+        "border-r border-sidebar-border bg-sidebar backdrop-blur-xl transition-all duration-300",
+        "w-80 data-[state=collapsed]:w-16"
       )}
     >
       <SidebarHeader className="border-b border-sidebar-border/50 p-4">
         <div className="flex items-center gap-3">
           <div className={cn(
-            "h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center shadow-lg",
+            "h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg hover-lift",
             !collapsed && "shadow-primary/20"
           )}>
-            <MessageSquare className="h-4 w-4 text-primary-foreground" />
+            <MessageSquare className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-sm text-sidebar-foreground">AirChatBot</h2>
-              <p className="text-xs text-sidebar-foreground/60">Islamic AI Assistant</p>
+              <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent">AirChatBot</h2>
+              <p className="text-xs text-sidebar-foreground/70 font-medium">Islamic AI Assistant</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="flex-1 p-3 space-y-4">
+      <SidebarContent className="flex-1 p-4 space-y-6">
         {/* New Chat Button */}
         <div>
           <Button 
             onClick={handleNewChat}
             className={cn(
-              "w-full justify-start gap-3 h-11 font-medium bg-gradient-primary hover:bg-gradient-primary/90 text-primary-foreground shadow-lg hover-lift",
-              collapsed && "w-11 h-11 p-0 justify-center"
+              "w-full justify-start gap-3 h-12 font-semibold bg-gradient-primary hover:bg-gradient-primary/90 text-primary-foreground shadow-lg hover-lift rounded-xl",
+              collapsed && "w-12 h-12 p-0 justify-center"
             )}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
             {!collapsed && "New Chat"}
           </Button>
         </div>
@@ -108,53 +118,59 @@ export function AppSidebar() {
         {conversations.length > 0 && (
           <SidebarGroup>
             {!collapsed && (
-              <div className="flex items-center justify-between mb-2">
-                <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">Recent Chats</SidebarGroupLabel>
+              <div className="flex items-center justify-between mb-4">
+                <SidebarGroupLabel className="text-sidebar-foreground font-semibold text-sm">Recent Chats</SidebarGroupLabel>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 hover:bg-sidebar-accent"
+                  className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg"
                   onClick={() => setShowAllConversations(!showAllConversations)}
                 >
-                  {showAllConversations ? <Archive className="h-3 w-3" /> : <MoreHorizontal className="h-3 w-3" />}
+                  {showAllConversations ? <Archive className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}
                 </Button>
               </div>
             )}
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu className="space-y-2">
                 {recentConversations.map((conversation) => (
                   <SidebarMenuItem key={conversation.id}>
-                    <SidebarMenuButton asChild className="group">
-                      <NavLink 
-                        to={`/chat?id=${conversation.id}`}
+                    <div className="group relative">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleConversationClick(conversation.id)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200",
+                          "w-full justify-start gap-3 h-auto p-3 rounded-xl transition-all duration-200 hover-lift",
                           "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          "data-[active]:bg-sidebar-primary data-[active]:text-sidebar-primary-foreground"
+                          collapsed && "w-12 h-12 p-0 justify-center"
                         )}
                       >
-                        <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-70" />
+                        <MessageSquare className="h-4 w-4 flex-shrink-0 text-sidebar-primary" />
                         {!collapsed && (
-                          <>
-                            <span className="flex-1 truncate text-sm font-medium">
+                          <div className="flex-1 text-left min-w-0">
+                            <div className="truncate text-sm font-medium text-sidebar-foreground">
                               {conversation.title || 'New Conversation'}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                deleteConversation(conversation.id);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </>
+                            </div>
+                            <div className="text-xs text-sidebar-foreground/60">
+                              {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                            </div>
+                          </div>
                         )}
-                      </NavLink>
-                    </SidebarMenuButton>
+                      </Button>
+                      {!collapsed && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive rounded-lg"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteConversation(conversation.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
@@ -164,31 +180,32 @@ export function AppSidebar() {
 
         {/* Voice Features */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">Voice Features</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground font-semibold text-sm mb-4">Voice Features</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-2">
               {voiceNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200",
-                        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        "data-[active]:bg-sidebar-primary data-[active]:text-sidebar-primary-foreground"
-                      )}
+                      className={getNavCls}
                     >
-                      <item.icon className="h-4 w-4 opacity-70" />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span className="text-sm font-medium">{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/20">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 w-full transition-all duration-200 hover-lift rounded-xl",
+                        collapsed && "justify-center"
+                      )}>
+                        <item.icon className="h-5 w-5 text-sidebar-primary" />
+                        {!collapsed && (
+                          <div className="flex items-center justify-between flex-1">
+                            <span className="text-sm font-medium text-sidebar-foreground">{item.title}</span>
+                            {item.badge && (
+                              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 rounded-lg">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -198,25 +215,43 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      {/* User Profile Footer - Minimal and Clean */}
-      {user && !collapsed && (
+      {/* User Profile Footer - Elegant and Modern */}
+      {user && (
         <div className="border-t border-sidebar-border/50 p-4">
-          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors cursor-pointer">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user.user_metadata?.avatar_url} />
-              <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs font-medium">
-                {user.email?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-sidebar-foreground">
-                {user.user_metadata?.display_name || user.email}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                Islamic AI Assistant
-              </p>
+          {!collapsed ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-200 cursor-pointer group hover-lift">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                <AvatarImage src={user.user_metadata?.avatar_url} />
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
+                  {user.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate text-sidebar-foreground">
+                  {user.user_metadata?.display_name || user.email?.split('@')[0]}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">
+                  Islamic AI Assistant
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover-lift cursor-pointer">
+                <AvatarImage src={user.user_metadata?.avatar_url} />
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-bold">
+                  {user.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
       )}
     </Sidebar>
