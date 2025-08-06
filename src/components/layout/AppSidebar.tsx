@@ -319,7 +319,10 @@ export function AppSidebar() {
         {/* Action Buttons */}
         <div className="space-y-3">
           <Button 
-            onClick={handleNewChat}
+            onClick={() => {
+              console.log('NEW CHAT BUTTON CLICKED!');
+              handleNewChat();
+            }}
             className={cn(
               "w-full font-semibold bg-background text-foreground border border-primary",
               "shadow-lg hover:shadow-primary/30 rounded-xl hover:bg-muted/50",
