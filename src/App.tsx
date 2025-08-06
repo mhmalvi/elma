@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
 import Bookmarks from "./pages/Bookmarks";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -46,6 +47,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/chat" element={<Chat />} />
+                  <Route path="/profile" element={<Profile />} />
                   <Route path="/bookmarks" element={<Bookmarks />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/admin" element={<AdminDashboard />} />
