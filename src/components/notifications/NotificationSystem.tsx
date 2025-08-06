@@ -157,15 +157,19 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
       </Button>
 
       {isOpen && (
-        <>
-          {/* Mobile/Small screens - Full screen overlay */}
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div 
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm"
-              onClick={() => setIsOpen(false)}
-            />
-            <Card className="fixed top-4 left-4 right-4 bottom-auto max-h-[80vh] p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 z-[9999]" onClick={() => setIsOpen(false)}>
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+          />
+          
+          {/* Notification panel positioned from the right */}
+          <div 
+            className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-background/95 backdrop-blur-xl border-l shadow-2xl animate-slide-in-right overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b bg-card/50">
                 <h3 className="font-semibold text-card-foreground">Notifications</h3>
                 <Button
                   variant="ghost"
@@ -177,128 +181,63 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
                 </Button>
               </div>
               
-              <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-4">
-                    No notifications yet
-                  </p>
-                ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-3 rounded-lg border ${
-                        notification.read ? 'bg-muted/30' : 'bg-background'
-                      } transition-colors`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2 flex-1">
-                          {getIcon(notification.type)}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{notification.title}</p>
-                            <p className="text-xs text-muted-foreground">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {notification.timestamp.toLocaleTimeString()}
-                            </p>
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
+                  {notifications.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-8">
+                      No notifications yet
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 rounded-lg border ${
+                          notification.read ? 'bg-muted/30' : 'bg-background'
+                        } transition-colors hover:bg-sidebar-accent/50`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 flex-1">
+                            {getIcon(notification.type)}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{notification.title}</p>
+                              <p className="text-xs text-muted-foreground">{notification.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {notification.timestamp.toLocaleTimeString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-1">
-                          {!notification.read && (
+                          <div className="flex gap-1">
+                            {!notification.read && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => markAsRead(notification.id)}
+                                className="h-6 w-6 p-0 hover:bg-primary/20"
+                                title="Mark as read"
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => markAsRead(notification.id)}
-                              className="h-6 w-6 p-0"
+                              onClick={() => deleteNotification(notification.id)}
+                              className="h-6 w-6 p-0 hover:bg-destructive/20"
+                              title="Delete"
                             >
-                              <CheckCircle className="w-3 h-3" />
+                              <X className="w-3 h-3" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteNotification(notification.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* Desktop - Positioned dropdown on left for collapsed sidebar */}
-          <div className={cn(
-            "hidden lg:block absolute top-full mt-2 w-80 max-w-[calc(100vw-2rem)] z-50",
-            collapsed ? "left-0" : "right-0"
-          )}>
-            <Card className="p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-card-foreground">Notifications</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 p-0 hover:bg-sidebar-accent rounded-lg transition-all duration-300"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-4">
-                    No notifications yet
-                  </p>
-                ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-3 rounded-lg border ${
-                        notification.read ? 'bg-muted/30' : 'bg-background'
-                      } transition-colors`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2 flex-1">
-                          {getIcon(notification.type)}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{notification.title}</p>
-                            <p className="text-xs text-muted-foreground">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {notification.timestamp.toLocaleTimeString()}
-                            </p>
                           </div>
                         </div>
-                        <div className="flex gap-1">
-                          {!notification.read && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => markAsRead(notification.id)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteNotification(notification.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </Card>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
