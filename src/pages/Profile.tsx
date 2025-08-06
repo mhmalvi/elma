@@ -257,18 +257,27 @@ const Profile = () => {
                   placeholder="https://example.com/avatar.jpg"
                   className="flex-1 border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200"
                 />
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    id="avatar-upload"
-                  />
-                  <Button variant="outline" size="icon" className="h-10 w-10 relative">
-                    <Upload className="h-4 w-4" />
+                <label htmlFor="avatar-upload" className="cursor-pointer">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-10 w-10 relative hover:bg-teal-50 hover:border-teal-400 transition-colors"
+                    asChild
+                  >
+                    <div>
+                      <Upload className="h-4 w-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="avatar-upload"
+                        style={{ fontSize: '0' }}
+                      />
+                    </div>
                   </Button>
-                </div>
+                </label>
               </div>
               <p className="text-xs text-muted-foreground">
                 Add a profile picture URL or click upload to select an image (max 5MB)
