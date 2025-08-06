@@ -23,6 +23,7 @@ import { OfflineContentManager } from "./components/offline/OfflineContentManage
 import { MobileBrowserTester } from "./components/performance/MobileBrowserTester";
 import VoiceQuality from "./pages/VoiceQuality";
 import { ConversationsProvider } from "./contexts/ConversationsContext";
+import { VoiceModeProvider } from "./contexts/VoiceModeContext";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +47,8 @@ const App = () => (
           <Route path="/*" element={
             <AuthGuard>
               <ConversationsProvider>
-                <AppLayout>
+                <VoiceModeProvider>
+                  <AppLayout>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/home" element={<Home />} />
@@ -72,7 +74,8 @@ const App = () => (
                   } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </AppLayout>
+                  </AppLayout>
+                </VoiceModeProvider>
               </ConversationsProvider>
             </AuthGuard>
           } />
