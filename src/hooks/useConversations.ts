@@ -260,9 +260,13 @@ export const useConversations = () => {
             if (payload.eventType === 'INSERT') {
               const newConversation = payload.new as Conversation;
               setConversations(prev => {
-                if (prev.find(conv => conv.id === newConversation.id)) {
+                // CRITICAL: Check for duplicates by ID
+                const exists = prev.find(conv => conv.id === newConversation.id);
+                if (exists) {
+                  console.log('Duplicate conversation detected, skipping:', newConversation.id);
                   return prev;
                 }
+                console.log('Adding new conversation via realtime:', newConversation.title);
                 return [newConversation, ...prev];
               });
             } else if (payload.eventType === 'UPDATE') {
@@ -271,7 +275,8 @@ export const useConversations = () => {
                 prev.map(conv => conv.id === updatedConversation.id ? updatedConversation : conv)
               );
             } else if (payload.eventType === 'DELETE') {
-              setConversations(prev => prev.filter(conv => conv.id !== payload.old.id));
+              const deletedId = (payload.old as any).id;
+              setConversations(prev => prev.filter(conv => conv.id !== deletedId));
             }
           }
         }
