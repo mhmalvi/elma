@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -104,19 +104,75 @@ export const useVoiceChat = () => {
     setIsListening(false);
   }, []);
 
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Stop all speech synthesis
+  const stopSpeaking = useCallback(() => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      currentUtteranceRef.current = null;
+    }
+  }, []);
+
+  // Pause speech synthesis
+  const pauseSpeaking = useCallback(() => {
+    if (synthRef.current && isSpeaking) {
+      synthRef.current.pause();
+      setIsPaused(true);
+    }
+  }, [isSpeaking]);
+
+  // Resume speech synthesis
+  const resumeSpeaking = useCallback(() => {
+    if (synthRef.current && isPaused) {
+      synthRef.current.resume();
+      setIsPaused(false);
+    }
+  }, [isPaused]);
+
   // Speak text using TTS
   const speakText = useCallback((text: string) => {
     if (!synthRef.current && !initTextToSpeech()) {
       return;
     }
 
-    // Cancel any ongoing speech
-    synthRef.current?.cancel();
+    // Stop any ongoing speech first
+    stopSpeaking();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 1;
+
+    // Add event listeners
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsPaused(false);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      currentUtteranceRef.current = null;
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      currentUtteranceRef.current = null;
+    };
+
+    utterance.onpause = () => {
+      setIsPaused(true);
+    };
+
+    utterance.onresume = () => {
+      setIsPaused(false);
+    };
 
     // Try to use a natural voice
     const voices = synthRef.current?.getVoices() || [];
@@ -130,8 +186,9 @@ export const useVoiceChat = () => {
       utterance.voice = preferredVoice;
     }
 
+    currentUtteranceRef.current = utterance;
     synthRef.current?.speak(utterance);
-  }, [initTextToSpeech]);
+  }, [initTextToSpeech, stopSpeaking]);
 
   // Handle user message (voice or text)
   const handleUserMessage = useCallback(async (text: string) => {
@@ -207,18 +264,51 @@ export const useVoiceChat = () => {
   // Clear chat
   const clearMessages = useCallback(() => {
     setMessages([]);
-    synthRef.current?.cancel();
+    stopSpeaking();
+  }, [stopSpeaking]);
+
+  // Cleanup effect to stop all speech when component unmounts
+  useEffect(() => {
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
   }, []);
+
+  // Effect to handle page visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopSpeaking();
+        stopListening();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [stopSpeaking, stopListening]);
 
   return {
     messages,
     isListening,
     isProcessing,
     transcript,
+    isSpeaking,
+    isPaused,
     startListening,
     stopListening,
     sendTextMessage,
     speakText,
+    stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
     clearMessages
   };
 };
