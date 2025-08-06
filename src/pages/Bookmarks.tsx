@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { Navigate } from "react-router-dom"
-import { Search, Tag, Edit3, Download } from "lucide-react"
+import { Search, Tag, Edit3, Download, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +10,7 @@ import { TopAppBar } from "@/components/ui/top-app-bar"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import { BookmarkDialog } from "@/components/bookmarks/BookmarkDialog"
 import { ExportDialog } from "@/components/export/ExportDialog"
-import { DeleteButton } from "@/components/ui/delete-button"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { useAuth } from "@/hooks/useAuth"
 import { useBookmarks } from "@/hooks/useBookmarks"
 import { formatDistanceToNow } from "date-fns"
@@ -23,6 +23,8 @@ const Bookmarks = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [editingBookmark, setEditingBookmark] = useState<any>(null)
   const [showExport, setShowExport] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [bookmarkToDelete, setBookmarkToDelete] = useState<{id: string, title: string} | null>(null)
 
   // Move all hooks to top level before any conditionals
   const allTags = getAllTags()
@@ -59,9 +61,15 @@ const Bookmarks = () => {
     )
   }
 
-  const handleDeleteBookmark = async (id: string) => {
-    if (confirm("Are you sure you want to delete this bookmark?")) {
-      await deleteBookmark(id)
+  const handleDeleteBookmark = (id: string, title: string) => {
+    setBookmarkToDelete({ id, title })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteBookmark = async () => {
+    if (bookmarkToDelete) {
+      await deleteBookmark(bookmarkToDelete.id)
+      setBookmarkToDelete(null)
     }
   }
 
@@ -204,13 +212,14 @@ const Bookmarks = () => {
                       >
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <DeleteButton
-                        variant="minimal"
-                        size="sm" 
-                        onDelete={() => handleDeleteBookmark(bookmark.id)}
-                        tooltip="Delete bookmark"
-                        className="opacity-70 hover:opacity-100"
-                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteBookmark(bookmark.id, bookmark.title)}
+                        className="opacity-70 hover:opacity-100 hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </ModernCard>
@@ -232,6 +241,16 @@ const Bookmarks = () => {
       <ExportDialog
         open={showExport}
         onOpenChange={setShowExport}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDeleteBookmark}
+        title="Delete Bookmark"
+        description={`Are you sure you want to delete the bookmark "${bookmarkToDelete?.title}"? This action cannot be undone.`}
+        itemType="bookmark"
       />
     </div>
   )
