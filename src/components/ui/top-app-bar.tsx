@@ -33,7 +33,7 @@ export const TopAppBar = ({
 
   return (
     <div className={cn(
-      "sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b border-border/50 min-h-[60px]",
+      "fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 border-b border-border/50 h-12",
       transparent 
         ? "bg-background/95 backdrop-blur-lg" 
         : "bg-background",
