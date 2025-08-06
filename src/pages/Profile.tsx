@@ -84,12 +84,12 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
+        .update({
           display_name: profile.display_name,
           avatar_url: profile.avatar_url,
           preferences: profile.preferences
-        });
+        })
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -106,6 +106,80 @@ const Profile = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+
+    try {
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new avatar
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
+
+      toast({
+        title: "Success",
+        description: "Avatar uploaded successfully"
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload avatar",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "File size must be less than 5MB",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Please upload an image file",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      uploadAvatar(file);
     }
   };
 
@@ -183,12 +257,21 @@ const Profile = () => {
                   placeholder="https://example.com/avatar.jpg"
                   className="flex-1 border-2 border-border/50 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 transition-all duration-200"
                 />
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <Upload className="h-4 w-4" />
-                </Button>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id="avatar-upload"
+                  />
+                  <Button variant="outline" size="icon" className="h-10 w-10 relative">
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Add a profile picture URL or upload an image
+                Add a profile picture URL or click upload to select an image (max 5MB)
               </p>
             </div>
 
