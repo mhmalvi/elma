@@ -186,25 +186,34 @@ export const useVoiceIntegration = () => {
       if (shouldUseElevenLabs) {
         const startTime = performance.now()
         
-        const { data, error } = await supabase.functions.invoke('text-to-voice', {
-          body: { 
-            text: text.slice(0, 1000), // Limit text length for API efficiency
-            voice: '9BWtsMINqrJLrRacOk9x', // Aria voice - warm, natural, engaging
-            options: {
-              model_id: 'eleven_multilingual_v2', // High-quality multilingual model
-              voice_settings: {
-                stability: 0.6,        // More stable, less random
-                similarity_boost: 0.8, // Higher voice consistency
-                style: 0.4,            // Moderate expressiveness
-                use_speaker_boost: true // Enhanced clarity
-              }
+        const requestPayload = { 
+          text: text.slice(0, 1000), // Limit text length for API efficiency
+          voice: '9BWtsMINqrJLrRacOk9x', // Aria voice - warm, natural, engaging
+          options: {
+            model_id: 'eleven_multilingual_v2', // High-quality multilingual model
+            voice_settings: {
+              stability: 0.6,        // More stable, less random
+              similarity_boost: 0.8, // Higher voice consistency
+              style: 0.4,            // Moderate expressiveness
+              use_speaker_boost: true // Enhanced clarity
             }
           }
+        }
+        
+        console.log('Sending TTS request:', requestPayload)
+        
+        const { data, error } = await supabase.functions.invoke('text-to-voice', {
+          body: requestPayload
         })
 
         const generationTime = performance.now() - startTime
 
-        if (error) throw error
+        if (error) {
+          console.error('TTS Edge Function Error:', error)
+          throw error
+        }
+
+        console.log('TTS Response received:', data)
 
         // Create audio element and play
         const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`)
