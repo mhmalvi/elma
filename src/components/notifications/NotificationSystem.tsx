@@ -17,7 +17,7 @@ interface Notification {
   userId?: string;
 }
 
-export const NotificationSystem = () => {
+export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -140,8 +140,9 @@ export const NotificationSystem = () => {
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "relative p-2 hover:bg-sidebar-accent hover:text-primary transition-all duration-300",
-          "hover:scale-105 active:scale-95 rounded-lg"
+          "relative hover:bg-sidebar-accent hover:text-primary transition-all duration-300",
+          "hover:scale-105 active:scale-95 rounded-lg",
+          collapsed ? "w-10 h-10 p-0" : "p-2"
         )}
         title="Notifications"
       >
@@ -228,8 +229,11 @@ export const NotificationSystem = () => {
             </Card>
           </div>
 
-          {/* Desktop - Positioned dropdown */}
-          <div className="hidden lg:block absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] z-50">
+          {/* Desktop - Positioned dropdown on left for collapsed sidebar */}
+          <div className={cn(
+            "hidden lg:block absolute top-full mt-2 w-80 max-w-[calc(100vw-2rem)] z-50",
+            collapsed ? "left-0" : "right-0"
+          )}>
             <Card className="p-4 shadow-xl border bg-card/95 backdrop-blur-xl animate-scale-in">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-card-foreground">Notifications</h3>
@@ -243,57 +247,57 @@ export const NotificationSystem = () => {
                 </Button>
               </div>
 
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-4">
-                  No notifications yet
-                </p>
-              ) : (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-3 rounded-lg border ${
-                      notification.read ? 'bg-muted/30' : 'bg-background'
-                    } transition-colors`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 flex-1">
-                        {getIcon(notification.type)}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {notification.timestamp.toLocaleTimeString()}
-                          </p>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">
+                    No notifications yet
+                  </p>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-3 rounded-lg border ${
+                        notification.read ? 'bg-muted/30' : 'bg-background'
+                      } transition-colors`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          {getIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {notification.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {!notification.read && (
+                        <div className="flex gap-1">
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => markAsRead(notification.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => deleteNotification(notification.id)}
                             className="h-6 w-6 p-0"
                           >
-                            <CheckCircle className="w-3 h-3" />
+                            <X className="w-3 h-3" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteNotification(notification.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-        </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
         </>
       )}
     </div>
