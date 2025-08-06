@@ -42,47 +42,89 @@ serve(async (req) => {
   }
 
   try {
-    const { audio } = await req.json()
+    const { audio, metadata } = await req.json()
     
     if (!audio) {
       throw new Error('No audio data provided')
     }
 
-    console.log('Processing audio data...')
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured')
+    }
 
-    // Process audio in chunks
+    console.log('Processing audio data...', {
+      audioSize: typeof audio === 'string' ? audio.length : 'unknown',
+      metadata: metadata || 'none'
+    })
+
+    // Process audio in chunks to prevent memory issues
     const binaryAudio = processBase64Chunks(audio)
     
-    // Prepare form data
+    // Prepare optimized form data
     const formData = new FormData()
     const blob = new Blob([binaryAudio], { type: 'audio/webm' })
     formData.append('file', blob, 'audio.webm')
     formData.append('model', 'whisper-1')
+    formData.append('language', 'en') // Optimize for English
+    formData.append('response_format', 'verbose_json') // Get confidence scores
 
-    console.log('Sending to OpenAI Whisper...')
+    console.log('Sending to OpenAI Whisper API...')
 
-    // Send to OpenAI
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-      },
-      body: formData,
-    })
+    // Enhanced API call with retry logic
+    let retryCount = 0
+    const maxRetries = 2
+    
+    while (retryCount <= maxRetries) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: formData,
+        })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
-      throw new Error(`OpenAI API error: ${errorText}`)
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('OpenAI API error:', errorText)
+          
+          if (retryCount < maxRetries && response.status >= 500) {
+            retryCount++
+            console.log(`Retrying request (${retryCount}/${maxRetries})...`)
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+            continue
+          }
+          
+          throw new Error(`OpenAI API error (${response.status}): ${errorText}`)
+        }
+
+        const result = await response.json()
+        console.log('Transcription successful:', {
+          text: result.text?.substring(0, 100) + (result.text?.length > 100 ? '...' : ''),
+          duration: result.duration,
+          language: result.language
+        })
+
+        return new Response(
+          JSON.stringify({ 
+            text: result.text,
+            confidence: result.segments?.[0]?.avg_logprob || null,
+            duration: result.duration,
+            language: result.language
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (fetchError) {
+        if (retryCount < maxRetries) {
+          retryCount++
+          console.log(`Request failed, retrying (${retryCount}/${maxRetries})...`, fetchError)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+          continue
+        }
+        throw fetchError
+      }
     }
-
-    const result = await response.json()
-    console.log('Transcription result:', result.text)
-
-    return new Response(
-      JSON.stringify({ text: result.text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Error in voice-to-text function:', error)
