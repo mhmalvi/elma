@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { useGlobalAudioManager } from './useGlobalAudioManager';
 
 interface VADConfig {
   threshold?: number;
@@ -31,6 +32,7 @@ export const useVoiceActivityDetection = (
   disableWhenPlaying?: boolean
 ) => {
   const combinedConfig = { ...DEFAULT_VAD_CONFIG, ...config };
+  const audioManager = useGlobalAudioManager();
   
   const [vadState, setVADState] = useState<VADState>({
     isUserSpeaking: false,
@@ -190,6 +192,12 @@ export const useVoiceActivityDetection = (
   }, [vadState.isListening, combinedConfig, calculateRMS, onSpeechStart, onSpeechEnd, disableWhenPlaying]);
 
   const startListening = useCallback(async (): Promise<boolean> => {
+    // Check with audio manager first
+    if (!audioManager.canStart('vad')) {
+      console.log('VAD: Blocked by audio manager');
+      return false;
+    }
+
     try {
       console.log('VAD: Starting voice activity detection');
       
@@ -250,7 +258,7 @@ export const useVoiceActivityDetection = (
       }));
       return false;
     }
-  }, [analyzeAudio]);
+  }, [analyzeAudio, audioManager]);
 
   const stopListening = useCallback(() => {
     console.log('VAD: Stopping voice activity detection');
