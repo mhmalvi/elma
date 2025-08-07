@@ -1,4 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,12 +14,38 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    }
+
+    // Rate limit: 30/min per user
+    const { data: allowed, error: rlError } = await supabase.rpc('check_rate_limit', {
+      endpoint_name: 'text-to-voice',
+      max_requests: 30,
+      window_minutes: 1,
+    })
+    if (rlError) {
+      console.error('Rate limit error:', rlError)
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders })
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders })
+    }
+
     console.log('Received request:', req.method)
     
     const requestBody = await req.json()
-    console.log('Request body received:', requestBody)
+    console.log('Request body received:', { textLen: (requestBody?.text || '').length })
     
     const { text, voice, options } = requestBody
+
 
     if (!text) {
       console.error('No text provided in request')
