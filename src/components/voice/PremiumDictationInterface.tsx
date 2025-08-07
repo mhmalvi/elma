@@ -95,49 +95,51 @@ export const PremiumDictationInterface = ({
     return 'idle';
   };
   const hasTranscript = Boolean(editedTranscript?.trim());
-  return <div className={cn("w-full space-y-4 p-4 rounded-lg bg-card border", className)}>
-      {/* Header */}
-      
+  return <div className={cn("w-full space-y-2 p-3 rounded-2xl bg-gradient-to-br from-spiritual/5 to-primary/5 backdrop-blur-xl border border-spiritual/20", className)}>
+      {/* Ultra Compact Dictation Mode Interface */}
+      <div className="relative flex items-center justify-between gap-3">
+        {/* Language Selector - Minimal */}
+        <div className="flex-shrink-0">
+          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
+        </div>
 
-      {/* Language Selector */}
-      <div className="flex justify-center">
-        <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
-      </div>
-
-      {/* Recording Interface */}
-      <div className="relative flex flex-col items-center space-y-8">
-        {/* AI Avatar */}
-        <div className="relative">
-          <PremiumAIAvatar isListening={sttState.isListening} isThinking={sttState.isProcessing} size="xl" />
+        {/* Central AI Avatar with Dictation Animations */}
+        <div className="flex-1 flex flex-col items-center space-y-2">
+          <div className="relative">
+            <PremiumAIAvatar isListening={sttState.isListening} isThinking={sttState.isProcessing} size="md" />
+            {/* Dictation mode glow rings */}
+            {sttState.isListening && (
+              <>
+                <div className="absolute inset-0 rounded-full border-2 border-spiritual/40 animate-ping scale-110" />
+                <div className="absolute inset-0 rounded-full border border-spiritual/30 animate-bounce scale-125" />
+              </>
+            )}
+          </div>
           
-          {/* Status badge */}
-          <div className="absolute -top-2 -right-2">
-            
+          {/* Compact Waveform */}
+          <div className="w-32 h-6">
+            <PremiumWaveformVisualizer isActive={sttState.isListening} frequency="high" style="detailed" color="spiritual" bars={8} />
           </div>
         </div>
 
-        {/* Waveform Visualizer */}
-        <div className="w-64">
-          <PremiumWaveformVisualizer isActive={sttState.isListening} frequency="high" style="detailed" color="primary" bars={10} />
-        </div>
-
-        {/* Recording Controls */}
-        <div className="flex items-center gap-4">
-          {!sttState.isListening ? <Button onClick={handleStartRecording} size="lg" className="w-16 h-16 rounded-full bg-gradient-primary hover:bg-primary/90 shadow-xl hover:scale-110 transition-all duration-300">
-              <Mic className="w-6 h-6" />
-            </Button> : <Button onClick={handleStopRecording} size="lg" variant="destructive" className="w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-all duration-300 animate-gentle-pulse">
-              <Square className="w-6 h-6" />
-            </Button>}
-
-          {hasTranscript && !sttState.isListening && <Button onClick={handleReset} variant="outline" size="sm" className="animate-slide-in-up">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
-            </Button>}
+        {/* Control Buttons - Dictation Mode Style */}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {hasTranscript && !sttState.isListening && (
+            <Button onClick={handleReset} variant="ghost" size="sm" className="h-8 w-8 rounded-xl border border-spiritual/30 hover:bg-spiritual/10">
+              <RotateCcw className="w-3 h-3" />
+            </Button>
+          )}
+          
+          <Button onClick={!sttState.isListening ? handleStartRecording : handleStopRecording} className={cn("h-12 w-12 rounded-2xl transition-all duration-300 shadow-lg", "hover:scale-105", sttState.isListening ? "bg-destructive hover:bg-destructive/90 animate-bounce" : "bg-gradient-to-r from-spiritual to-primary hover:from-spiritual/90 hover:to-primary/90")}>
+            {sttState.isListening ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
 
-      {/* Status Indicator */}
-      <SmartStatusIndicator status={getRecordingStatus()} confidence={sttState.confidence} language={currentLanguage} isOnline={true} wordCount={sttState.wordCount} characterCount={sttState.characterCount} message={showSuccess ? "Sent successfully!" : undefined} />
+      {/* Status Row */}
+      <div className="w-full">
+        <SmartStatusIndicator status={getRecordingStatus()} confidence={sttState.confidence} language={currentLanguage} isOnline={true} wordCount={sttState.wordCount} characterCount={sttState.characterCount} message={showSuccess ? "Sent successfully!" : undefined} className="w-full" />
+      </div>
 
       {/* Transcript Area */}
       {hasTranscript && <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/20 animate-slide-in-up">
