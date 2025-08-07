@@ -410,7 +410,7 @@ export const EnhancedChatInterface = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Input Container with Enhanced Visual Hierarchy */}
             <div className="relative">
-              <div className="flex gap-2 items-end p-4 rounded-2xl border border-border/30 bg-background/80 backdrop-blur-sm transition-all duration-300 focus-within:border-accent/40 focus-within:bg-background/90 focus-within:shadow-lg focus-within:shadow-accent/10">
+              <div className="flex gap-3 items-end p-4 rounded-3xl border border-border/30 bg-background/80 backdrop-blur-sm transition-all duration-300 focus-within:border-primary/40 focus-within:bg-background/90 focus-within:shadow-lg focus-within:shadow-primary/10">
                 {/* Input Field */}
                 <div className="flex-1 relative">
                   <Textarea 
@@ -432,23 +432,23 @@ export const EnhancedChatInterface = ({
                 </div>
 
                 {/* Button Group - Voice modes + Send */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   {/* Voice Mode Buttons */}
-                  <div className="flex gap-0.5 p-0.5 rounded-lg bg-muted/20 backdrop-blur-sm">
+                  <div className="flex gap-1 p-1 rounded-2xl bg-muted/20 backdrop-blur-sm">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => setMode(currentMode === 'dictation' ? null : 'dictation')}
                       className={cn(
-                        "h-8 w-8 rounded-md transition-all duration-200",
+                        "h-9 w-9 rounded-xl transition-all duration-200",
                         currentMode === 'dictation' 
-                          ? "bg-accent text-accent-foreground shadow-sm" 
-                          : "hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "hover:bg-primary/20 text-muted-foreground hover:text-primary"
                       )}
                       disabled={isProcessing}
                     >
-                      <Mic className="w-3.5 h-3.5" />
+                      <Mic className="w-4 h-4" />
                     </Button>
                     
                     <Button
@@ -457,19 +457,19 @@ export const EnhancedChatInterface = ({
                       size="sm"
                       onClick={() => setMode(currentMode === 'live' ? null : 'live')}
                       className={cn(
-                        "h-8 w-8 rounded-md transition-all duration-200",
+                        "h-9 w-9 rounded-xl transition-all duration-200",
                         currentMode === 'live' 
-                          ? "bg-accent text-accent-foreground shadow-sm" 
-                          : "hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "hover:bg-primary/20 text-muted-foreground hover:text-primary"
                       )}
                       disabled={isProcessing}
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <MessageCircle className="w-4 h-4" />
                     </Button>
                   </div>
 
                   {/* Separator */}
-                  <div className="w-px h-6 bg-border/40 mx-1" />
+                  <div className="w-px h-7 bg-border/40 mx-1" />
 
                   {/* Send Button */}
                   <Button 
@@ -477,17 +477,18 @@ export const EnhancedChatInterface = ({
                     disabled={!inputValue.trim() || isProcessing} 
                     size="sm" 
                     className={cn(
-                      "h-10 w-10 rounded-xl transition-all duration-300",
-                      "bg-accent hover:bg-accent/90 text-accent-foreground",
+                      "h-11 w-11 rounded-2xl transition-all duration-300",
+                      "bg-primary hover:bg-primary/90 text-primary-foreground",
                       "disabled:opacity-40 disabled:cursor-not-allowed",
-                      "shadow-sm hover:shadow-md hover:shadow-accent/20",
+                      "shadow-md hover:shadow-lg hover:shadow-primary/20",
+                      "hover:scale-105 active:scale-95",
                       !inputValue.trim() && "scale-95 opacity-60"
                     )}
                   >
                     {isProcessing ? (
-                      <div className="w-3.5 h-3.5 border-2 border-accent-foreground/60 border-t-accent-foreground rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-primary-foreground/60 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
