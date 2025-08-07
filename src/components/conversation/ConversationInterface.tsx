@@ -216,31 +216,30 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
 
                     {!message.isUser && !message.isProcessing && (
                       <div className="flex items-center gap-1">
-                        {voiceChat.playingMessageId === message.id && voiceChat.isSpeaking ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => voiceChat.stopSpeaking()}
-                            className="h-7 px-3 text-xs"
-                            aria-label="Stop message audio"
-                            data-testid={`stop-btn-${message.id}`}
-                          >
-                            <Square className="w-3 h-3 mr-1" />
-                            Stop
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => voiceChat.speakMessage(message.id)}
-                            className="h-7 px-3 text-xs"
-                            aria-label="Play message audio"
-                            data-testid={`play-btn-${message.id}`}
-                          >
-                            <Play className="w-3 h-3 mr-1" />
-                            Play
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => voiceChat.speakMessage(message.id)}
+                          className="h-7 px-3 text-xs"
+                          aria-label="Play message audio"
+                          data-testid={`play-btn-${message.id}`}
+                          disabled={voiceChat.playingMessageId === message.id && voiceChat.isSpeaking}
+                        >
+                          <Play className="w-3 h-3 mr-1" />
+                          Play
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => voiceChat.stopSpeaking()}
+                          className="h-7 px-3 text-xs"
+                          aria-label="Stop message audio"
+                          data-testid={`stop-btn-${message.id}`}
+                          disabled={voiceChat.playingMessageId !== message.id || !voiceChat.isSpeaking}
+                        >
+                          <Square className="w-3 h-3 mr-1" />
+                          Stop
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
