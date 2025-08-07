@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
+import { useAutoTTS } from '@/hooks/useAutoTTS';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
@@ -77,6 +78,14 @@ export const EnhancedChatInterface = ({
     isPlayingAudio,
     stopAudio
   } = useVoiceIntegration();
+  
+  // Enhanced auto-TTS system
+  const {
+    autoSpeak,
+    stopAutoSpeak,
+    isAutoSpeaking,
+    currentProvider
+  } = useAutoTTS();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -177,9 +186,19 @@ export const EnhancedChatInterface = ({
         };
         addMessage(aiMessage);
 
-        // Auto-speak the response if live voice mode is active
-        if (currentMode === 'live' && (data.answer || data.response)) {
-          await speakText(data.answer || data.response);
+        // CRITICAL: Automatic TTS for AI responses
+        const responseText = data.answer || data.response;
+        if (responseText) {
+          console.log('[EnhancedChat] Auto-speaking AI response:', responseText.slice(0, 50));
+          
+          // Determine if auto-speak should be enabled based on mode
+          const shouldAutoSpeak = currentMode === 'live' || currentMode === 'dictation';
+          
+          await autoSpeak(responseText, {
+            autoSpeak: shouldAutoSpeak,
+            usePremium: true,
+            interruptible: true
+          });
         }
       }
     } catch (error) {
@@ -223,10 +242,17 @@ export const EnhancedChatInterface = ({
     }
   }, [currentTranscript]);
   const handleSpeakMessage = async (text: string) => {
-    if (isPlayingAudio) {
+    if (isPlayingAudio || isAutoSpeaking) {
+      // Stop both manual and auto TTS
       stopAudio();
+      stopAutoSpeak();
     } else {
-      await speakText(text);
+      // Use auto-TTS for manual speak as well for consistency
+      await autoSpeak(text, {
+        autoSpeak: true,
+        usePremium: true,
+        interruptible: true
+      });
     }
   };
   const copyToClipboard = (text: string) => {
@@ -329,9 +355,9 @@ export const EnhancedChatInterface = ({
                     </Card>
 
                     {!message.isUser && <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
-                          {isPlayingAudio ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                        </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
+                        {(isPlayingAudio || isAutoSpeaking) ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                      </Button>
                         <Button variant="ghost" size="sm" onClick={() => copyToClipboard(message.text)} className="h-6 px-2 text-xs">
                           <Copy className="w-3 h-3" />
                         </Button>
