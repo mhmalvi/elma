@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
-import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
+import { FuturisticLiveMode } from '@/components/voice/FuturisticLiveMode';
 import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,7 @@ import { useAutoTTS } from '@/hooks/useAutoTTS';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
-import { useVoiceModes } from '@/hooks/useVoiceModes';
+import { useRealtimeVoiceChat } from '@/hooks/useRealtimeVoiceChat';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 interface Message {
@@ -236,21 +236,35 @@ export const EnhancedChatInterface = ({
     }
   };
 
-  // Voice mode handlers with conversation state management
+  // Realtime voice chat for futuristic Live Mode
   const {
-    handleDictationComplete,
-    handleLiveTranscriptStream,
-    handleLiveInterrupt,
-    currentTranscript,
-    conversationState
-  } = useVoiceModes(sendMessage);
+    chatState,
+    toggleConversation,
+    interrupt,
+    changeLanguage,
+    sendTextMessage
+  } = useRealtimeVoiceChat(user?.id);
 
-  // Handle current transcript from voice modes
-  useEffect(() => {
-    if (currentTranscript && currentTranscript.trim()) {
-      setInputValue(currentTranscript);
+  // Enhanced voice mode handlers for dictation mode
+  const handleDictationComplete = useCallback((text: string) => {
+    console.log('[EnhancedChat] Dictation complete:', text);
+    if (text.trim()) {
+      setInputValue(text);
+      sendMessage(text);
     }
-  }, [currentTranscript]);
+  }, [sendMessage]);
+
+  // Handle live mode transcript streaming (legacy support)
+  const handleLiveTranscriptStream = useCallback((text: string, isFinal: boolean) => {
+    if (isFinal && text.trim()) {
+      sendTextMessage(text);
+    }
+  }, [sendTextMessage]);
+
+  // Handle live mode interruption
+  const handleLiveInterrupt = useCallback(() => {
+    interrupt();
+  }, [interrupt]);
   const handleSpeakMessage = async (text: string) => {
     if (isPlayingAudio || isAutoSpeaking) {
       // Stop both manual and auto TTS
@@ -430,10 +444,10 @@ export const EnhancedChatInterface = ({
                 className="w-full" 
               />
             ) : currentMode === 'live' ? (
-              <PremiumLiveConversationInterface 
+              <FuturisticLiveMode 
                 onTranscriptStream={handleLiveTranscriptStream} 
                 onInterrupt={handleLiveInterrupt}
-                conversationState={conversationState}
+                conversationState={chatState.conversationState}
                 className="w-full" 
               />
             ) : null}
