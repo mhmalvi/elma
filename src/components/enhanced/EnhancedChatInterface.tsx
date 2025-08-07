@@ -34,7 +34,7 @@ import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-
+import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
 interface Message {
   id: string;
   text: string;
@@ -508,12 +508,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               {/* Interface Content */}
               <div className="relative z-10 p-8">
                 {currentMode === 'dictation' ? (
-                  <DictationModeInterface
+                  <PremiumDictationInterface
                     onTranscriptComplete={handleDictationComplete}
                     className="space-y-6"
                   />
                 ) : currentMode === 'live' ? (
-                  <LiveConversationInterface
+                  <PremiumLiveConversationInterface
                     onTranscriptStream={handleLiveTranscriptStream}
                     onInterrupt={handleLiveInterrupt}
                     className="space-y-6"
