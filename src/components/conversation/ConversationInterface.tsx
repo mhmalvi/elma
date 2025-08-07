@@ -216,29 +216,52 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
 
                     {!message.isUser && !message.isProcessing && (
                       <div className="flex items-center gap-1">
+                        {voiceChat.playingMessageId === message.id && voiceChat.isSpeaking ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => voiceChat.stopSpeaking()}
+                            className="h-7 px-3 text-xs"
+                            aria-label="Stop message audio"
+                            data-testid={`stop-btn-${message.id}`}
+                          >
+                            <Square className="w-3 h-3 mr-1" />
+                            Stop
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => voiceChat.speakMessage(message.id)}
+                            className="h-7 px-3 text-xs"
+                            aria-label="Play message audio"
+                            data-testid={`play-btn-${message.id}`}
+                          >
+                            <Play className="w-3 h-3 mr-1" />
+                            Play
+                          </Button>
+                        )}
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSpeakMessage(message.text)}
-                          className="h-6 px-2 text-xs"
-                        >
-                          <Play className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => copyToClipboard(message.text)}
-                          className="h-6 px-2 text-xs"
+                          className="h-7 px-3 text-xs"
+                          aria-label="Copy message"
+                          data-testid={`copy-btn-${message.id}`}
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => addBookmark(message.id, message.text.substring(0, 50))}
-                          className="h-6 px-2 text-xs"
+                          className="h-7 px-3 text-xs"
+                          aria-label={isBookmarked(message.id) ? "Remove bookmark" : "Bookmark message"}
+                          data-testid={`bookmark-btn-${message.id}`}
                         >
-                          <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
+                          <Bookmark className={cn("w-3 h-3 mr-1", isBookmarked(message.id) && "fill-current text-primary")} />
+                          {isBookmarked(message.id) ? 'Bookmarked' : 'Bookmark'}
                         </Button>
                       </div>
                     )}
