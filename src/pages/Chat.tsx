@@ -1,8 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { EnhancedChatInterface } from '@/components/enhanced/EnhancedChatInterface';
-import { VoiceModeProvider } from '@/contexts/VoiceModeContext';
+import { ChatLayout } from '@/components/layout/ChatLayout';
 
 const Chat = () => {
   const { user, loading } = useAuth();
@@ -20,11 +19,9 @@ const Chat = () => {
   }
 
   return (
-    <VoiceModeProvider>
-      <div className="h-full flex flex-col">
-        <EnhancedChatInterface className="flex-1" />
-      </div>
-    </VoiceModeProvider>
+    <div className="h-full flex flex-col">
+      <ChatLayout className="flex-1" />
+    </div>
   );
 };
 
