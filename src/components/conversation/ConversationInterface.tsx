@@ -3,34 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { FloatingVoiceButton } from '@/components/ui/floating-voice-button';
-import { Send, Mic, Play, Pause, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
+import { Send, Mic, Play, Pause, Copy, Bookmark, Sparkles, MessageCircle, BookOpen, Quote, Square, MicOff } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
-import { useVoiceMode } from '@/contexts/VoiceModeContext';
-import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
-import { useRealtimeVoiceChat } from '@/hooks/useRealtimeVoiceChat';
-import { useStreamingTTS } from '@/hooks/useStreamingTTS';
-import { supabase } from '@/integrations/supabase/client';
+import { useStreamingVoiceChat } from '@/hooks/useStreamingVoiceChat';
 import { cn } from '@/lib/utils';
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  source?: {
-    verse?: string;
-    hadith?: string;
-    reference?: string;
-  };
-  isProcessing?: boolean;
-}
 
 interface ConversationInterfaceProps {
   className?: string;
@@ -41,50 +21,13 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
   const { profile } = useProfile();
   const { addBookmark, isBookmarked } = useBookmarks();
   const { toast } = useToast();
-  const { currentMode, settings, setMode } = useVoiceMode();
 
-  // Use conversation management context
-  const {
-    currentConversation,
-    messages: conversationMessages,
-    createConversation,
-    addMessage,
-    messagesLoading,
-  } = useConversationsContext();
-
-  // Real-time voice chat system
-  const {
-    chatState,
-    toggleConversation,
-    interrupt,
-    changeLanguage,
-    sendTextMessage
-  } = useRealtimeVoiceChat(user?.id);
-
-  // Streaming TTS for immediate response
-  const {
-    streamState,
-    isStreaming: isTTSStreaming,
-    startStreamingResponse,
-    stopStreaming
-  } = useStreamingTTS();
-
-  // Voice input for manual control
-  const { sttState, startListening, stopListening, clearTranscript } = useAdvancedVoiceSTT();
+  // Use the new streaming voice chat system
+  const voiceChat = useStreamingVoiceChat();
 
   const [inputValue, setInputValue] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Convert conversation messages to display format
-  const displayMessages = conversationMessages.map(msg => ({
-    id: msg.id,
-    text: msg.content,
-    isUser: msg.role === 'user',
-    timestamp: new Date(msg.created_at),
-    source: msg.sources?.[0] || (msg.metadata as any)?.source
-  }));
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -93,103 +36,15 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
 
   useEffect(() => {
     scrollToBottom();
-  }, [displayMessages, scrollToBottom]);
-
-  // Handle voice transcript for manual mode
-  useEffect(() => {
-    if (sttState.transcript && sttState.transcript !== sttState.interimTranscript && currentMode !== 'voice') {
-      setInputValue(sttState.transcript);
-      if (settings.autoTTS) {
-        sendMessage(sttState.transcript);
-      }
-      clearTranscript();
-    } else if (sttState.interimTranscript && currentMode !== 'voice') {
-      setInputValue(sttState.interimTranscript);
-    }
-  }, [sttState.transcript, sttState.interimTranscript, settings.autoTTS, clearTranscript, currentMode]);
+  }, [voiceChat.messages, scrollToBottom]);
 
   // Send message to AI
   const sendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isProcessing) return;
+    if (!messageText.trim()) return;
     
+    // Use the streaming voice chat system
+    await voiceChat.sendTextMessage(messageText.trim());
     setInputValue('');
-    setIsProcessing(true);
-    
-    try {
-      // Create conversation if none exists
-      let conversation = currentConversation;
-      if (!conversation) {
-        conversation = await createConversation(messageText.substring(0, 100));
-        if (!conversation) {
-          throw new Error('Failed to create conversation');
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // Add user message immediately
-      const userMessage = {
-        id: `temp-user-${Date.now()}`,
-        conversation_id: conversation.id,
-        user_id: user?.id || '',
-        content: messageText,
-        role: 'user' as const,
-        sources: [],
-        qdrant_context: {},
-        metadata: {},
-        created_at: new Date().toISOString()
-      };
-      addMessage(userMessage);
-
-      // Get AI response
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          question: messageText,
-          user_id: user?.id,
-          conversation_id: conversation.id
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to get AI response');
-      }
-
-      // Add AI response
-      if (data.answer || data.response) {
-        const aiMessage = {
-          id: `temp-ai-${Date.now()}`,
-          conversation_id: conversation.id,
-          user_id: user?.id || '',
-          content: data.answer || data.response,
-          role: 'assistant' as const,
-          sources: data.sources || [],
-          qdrant_context: data.qdrant_context || {},
-          metadata: data.metadata || {},
-          created_at: new Date().toISOString()
-        };
-        addMessage(aiMessage);
-
-        // Auto-speak AI response with streaming TTS for immediate response
-        const responseText = data.answer || data.response;
-        if (responseText && (currentMode === 'voice' || settings.autoTTS)) {
-          // Stop any current streaming
-          stopStreaming();
-          
-          // Start streaming TTS immediately - no delay
-          await startStreamingResponse(responseText, settings.language);
-          
-          // Note: Auto-resume listening is handled by useRealtimeVoiceChat hook
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -204,33 +59,17 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
     }
   };
 
-  const toggleVoiceMode = async () => {
-    if (currentMode === 'voice') {
-      // Stop real-time voice chat
-      await toggleConversation();
-      
-      // Switch to text mode
-      setMode('text');
-      
-      // Also stop manual voice if active
-      if (sttState.isListening) {
-        stopListening();
-      }
-    } else {
-      // Switch to voice mode
-      setMode('voice');
-      
-      // Start real-time voice conversation
-      await toggleConversation();
-    }
+  const toggleVoiceMode = () => {
+    voiceChat.toggleVoiceMode();
   };
 
   const handleSpeakMessage = async (text: string) => {
-    if (isTTSStreaming || streamState.isStreaming) {
-      stopStreaming();
-    } else {
-      await startStreamingResponse(text, settings.language);
-    }
+    // For now, we can implement this later if needed
+    console.log('Speak message:', text);
+  };
+
+  const handleStopSpeaking = () => {
+    voiceChat.interruptAI();
   };
 
   const copyToClipboard = (text: string) => {
@@ -253,6 +92,27 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
     adjustTextareaHeight();
   }, [inputValue]);
 
+  // Voice mode status indicators
+  const getVoiceStatus = () => {
+    if (!voiceChat.isVoiceMode) return '';
+    
+    switch (voiceChat.state) {
+      case 'listening':
+        return 'Listening...';
+      case 'processing':
+        return 'Processing...';
+      case 'speaking':
+        return 'Speaking...';
+      case 'interrupted':
+        return 'Interrupted';
+      default:
+        return 'Voice mode ready';
+    }
+  };
+
+  const isVoiceActive = voiceChat.isVoiceMode;
+  const showVoiceControls = voiceChat.isVoiceMode;
+
   const welcomePrompts = [
     "What does Islam teach about patience?",
     "Can you explain the concept of Tawhid?",
@@ -265,7 +125,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {displayMessages.length === 0 && !currentConversation && !messagesLoading ? (
+          {voiceChat.messages.length === 0 ? (
             // Welcome State
             <div className="text-center py-12">
               <div className="mb-8">
@@ -311,7 +171,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                       size="sm"
                       onClick={() => sendMessage(prompt)}
                       className="text-xs hover:bg-primary/10"
-                      disabled={isProcessing}
+                      disabled={voiceChat.isProcessing}
                     >
                       <Quote className="w-3 h-3 mr-1" />
                       {prompt}
@@ -320,16 +180,10 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                 </div>
               </div>
             </div>
-          ) : messagesLoading ? (
-            // Loading state
-            <div className="text-center py-12">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading conversation...</p>
-            </div>
           ) : (
             // Messages
             <>
-              {displayMessages.map(message => (
+              {voiceChat.messages.map(message => (
                 <div key={message.id} className={cn("flex gap-3 animate-fade-in", message.isUser ? "justify-end" : "justify-start")}>
                   {!message.isUser && (
                     <Avatar className="w-8 h-8 mt-1">
@@ -345,21 +199,23 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                       "p-4 transition-all duration-200",
                       message.isUser ? "bg-primary text-primary-foreground ml-auto" : "bg-muted"
                     )}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.text}
-                      </p>
-
-                      {message.source && (
-                        <div className="mt-3 pt-3 border-t border-border/20">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <BookOpen className="w-3 h-3" />
-                            <span>Source: {message.source.reference || message.source}</span>
+                      {message.isProcessing ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                           </div>
+                          <span className="text-sm">Thinking...</span>
                         </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {message.text}
+                        </p>
                       )}
                     </Card>
 
-                    {!message.isUser && (
+                    {!message.isUser && !message.isProcessing && (
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -367,7 +223,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                           onClick={() => handleSpeakMessage(message.text)}
                           className="h-6 px-2 text-xs"
                         >
-                          {(isTTSStreaming || streamState.isStreaming) ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          <Play className="w-3 h-3" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -403,31 +259,6 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                   )}
                 </div>
               ))}
-
-              {/* Processing indicator */}
-              {isProcessing && (
-                <div className="flex gap-3 animate-fade-in justify-start">
-                  <Avatar className="w-8 h-8 mt-1">
-                    <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      AI
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="max-w-[80%] space-y-2 items-start">
-                    <Card className="p-4 transition-all duration-200 bg-muted animate-pulse">
-                      <div className="flex items-center gap-2">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
-                        <span className="text-sm">Thinking...</span>
-                      </div>
-                    </Card>
-                  </div>
-                </div>
-              )}
             </>
           )}
           <div ref={messagesEndRef} />
@@ -437,7 +268,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
       {/* Input Area */}
       <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto p-4">
-          <form onSubmit={handleSubmit} className="relative">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="flex items-end gap-3">
               <div className="flex-1 relative">
                 <Textarea
@@ -445,62 +276,94 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={currentMode === 'voice' ? "Voice mode active - speak naturally" : "Ask about Islamic teachings, life advice, or spiritual guidance..."}
+                  placeholder={voiceChat.isVoiceMode ? "Voice mode active - speak naturally" : "Ask about Islamic teachings, life advice, or spiritual guidance..."}
                   className={cn(
-                    "min-h-[48px] max-h-[120px] resize-none pr-20 text-sm",
+                    "min-h-[48px] max-h-[120px] resize-none pr-4 text-sm",
                     "bg-background/50 border-border/50 focus:border-primary/50",
-                    currentMode === 'voice' && "border-green-400/50 bg-green-50/50"
+                    voiceChat.isVoiceMode && "border-green-400/50 bg-green-50/50 dark:bg-green-950/20"
                   )}
-                  disabled={isProcessing || currentMode === 'voice'}
+                  disabled={voiceChat.isProcessing || voiceChat.isVoiceMode}
                   rows={1}
                 />
-                
-                {/* Voice status indicator */}
-                {currentMode === 'voice' && (
-                  <div className="absolute right-14 top-1/2 -translate-y-1/2">
-                    <div className="flex items-center gap-1">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        chatState.conversationState === 'listening' && "bg-green-500 animate-pulse",
-                        chatState.conversationState === 'processing' && "bg-yellow-500 animate-spin",
-                        chatState.conversationState === 'speaking' && "bg-blue-500 animate-bounce"
-                      )}></div>
-                      <span className="text-xs text-muted-foreground capitalize">
-                        {chatState.conversationState}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Voice toggle button */}
+              {/* Voice Mode Toggle */}
               <Button
-                type="button"
-                onClick={toggleVoiceMode}
-                variant="outline"
+                variant={voiceChat.isVoiceMode ? "default" : "outline"}
                 size="icon"
+                onClick={toggleVoiceMode}
                 className={cn(
-                  "h-12 w-12 shrink-0 transition-all duration-200",
-                  currentMode === 'voice' && "bg-green-500 hover:bg-green-600 text-white border-green-500"
+                  "shrink-0 transition-all duration-200",
+                  voiceChat.isVoiceMode && "bg-primary text-primary-foreground shadow-lg",
+                  voiceChat.isListening && "animate-pulse"
                 )}
               >
-                <Mic className={cn("w-5 h-5", currentMode === 'voice' && "animate-pulse")} />
+                {voiceChat.isVoiceMode ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
 
-              {/* Send button */}
+              {/* Send Button */}
               <Button
-                type="submit"
-                disabled={!inputValue.trim() || isProcessing}
-                className="h-12 w-12 shrink-0"
+                onClick={() => sendMessage(inputValue)}
+                disabled={!inputValue.trim() || voiceChat.isProcessing}
                 size="icon"
+                className="shrink-0"
               >
-                <Send className="w-5 h-5" />
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </form>
         </div>
-      </div>
 
+        {/* Voice Mode Controls */}
+        {showVoiceControls && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 border-t border-border/50">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className={cn(
+                "w-2 h-2 rounded-full transition-colors",
+                voiceChat.isListening ? "bg-green-500 animate-pulse" : 
+                voiceChat.isSpeaking ? "bg-blue-500 animate-pulse" :
+                voiceChat.isProcessing ? "bg-yellow-500 animate-pulse" : "bg-gray-400"
+              )} />
+              {getVoiceStatus()}
+            </div>
+            
+            {voiceChat.currentTranscript && (
+              <div className="text-sm text-foreground/80 italic">
+                "{voiceChat.currentTranscript}"
+              </div>
+            )}
+
+            {voiceChat.audioLevel > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="text-xs text-muted-foreground">Volume:</div>
+                <div className="flex gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "w-1 h-3 rounded-full transition-colors",
+                        voiceChat.audioLevel > (i + 1) * 0.2 ? "bg-green-500" : "bg-gray-300"
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {voiceChat.isSpeaking && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStopSpeaking}
+                className="ml-auto"
+              >
+                <Square className="h-4 w-4 mr-2" />
+                Stop
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
