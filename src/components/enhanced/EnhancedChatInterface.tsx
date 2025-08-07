@@ -473,56 +473,97 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="border-t bg-background/80 backdrop-blur p-4">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask about Islam, life guidance, Quran, Hadith..."
-                className="min-h-[50px] max-h-[120px] resize-none pr-12 py-3 border-2 border-teal-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 focus:ring-offset-0 transition-all duration-200"
-                disabled={isProcessing}
-              />
+      {/* Premium Input Area */}
+      <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
+        <div className="max-w-4xl mx-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Main Input Container */}
+            <div className="relative">
+              <div className="flex gap-4 items-end p-1 rounded-2xl bg-gradient-to-br from-card/80 to-muted/20 border border-border/20 shadow-lg shadow-black/5 backdrop-blur-sm">
+                {/* Input Field */}
+                <div className="flex-1 relative">
+                  <Textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask about Islam, life guidance, Quran, Hadith..."
+                    className="min-h-[52px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed"
+                    disabled={isProcessing}
+                  />
+                  
+                  {/* Character count indicator */}
+                  {inputValue.length > 50 && (
+                    <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/50">
+                      {inputValue.length}
+                    </div>
+                  )}
+                </div>
+
+                {/* Voice Mode Toggle */}
+                <div className="flex-shrink-0">
+                  <PremiumVoiceModeToggle 
+                    currentMode={currentMode}
+                    onModeChange={(mode) => {
+                      console.log('Mode change requested:', mode);
+                    }} 
+                    isActive={true}
+                    className="scale-90 opacity-80 hover:opacity-100 transition-opacity" 
+                  />
+                </div>
+
+                {/* Send Button */}
+                <div className="flex-shrink-0">
+                  <Button
+                    type="submit"
+                    disabled={!inputValue.trim() || isProcessing}
+                    size="sm"
+                    className={cn(
+                      "h-11 w-11 rounded-xl shadow-md transition-all duration-300",
+                      "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
+                      "hover:shadow-lg hover:scale-105 active:scale-95",
+                      "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    )}
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-white/70 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
               
-              {/* Clean input area without duplicate selectors */}
+              {/* Subtle glow effect */}
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
             </div>
 
-            {/* Simplified Voice Mode Toggle */}
-            <div className="flex items-center">
-              <PremiumVoiceModeToggle 
-                currentMode={currentMode}
-                onModeChange={(mode) => {
-                  console.log('Mode change requested:', mode);
-                }} 
-                isActive={true}
-                className="w-auto h-auto scale-75" 
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={!inputValue.trim() || isProcessing}
-              className="h-[50px] px-6"
-            >
-              {isProcessing ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
+            {/* Minimal Status Indicator */}
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
+              <div className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 bg-muted/50 text-muted-foreground/80 rounded text-xs font-mono">⌘</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 bg-muted/50 text-muted-foreground/80 rounded text-xs font-mono">↵</kbd>
+                <span className="text-muted-foreground/50">to send</span>
+              </div>
+              
+              {currentMode && (
+                <>
+                  <span className="text-muted-foreground/30">•</span>
+                  <div className="flex items-center gap-1">
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-pulse",
+                      currentMode === 'dictation' ? "bg-primary/70" : "bg-accent/70"
+                    )} />
+                    <span className="text-muted-foreground/60 font-medium">
+                      {currentMode === 'dictation' ? 'Voice Memo' : 'Live Chat'} ready
+                    </span>
+                  </div>
+                </>
               )}
-            </Button>
-          </div>
-
-          <div className="mt-2 text-center">
-            <p className="text-xs text-muted-foreground">
-              Press Enter to send • Shift+Enter for new line • 
-              {currentMode ? ` ${currentMode === 'dictation' ? 'Voice Memo' : 'Live Talk'} mode active` : " Select voice mode to get started"}
-            </p>
-          </div>
-        </form>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
