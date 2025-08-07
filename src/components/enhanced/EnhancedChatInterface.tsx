@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
+import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
 import { 
   Send, 
   Mic,
@@ -508,12 +509,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               {/* Interface Content */}
               <div className="relative z-10 p-8">
                 {currentMode === 'dictation' ? (
-                  <DictationModeInterface
+                  <PremiumDictationInterface
                     onTranscriptComplete={handleDictationComplete}
                     className="space-y-6"
                   />
                 ) : currentMode === 'live' ? (
-                  <LiveConversationInterface
+                  <PremiumLiveConversationInterface
                     onTranscriptStream={handleLiveTranscriptStream}
                     onInterrupt={handleLiveInterrupt}
                     className="space-y-6"
