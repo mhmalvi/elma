@@ -28,36 +28,46 @@ export const useStreamingVoiceChat = () => {
     currentTranscript: ''
   });
 
+  // EMERGENCY SYSTEM STATE - Global audio system control
+  const [systemState, setSystemState] = useState<'normal' | 'emergency_stop' | 'push_to_talk'>('normal');
+  const [isSystemDisabled, setIsSystemDisabled] = useState(false);
+  const systemLockRef = useRef(false);
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingMessageRef = useRef<string>('');
   const currentMessageIdRef = useRef<string>('');
 
-  // Initialize audio streaming queue with CRITICAL TTS/STT mutual exclusion
+  // Initialize audio streaming queue with EMERGENCY controls
   const audioQueue = useAudioStreamQueue({
     onChunkStart: (chunk) => {
-      console.log('TTS chunk started:', chunk.text.substring(0, 50));
+      if (isSystemDisabled) return;
+      console.log('TTS: Starting audio chunk');
+      systemLockRef.current = true; // LOCK SYSTEM during TTS
       stateMachine.aiStartsResponding();
-      // CRITICAL: Completely stop VAD when TTS starts to prevent feedback
+      // HARD STOP: Complete shutdown of input systems during TTS
       vadDetection.stopListening();
       sttEngine.stopListening?.();
     },
     onChunkComplete: (chunk) => {
-      console.log('TTS chunk completed');
+      console.log('TTS: Chunk complete');
     },
     onQueueEmpty: () => {
-      console.log('TTS queue empty - AI finished speaking');
+      console.log('TTS: Queue empty - speech complete');
+      systemLockRef.current = false; // UNLOCK SYSTEM
       stateMachine.aiStopsResponding();
-      
-      // CRITICAL FIX: Notify VAD that TTS stopped and add longer cooldown
       vadDetection.onTTSStop?.();
       
-      // Don't auto-resume - require manual action to prevent loops
-      console.log('TTS finished - waiting for manual voice activation');
+      // MANDATORY cooldown after TTS
+      setTimeout(() => {
+        if (stateMachine.isVoiceMode && !isSystemDisabled && systemState === 'normal') {
+          console.log('TTS: Cooldown complete, resuming listening');
+        }
+      }, 2000);
     },
     onInterrupted: () => {
-      console.log('TTS interrupted by user speech');
+      console.log('TTS: EMERGENCY INTERRUPT');
+      systemLockRef.current = false; // UNLOCK SYSTEM
       stateMachine.interrupt();
-      // Also notify VAD about TTS stopping
       vadDetection.onTTSStop?.();
     }
   });
@@ -79,37 +89,49 @@ export const useStreamingVoiceChat = () => {
     }
   });
 
-  // EMERGENCY: Disable VAD completely when any TTS is active
+  // EMERGENCY: Complete VAD shutdown during system lock
   const vadDetection = useVoiceActivityDetection(
     {
-      threshold: 0.6, // Very high threshold
-      minSpeechDuration: 1500, // 1.5 seconds minimum
-      silenceDuration: 3000, // 3 seconds silence
-      confidenceThreshold: 0.95 // 95% confidence required
+      threshold: 0.4,
+      minSpeechDuration: 800,
+      silenceDuration: 2000,
+      confidenceThreshold: 0.85
     },
     () => {
-      // CRITICAL: Only proceed if NOT playing TTS and in proper state
-      if (!audioQueue.isPlaying && stateMachine.state === 'listening') {
-        console.log('VAD: LEGITIMATE user speech detected');
+      // HARD BLOCK: No VAD activity during system lock or when disabled
+      if (isSystemDisabled || systemLockRef.current || audioQueue.isPlaying) {
+        console.log('VAD: BLOCKED - system locked or disabled');
+        return;
+      }
+      
+      if (systemState === 'push_to_talk') {
+        console.log('VAD: BLOCKED - push-to-talk mode active');
+        return;
+      }
+
+      if (stateMachine.state === 'listening') {
+        console.log('VAD: User speech detected (system unlocked)');
         stateMachine.userStartsSpeaking();
-      } else {
-        console.log('VAD: Ignoring speech - TTS active or wrong state');
       }
     },
     () => {
-      console.log('VAD: User stopped speaking');
-      if (stateMachine.state === 'listening') {
+      if (!isSystemDisabled && !systemLockRef.current && stateMachine.state === 'listening') {
         stateMachine.userStopsSpeaking();
       }
     },
-    audioQueue.isPlaying // Completely disable when TTS is playing
+    isSystemDisabled || systemLockRef.current || audioQueue.isPlaying
   );
 
-  // Initialize STT engine
+  // Initialize STT engine with EMERGENCY controls
   const sttEngine = useAdvancedVoiceSTT();
 
-  // Handle transcript changes from STT
+  // Handle transcript changes from STT with SYSTEM LOCK checks
   useEffect(() => {
+    // HARD BLOCK: No STT processing during system lock
+    if (isSystemDisabled || systemLockRef.current) {
+      return;
+    }
+
     if (sttEngine.sttState.transcript && sttEngine.sttState.transcript.trim()) {
       const transcript = sttEngine.sttState.transcript;
       console.log('Final transcript received:', transcript);
@@ -121,15 +143,33 @@ export const useStreamingVoiceChat = () => {
         currentTranscript: sttEngine.sttState.interimTranscript
       }));
     }
-  }, [sttEngine.sttState.transcript, sttEngine.sttState.interimTranscript]);
+  }, [sttEngine.sttState.transcript, sttEngine.sttState.interimTranscript, isSystemDisabled]);
 
-  // Handle STT errors
+  // EMERGENCY SYSTEM CONTROLS (moved up to be available in useEffect)
+  const emergencyStop = useCallback(() => {
+    console.log('EMERGENCY STOP: Shutting down all audio systems');
+    setIsSystemDisabled(true);
+    systemLockRef.current = false;
+    
+    // Clean shutdown sequence
+    setChatState(prev => ({
+      ...prev,
+      error: 'Voice mode disabled - Click Reset to restart'
+    }));
+  }, []);
+
+  // Handle STT errors with EMERGENCY actions
   useEffect(() => {
     if (sttEngine.sttState.error) {
       console.error('STT Error:', sttEngine.sttState.error);
       setChatState(prev => ({ ...prev, error: sttEngine.sttState.error }));
+      
+      // Auto-disable system on repeated STT errors
+      if (sttEngine.sttState.error.includes('continuous') || sttEngine.sttState.error.includes('loop')) {
+        emergencyStop();
+      }
     }
-  }, [sttEngine.sttState.error]);
+  }, [sttEngine.sttState.error, emergencyStop]);
 
   const handleUserMessage = useCallback(async (transcript: string) => {
     if (!transcript.trim()) return;
@@ -226,25 +266,6 @@ export const useStreamingVoiceChat = () => {
     console.log('AI response complete:', streamingMessageRef.current);
   }, [audioQueue]);
 
-  const toggleVoiceMode = useCallback(() => {
-    stateMachine.toggleVoiceMode();
-  }, [stateMachine]);
-
-  const sendTextMessage = useCallback(async (text: string) => {
-    if (stateMachine.isVoiceMode) {
-      stateMachine.toggleVoiceMode(); // Switch out of voice mode for text input
-    }
-    await handleUserMessage(text);
-  }, [stateMachine, handleUserMessage]);
-
-  const interruptAI = useCallback(() => {
-    audioQueue.interrupt(true);
-    stateMachine.interrupt();
-    
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  }, [audioQueue, stateMachine]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -259,34 +280,79 @@ export const useStreamingVoiceChat = () => {
     };
   }, [vadDetection, sttEngine, audioQueue]);
 
-  const recoverVoiceMode = useCallback(() => {
-    console.log('MANUAL VOICE MODE RECOVERY initiated');
-    
-    // Stop everything first
+  const enhancedEmergencyStop = useCallback(() => {
+    emergencyStop();
+    // Additional cleanup for enhanced emergency stop
     vadDetection.stopListening();
     sttEngine.stopListening?.();
-    audioQueue.interrupt(false);
-    
-    // Reset circuit breaker and all state
-    vadDetection.resetCircuitBreaker?.();
+    audioQueue.interrupt(true);
     stateMachine.reset();
+  }, [emergencyStop, vadDetection, sttEngine, audioQueue, stateMachine]);
+
+  const resetVoiceSystem = useCallback(() => {
+    console.log('RESET: Restarting voice system');
+    setIsSystemDisabled(false);
+    systemLockRef.current = false;
+    setSystemState('normal');
     
-    // Wait a moment, then SAFELY restart voice mode
-    setTimeout(() => {
-      if (!audioQueue.isPlaying) {
-        console.log('Starting safe voice mode recovery');
-        stateMachine.startVoiceMode?.();
-        
-        // Start listening after state settles
-        setTimeout(() => {
-          if (stateMachine.state === 'listening') {
-            vadDetection.startListening();
-            sttEngine.startListening?.();
-          }
-        }, 500);
-      }
-    }, 1000);
-  }, [vadDetection, stateMachine, audioQueue, sttEngine]);
+    setChatState(prev => ({
+      ...prev,
+      error: null
+    }));
+  }, []);
+
+  const switchToPushToTalk = useCallback(() => {
+    console.log('SWITCHING: Push-to-talk mode');
+    vadDetection.stopListening();
+    setSystemState('push_to_talk');
+    
+    setChatState(prev => ({
+      ...prev,
+      error: null
+    }));
+  }, [vadDetection]);
+
+  const recoverVoiceMode = useCallback(() => {
+    if (isSystemDisabled) {
+      console.log('Recovery blocked - use reset instead');
+      return;
+    }
+    
+    console.log('MANUAL VOICE MODE RECOVERY initiated');
+    vadDetection.resetCircuitBreaker?.();
+    systemLockRef.current = false;
+    
+    if (stateMachine.isVoiceMode && systemState === 'normal') {
+      vadDetection.startListening();
+      sttEngine.startListening?.();
+    }
+  }, [vadDetection, stateMachine, sttEngine, isSystemDisabled, systemState]);
+
+  // Voice mode controls with EMERGENCY safeguards
+  const toggleVoiceMode = useCallback(() => {
+    if (isSystemDisabled) {
+      console.log('Voice mode blocked - system disabled');
+      return;
+    }
+    stateMachine.toggleVoiceMode();
+  }, [stateMachine, isSystemDisabled]);
+
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (stateMachine.isVoiceMode) {
+      stateMachine.toggleVoiceMode(); // Switch out of voice mode for text input
+    }
+    await handleUserMessage(text);
+  }, [stateMachine, handleUserMessage]);
+
+  const interruptAI = useCallback(() => {
+    audioQueue.interrupt(true);
+    stateMachine.interrupt();
+    systemLockRef.current = false; // UNLOCK on interrupt
+    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, [audioQueue, stateMachine]);
 
   return {
     // State
@@ -295,6 +361,10 @@ export const useStreamingVoiceChat = () => {
     messages: chatState.messages,
     currentTranscript: chatState.currentTranscript,
     error: chatState.error,
+    systemState,
+    isSystemDisabled,
+    
+    // Voice status
     isUserSpeaking: vadDetection.isUserSpeaking,
     audioLevel: vadDetection.audioLevel,
     confidence: vadDetection.confidence,
@@ -305,6 +375,11 @@ export const useStreamingVoiceChat = () => {
     sendTextMessage,
     interruptAI,
     recoverVoiceMode,
+    
+    // EMERGENCY CONTROLS
+    emergencyStop: enhancedEmergencyStop,
+    resetVoiceSystem,
+    switchToPushToTalk,
     
     // Status
     isListening: stateMachine.state === 'listening',
