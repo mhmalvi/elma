@@ -1,9 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
-import { useStreamingTTSEngine } from '@/hooks/useStreamingTTSEngine';
-import { useUnifiedAudioManager } from '@/hooks/useUnifiedAudioManager';
-import { useRealTimeVAD } from '@/hooks/useRealTimeVAD';
+import { useAdvancedTTS } from '@/hooks/useAdvancedTTS';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LiveSessionState {
@@ -38,16 +36,15 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     sessionId: null
   });
 
-  // Advanced voice components
+  // Use existing working hooks
   const sttHook = useAdvancedVoiceSTT();
-  const ttsEngine = useStreamingTTSEngine();
-  const audioManager = useUnifiedAudioManager();
-  const vadDetector = useRealTimeVAD();
+  const ttsHook = useAdvancedTTS();
 
   // Session management refs
   const isProcessingRef = useRef(false);
   const sessionTimeoutRef = useRef<NodeJS.Timeout>();
   const interruptionRef = useRef(false);
+  const lastTranscriptRef = useRef('');
 
   // Advanced language detection from transcript
   const detectLanguage = useCallback((text: string): string => {
@@ -122,8 +119,8 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         turnCount: prev.turnCount + 1
       }));
 
-      // Stream the response with premium voice
-      await ttsEngine.startStreaming(aiResponse, sessionState.currentLanguage);
+      // Use existing TTS hook with premium voice
+      await ttsHook.speak(aiResponse, sessionState.currentLanguage, true);
 
       // Auto-resume listening after speaking (if not interrupted)
       if (!interruptionRef.current && sessionState.isActive) {
@@ -131,7 +128,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
           if (!interruptionRef.current && sessionState.isActive) {
             resumeListening();
           }
-        }, 500);
+        }, 1000);
       }
 
     } catch (error) {
@@ -151,7 +148,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     } finally {
       isProcessingRef.current = false;
     }
-  }, [userId, sessionState.sessionId, sessionState.currentLanguage, sessionState.isActive, addToHistory, ttsEngine, toast]);
+  }, [userId, sessionState.sessionId, sessionState.currentLanguage, sessionState.isActive, addToHistory, ttsHook, toast]);
 
   // Resume listening after AI response
   const resumeListening = useCallback(() => {
@@ -164,10 +161,9 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       conversationState: 'listening'
     }));
 
-    // Start VAD and STT
-    vadDetector.startDetection();
+    // Start STT
     sttHook.startListening(sessionState.currentLanguage);
-  }, [sessionState.isActive, sessionState.currentLanguage, vadDetector, sttHook]);
+  }, [sessionState.isActive, sessionState.currentLanguage, sttHook]);
 
   // Handle STT final transcript
   useEffect(() => {
@@ -178,8 +174,11 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       
       const transcript = sttHook.sttState.transcript.trim();
       
-      if (transcript.length > 2) {
+      // Prevent duplicate processing
+      if (transcript.length > 2 && transcript !== lastTranscriptRef.current) {
         console.log('[AdvancedLiveSession] Processing final transcript:', transcript);
+        
+        lastTranscriptRef.current = transcript;
         
         // Detect and update language if changed
         const detectedLang = detectLanguage(transcript);
@@ -196,20 +195,9 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     }
   }, [sttHook.sttState.transcript, sessionState.conversationState, sessionState.isActive, sessionState.currentLanguage, detectLanguage, processAIMessage, sttHook]);
 
-  // Monitor voice activity for instant interruption
-  useEffect(() => {
-    if (vadDetector.isVoiceDetected && 
-        sessionState.conversationState === 'speaking' && 
-        sessionState.isActive) {
-      
-      console.log('[AdvancedLiveSession] Voice detected during AI speech - interrupting');
-      interrupt();
-    }
-  }, [vadDetector.isVoiceDetected, sessionState.conversationState, sessionState.isActive]);
-
   // Update conversation state based on TTS activity
   useEffect(() => {
-    if (!ttsEngine.isStreaming && 
+    if (!ttsHook.ttsState.isSpeaking && 
         sessionState.conversationState === 'speaking' && 
         sessionState.isActive &&
         !interruptionRef.current) {
@@ -221,20 +209,19 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         if (sessionState.isActive && !interruptionRef.current) {
           resumeListening();
         }
-      }, 300);
+      }, 500);
     }
-  }, [ttsEngine.isStreaming, sessionState.conversationState, sessionState.isActive, resumeListening]);
+  }, [ttsHook.ttsState.isSpeaking, sessionState.conversationState, sessionState.isActive, resumeListening]);
 
   // Start continuous live session
   const startSession = useCallback(async () => {
     try {
       console.log('[AdvancedLiveSession] Starting live session');
       
-      // Initialize audio manager
-      await audioManager.initialize();
-      
       // Generate session ID
       const sessionId = `live_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('[AdvancedLiveSession] Setting session state...');
       
       setSessionState(prev => ({
         ...prev,
@@ -245,9 +232,12 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         turnCount: 0
       }));
 
-      // Start VAD and STT
-      vadDetector.startDetection();
+      console.log('[AdvancedLiveSession] Starting STT listening...');
+      
+      // Start STT
       await sttHook.startListening(sessionState.currentLanguage);
+
+      console.log('[AdvancedLiveSession] Session started successfully');
 
       toast({
         title: "🎤 Live Session Started",
@@ -268,7 +258,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         variant: "destructive",
       });
     }
-  }, [audioManager, vadDetector, sttHook, sessionState.currentLanguage, toast]);
+  }, [sttHook, sessionState.currentLanguage, toast]);
 
   // End session
   const endSession = useCallback(() => {
@@ -278,15 +268,16 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     isProcessingRef.current = false;
 
     // Stop all audio processes
-    ttsEngine.stopStreaming();
-    audioManager.stopAll();
-    vadDetector.stopDetection();
+    ttsHook.stopSpeaking();
     sttHook.stopListening();
 
     // Clear timeouts
     if (sessionTimeoutRef.current) {
       clearTimeout(sessionTimeoutRef.current);
     }
+
+    // Reset refs
+    lastTranscriptRef.current = '';
 
     setSessionState(prev => ({
       ...prev,
@@ -299,7 +290,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       title: "Session Ended",
       description: "Live conversation session has been stopped.",
     });
-  }, [ttsEngine, audioManager, vadDetector, sttHook, toast]);
+  }, [ttsHook, sttHook, toast]);
 
   // Interrupt AI speech and resume listening
   const interrupt = useCallback(() => {
@@ -308,8 +299,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     interruptionRef.current = true;
     
     // Stop TTS immediately
-    ttsEngine.stopStreaming();
-    audioManager.stopAudio();
+    ttsHook.stopSpeaking();
     
     // Brief delay before resuming listening
     setTimeout(() => {
@@ -317,8 +307,8 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       if (sessionState.isActive) {
         resumeListening();
       }
-    }, 200);
-  }, [ttsEngine, audioManager, sessionState.isActive, resumeListening]);
+    }, 300);
+  }, [ttsHook, sessionState.isActive, resumeListening]);
 
   // Change language
   const changeLanguage = useCallback((language: string) => {
@@ -329,9 +319,8 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       currentLanguage: language
     }));
 
-    // Update STT and TTS language
+    // Update STT language
     sttHook.changeLanguage(language);
-    ttsEngine.updateLanguage(language);
 
     // Restart listening if active
     if (sessionState.isActive && sessionState.conversationState === 'listening') {
@@ -340,7 +329,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         sttHook.startListening(language);
       }, 100);
     }
-  }, [sttHook, ttsEngine, sessionState.isActive, sessionState.conversationState]);
+  }, [sttHook, sessionState.isActive, sessionState.conversationState]);
 
   // Cleanup on unmount
   useEffect(() => {
