@@ -8,23 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
-import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
-import { 
-  Send, 
-  Mic,
-  Square, 
-  Play, 
-  Pause, 
-  VolumeX, 
-  Copy, 
-  Share,
-  Bookmark,
-  MoreHorizontal,
-  Sparkles,
-  MessageCircle,
-  BookOpen,
-  Quote
-} from 'lucide-react';
+import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -35,7 +19,6 @@ import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-
 interface Message {
   id: string;
   text: string;
@@ -48,18 +31,30 @@ interface Message {
   };
   isProcessing?: boolean;
 }
-
 interface EnhancedChatInterfaceProps {
   className?: string;
 }
+export const EnhancedChatInterface = ({
+  className
+}: EnhancedChatInterfaceProps) => {
+  const {
+    user
+  } = useAuth();
+  const {
+    profile
+  } = useProfile();
+  const {
+    addBookmark,
+    isBookmarked
+  } = useBookmarks();
+  const {
+    toast
+  } = useToast();
+  const {
+    currentMode,
+    setMode
+  } = useVoiceMode();
 
-export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps) => {
-  const { user } = useAuth();
-  const { profile } = useProfile();
-  const { addBookmark, isBookmarked } = useBookmarks();
-  const { toast } = useToast();
-  const { currentMode } = useVoiceMode();
-  
   // Use conversation management context
   const conversationHookResult = useConversationsContext();
   const {
@@ -70,19 +65,20 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     messagesLoading,
     selectConversation
   } = conversationHookResult;
-  
+
   // Debug hook result
   console.log('ENHANCED CHAT INTERFACE - Hook result:', {
     currentConversation: currentConversation?.id,
     messagesCount: conversationMessages.length,
     hookResult: conversationHookResult
   });
-  
-  const { speakText, isPlayingAudio, stopAudio } = useVoiceIntegration();
-
+  const {
+    speakText,
+    isPlayingAudio,
+    stopAudio
+  } = useVoiceIntegration();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -105,12 +101,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     console.log('- Raw messages:', conversationMessages);
   }, [currentConversation, conversationMessages, displayMessages, messagesLoading]);
 
-
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   }, []);
-
   useEffect(() => {
     scrollToBottom();
   }, [displayMessages, scrollToBottom]);
@@ -120,10 +116,8 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   // Send message to AI
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || isProcessing) return;
-
     setInputValue('');
     setIsProcessing(true);
-
     try {
       // Create conversation if none exists
       let conversation = currentConversation;
@@ -151,22 +145,21 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         created_at: new Date().toISOString()
       };
       addMessage(userMessage);
-
       console.log('Sending message to AI for conversation:', conversation.id);
-      
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('ai-chat', {
+        body: {
           question: messageText,
           user_id: user?.id,
           conversation_id: conversation.id
         }
       });
-
       if (error) {
         console.error('AI chat error:', error);
         throw new Error(error.message || 'Failed to get AI response');
       }
-
       console.log('AI response received:', data);
 
       // Add AI response to UI immediately
@@ -189,13 +182,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
           await speakText(data.answer || data.response);
         }
       }
-
     } catch (error) {
       console.error('Error sending message:', error);
-      
+
       // Remove the optimistic user message on error
       // The real-time subscription will handle proper message sync
-      
+
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -205,12 +197,10 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       setIsProcessing(false);
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(inputValue);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -223,7 +213,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     handleDictationComplete,
     handleLiveTranscriptStream,
     handleLiveInterrupt,
-    currentTranscript,
+    currentTranscript
   } = useVoiceModes(sendMessage);
 
   // Handle current transcript from voice modes
@@ -232,7 +222,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       setInputValue(currentTranscript);
     }
   }, [currentTranscript]);
-
   const handleSpeakMessage = async (text: string) => {
     if (isPlayingAudio) {
       stopAudio();
@@ -240,7 +229,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       await speakText(text);
     }
   };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -248,7 +236,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       description: "Message copied to clipboard"
     });
   };
-
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -256,27 +243,19 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   };
-
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue]);
 
   // Welcome messages for empty state
-  const welcomePrompts = [
-    "What does Islam teach about patience?",
-    "Can you explain the concept of Tawhid?",
-    "What are the pillars of Islam?",
-    "Tell me about the importance of prayer in Islam"
-  ];
-
-  return (
-    <div className={cn("flex flex-col h-full bg-background", className)}>
+  const welcomePrompts = ["What does Islam teach about patience?", "Can you explain the concept of Tawhid?", "What are the pillars of Islam?", "Tell me about the importance of prayer in Islam"];
+  return <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {displayMessages.length === 0 && !currentConversation && !messagesLoading ? (
-            // Welcome State
-            <div className="text-center py-12">
+          {displayMessages.length === 0 && !currentConversation && !messagesLoading ?
+        // Welcome State
+        <div className="text-center py-12">
               <div className="mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-8 h-8 text-primary" />
@@ -313,120 +292,69 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               <div className="mt-8">
                 <p className="text-sm text-muted-foreground mb-4">Try these example questions:</p>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {welcomePrompts.map((prompt, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => sendMessage(prompt)}
-                      className="text-xs hover:bg-primary/10"
-                      disabled={isProcessing}
-                    >
+                  {welcomePrompts.map((prompt, index) => <Button key={index} variant="outline" size="sm" onClick={() => sendMessage(prompt)} className="text-xs hover:bg-primary/10" disabled={isProcessing}>
                       <Quote className="w-3 h-3 mr-1" />
                       {prompt}
-                    </Button>
-                  ))}
+                    </Button>)}
                 </div>
               </div>
-            </div>
-          ) : messagesLoading ? (
-            // Loading state
-            <div className="text-center py-12">
+            </div> : messagesLoading ?
+        // Loading state
+        <div className="text-center py-12">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading conversation...</p>
-            </div>
-          ) : (
-            // Messages
-            <>
-              {displayMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-3 animate-fade-in",
-                    message.isUser ? "justify-end" : "justify-start"
-                  )}
-                >
-                  {!message.isUser && (
-                    <Avatar className="w-8 h-8 mt-1">
+            </div> :
+        // Messages
+        <>
+              {displayMessages.map(message => <div key={message.id} className={cn("flex gap-3 animate-fade-in", message.isUser ? "justify-end" : "justify-start")}>
+                  {!message.isUser && <Avatar className="w-8 h-8 mt-1">
                       <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         AI
                       </AvatarFallback>
-                    </Avatar>
-                  )}
+                    </Avatar>}
 
-                  <div className={cn(
-                    "max-w-[80%] space-y-2",
-                    message.isUser ? "items-end" : "items-start"
-                  )}>
-                    <Card className={cn(
-                      "p-4 transition-all duration-200",
-                      message.isUser 
-                        ? "bg-primary text-primary-foreground ml-auto" 
-                        : "bg-muted"
-                     )}>
+                  <div className={cn("max-w-[80%] space-y-2", message.isUser ? "items-end" : "items-start")}>
+                    <Card className={cn("p-4 transition-all duration-200", message.isUser ? "bg-primary text-primary-foreground ml-auto" : "bg-muted")}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.text}
                       </p>
 
-                      {message.source && (
-                        <div className="mt-3 pt-3 border-t border-border/20">
+                      {message.source && <div className="mt-3 pt-3 border-t border-border/20">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <BookOpen className="w-3 h-3" />
                             <span>Source: {message.source.reference || message.source}</span>
                           </div>
-                        </div>
-                      )}
+                        </div>}
                     </Card>
 
-                    {!message.isUser && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSpeakMessage(message.text)}
-                          className="h-6 px-2 text-xs"
-                        >
+                    {!message.isUser && <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
                           {isPlayingAudio ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(message.text)}
-                          className="h-6 px-2 text-xs"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(message.text)} className="h-6 px-2 text-xs">
                           <Copy className="w-3 h-3" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addBookmark(message.id, message.text.substring(0, 50))}
-                          className="h-6 px-2 text-xs"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => addBookmark(message.id, message.text.substring(0, 50))} className="h-6 px-2 text-xs">
                           <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
                         </Button>
-                      </div>
-                    )}
+                      </div>}
 
                     <div className="text-xs text-muted-foreground">
                       {message.timestamp.toLocaleTimeString()}
                     </div>
                   </div>
 
-                  {message.isUser && (
-                    <Avatar className="w-8 h-8 mt-1">
+                  {message.isUser && <Avatar className="w-8 h-8 mt-1">
                       <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                         {profile?.display_name?.[0]?.toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
+                    </Avatar>}
+                </div>)}
 
               {/* Processing indicator */}
-              {isProcessing && (
-                <div className="flex gap-3 animate-fade-in justify-start">
+              {isProcessing && <div className="flex gap-3 animate-fade-in justify-start">
                   <Avatar className="w-8 h-8 mt-1">
                     <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -439,154 +367,148 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                       <div className="flex items-center gap-2">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{
+                      animationDelay: '0.1s'
+                    }}></div>
+                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{
+                      animationDelay: '0.2s'
+                    }}></div>
                         </div>
                         <span className="text-sm">Thinking...</span>
                       </div>
                     </Card>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                </div>}
+            </>}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      {/* Premium Voice Mode Interface */}
+      {/* Minimal Voice Mode Interface */}
       {currentMode && (
-        <div className={cn(
-          "relative border-t border-border/20 overflow-hidden",
-          "bg-gradient-to-br from-card/60 via-background/80 to-secondary/20",
-          "backdrop-blur-xl"
-        )}>
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-[0.02]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_0px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="border-t border-border/5 bg-background/80 backdrop-blur-xl">
+          <div className="max-w-4xl mx-auto p-8">
+            {currentMode === 'dictation' ? (
+              <PremiumDictationInterface 
+                onTranscriptComplete={handleDictationComplete} 
+                className="w-full" 
+              />
+            ) : currentMode === 'live' ? (
+              <PremiumLiveConversationInterface 
+                onTranscriptStream={handleLiveTranscriptStream} 
+                onInterrupt={handleLiveInterrupt} 
+                className="w-full" 
+              />
+            ) : null}
           </div>
-          
-          {/* Content Container */}
-          <div className="relative z-10 max-w-5xl mx-auto px-8 py-10">
-            {/* Premium Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full animate-gentle-pulse",
-                    currentMode === 'dictation' ? "bg-primary" : "bg-accent"
-                  )} />
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    {currentMode === 'dictation' ? 'Voice Memo Studio' : 'Live AI Conversation'}
-                  </h3>
-                </div>
-                <p className="text-sm text-muted-foreground/80 ml-5">
-                  {currentMode === 'dictation' 
-                    ? 'Record, refine, and send your thoughts with precision' 
-                    : 'Natural real-time conversation with intelligent AI'}
-                </p>
-              </div>
-              
-              {/* Enhanced Mode Selector */}
-              <div className="relative">
-                <VoiceModeSelector />
-                
-                {/* Premium glow effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              </div>
-            </div>
-            
-            {/* Voice Interface Content */}
-            <div className={cn(
-              "relative rounded-2xl border border-border/30 overflow-hidden",
-              "bg-gradient-to-br from-card/40 to-secondary/20",
-              "shadow-2xl shadow-black/5",
-              "backdrop-blur-sm"
-            )}>
-              {/* Inner glow */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-              
-              {/* Interface Content */}
-              <div className="relative z-10 p-8">
-                {currentMode === 'dictation' ? (
-                  <PremiumDictationInterface
-                    onTranscriptComplete={handleDictationComplete}
-                    className="space-y-6"
-                  />
-                ) : currentMode === 'live' ? (
-                  <PremiumLiveConversationInterface
-                    onTranscriptStream={handleLiveTranscriptStream}
-                    onInterrupt={handleLiveInterrupt}
-                    className="space-y-6"
-                  />
-                ) : null}
-              </div>
-              
-              {/* Bottom accent line */}
-              <div className={cn(
-                "h-1 bg-gradient-to-r",
-                currentMode === 'dictation' 
-                  ? "from-primary/50 via-primary to-primary/50"
-                  : "from-accent/50 via-accent to-accent/50"
-              )} />
-            </div>
-            
-            {/* Floating help text */}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-muted-foreground/60 font-medium tracking-wide">
-                ✨ Powered by advanced AI • Multi-language support • Real-time processing
-              </p>
-            </div>
-          </div>
-          
-          {/* Side decorative elements */}
-          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-40 h-40 bg-gradient-to-tl from-accent/10 to-transparent rounded-full blur-3xl" />
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="border-t bg-background/80 backdrop-blur p-4">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask about Islam, life guidance, Quran, Hadith..."
-                className="min-h-[50px] max-h-[120px] resize-none pr-12 py-3 border-2 border-teal-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/15 focus:ring-offset-0 transition-all duration-200"
-                disabled={isProcessing}
-              />
-              
-              {/* Clean input area without duplicate selectors */}
+      {/* Refined Input Area */}
+      <div className="border-t border-border/20 bg-background/95 backdrop-blur-2xl">
+        <div className="max-w-4xl mx-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Input Container with Enhanced Visual Hierarchy */}
+            <div className="relative">
+              <div className="flex gap-3 items-end p-4 rounded-3xl border border-border/30 bg-background/80 backdrop-blur-sm transition-all duration-300 focus-within:border-primary/40 focus-within:bg-background/90 focus-within:shadow-lg focus-within:shadow-primary/10">
+                {/* Input Field */}
+                <div className="flex-1 relative">
+                  <Textarea 
+                    ref={textareaRef} 
+                    value={inputValue} 
+                    onChange={e => setInputValue(e.target.value)} 
+                    onKeyDown={handleKeyDown} 
+                    placeholder="Ask about Islamic guidance..." 
+                    className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
+                    disabled={isProcessing} 
+                  />
+                  
+                  {/* Character count - Subtle */}
+                  {inputValue.length > 100 && (
+                    <div className="absolute -bottom-5 right-0 text-xs text-muted-foreground/40">
+                      {inputValue.length}
+                    </div>
+                  )}
+                </div>
+
+                {/* Button Group - Voice modes + Send */}
+                <div className="flex items-center gap-2">
+                  {/* Voice Mode Buttons */}
+                  <div className="flex gap-1 p-1 rounded-2xl bg-muted/20 backdrop-blur-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode(currentMode === 'dictation' ? null : 'dictation')}
+                      className={cn(
+                        "h-9 w-9 rounded-xl transition-all duration-200",
+                        currentMode === 'dictation' 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "hover:bg-primary/20 text-muted-foreground hover:text-primary"
+                      )}
+                      disabled={isProcessing}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode(currentMode === 'live' ? null : 'live')}
+                      className={cn(
+                        "h-9 w-9 rounded-xl transition-all duration-200",
+                        currentMode === 'live' 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "hover:bg-primary/20 text-muted-foreground hover:text-primary"
+                      )}
+                      disabled={isProcessing}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Separator */}
+                  <div className="w-px h-7 bg-border/40 mx-1" />
+
+                  {/* Send Button */}
+                  <Button 
+                    type="submit" 
+                    disabled={!inputValue.trim() || isProcessing} 
+                    size="sm" 
+                    className={cn(
+                      "h-11 w-11 rounded-2xl transition-all duration-300",
+                      "bg-primary hover:bg-primary/90 text-primary-foreground",
+                      "disabled:opacity-40 disabled:cursor-not-allowed",
+                      "shadow-md hover:shadow-lg hover:shadow-primary/20",
+                      "hover:scale-105 active:scale-95",
+                      !inputValue.trim() && "scale-95 opacity-60"
+                    )}
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-primary-foreground/60 border-t-primary-foreground rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            {/* Single Voice Mode Selector */}
-            <VoiceModeSelector className="h-[50px]" />
-
-            <Button
-              type="submit"
-              disabled={!inputValue.trim() || isProcessing}
-              className="h-[50px] px-6"
-            >
-              {isProcessing ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-
-          <div className="mt-2 text-center">
-            <p className="text-xs text-muted-foreground">
-              Press Enter to send • Shift+Enter for new line • 
-              {currentMode ? ` ${currentMode === 'dictation' ? 'Voice Memo' : 'Live Talk'} mode active` : " Select voice mode to get started"}
-            </p>
-          </div>
-        </form>
+            {/* Status - Ultra Minimal */}
+            {currentMode && (
+              <div className="flex justify-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    currentMode === 'dictation' ? "bg-primary animate-pulse" : "bg-accent animate-pulse"
+                  )} />
+                  <span>{currentMode === 'dictation' ? 'Memo' : 'Live'} mode</span>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    </div>;
 };
