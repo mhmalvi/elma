@@ -490,7 +490,10 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               <div className="relative">
                 <PremiumVoiceModeToggle 
                   currentMode={currentMode}
-                  onModeChange={() => {}} 
+                  onModeChange={(mode) => {
+                    // Note: This will be connected to actual mode switching later
+                    console.log('Mode change requested:', mode);
+                  }} 
                   isActive={true}
                 />
                 
@@ -566,13 +569,17 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               {/* Clean input area without duplicate selectors */}
             </div>
 
-            {/* Single Voice Mode Selector */}
-            <PremiumVoiceModeToggle 
-              currentMode={currentMode}
-              onModeChange={() => {}} 
-              isActive={true}
-              className="h-[50px]" 
-            />
+            {/* Simplified Voice Mode Toggle */}
+            <div className="flex items-center">
+              <PremiumVoiceModeToggle 
+                currentMode={currentMode}
+                onModeChange={(mode) => {
+                  console.log('Mode change requested:', mode);
+                }} 
+                isActive={true}
+                className="w-auto h-auto scale-75" 
+              />
+            </div>
 
             <Button
               type="submit"
