@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useGlobalAudioManager } from './useGlobalAudioManager';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface VoiceSTTState {
@@ -39,7 +38,6 @@ export const ADVANCED_LANGUAGES: VoiceLanguage[] = [
 
 export const useAdvancedVoiceSTT = () => {
   const { toast } = useToast();
-  const audioManager = useGlobalAudioManager();
   
   const [sttState, setSTTState] = useState<VoiceSTTState>({
     isListening: false,
@@ -388,12 +386,6 @@ export const useAdvancedVoiceSTT = () => {
 
   // Enhanced start listening with intelligent fallback
   const startListening = useCallback(async (language: string = 'en') => {
-    // Check with audio manager first
-    if (!audioManager.canStart('stt')) {
-      console.log('[Advanced STT] Blocked by audio manager');
-      return;
-    }
-
     try {
       console.log('[Advanced STT] Starting with language:', language);
       setCurrentLanguage(language);
@@ -453,7 +445,7 @@ export const useAdvancedVoiceSTT = () => {
         variant: "destructive",
       });
     }
-  }, [initializeWebSpeech, startListeningWithMediaRecorder, toast, audioManager]);
+  }, [initializeWebSpeech, startListeningWithMediaRecorder, toast]);
 
   // Clear transcript
   const clearTranscript = useCallback(() => {

@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type VoiceModeType = 'voice' | 'text';
+export type VoiceModeType = 'dictation' | 'live' | null;
 
 interface VoiceModeSettings {
-  autoTTS: boolean;
+  silenceTimeout: number;
+  autoSend: boolean;
   interruptible: boolean;
-  language: string;
-  usePremiumVoice: boolean;
+  continuousListening: boolean;
 }
 
 interface VoiceModeContextType {
@@ -20,10 +20,10 @@ interface VoiceModeContextType {
 }
 
 const defaultSettings: VoiceModeSettings = {
-  autoTTS: true,
+  silenceTimeout: 2000,
+  autoSend: true,
   interruptible: true,
-  language: 'en',
-  usePremiumVoice: true,
+  continuousListening: false,
 };
 
 const VoiceModeContext = createContext<VoiceModeContextType | undefined>(undefined);
@@ -35,7 +35,7 @@ interface VoiceModeProviderProps {
 export const VoiceModeProvider = ({ children }: VoiceModeProviderProps) => {
   const [currentMode, setCurrentMode] = useState<VoiceModeType>(() => {
     const saved = localStorage.getItem('voice_mode');
-    return (saved as VoiceModeType) || 'text';
+    return (saved as VoiceModeType) || null;
   });
   const [isActive, setIsActive] = useState(false);
   const [settings, setSettings] = useState<VoiceModeSettings>(defaultSettings);
@@ -45,27 +45,35 @@ export const VoiceModeProvider = ({ children }: VoiceModeProviderProps) => {
     setCurrentMode(mode);
     setIsActive(false);
     
-    localStorage.setItem('voice_mode', mode);
-    
-    // Update settings based on mode
-    if (mode === 'voice') {
-      setSettings(prev => ({
-        ...prev,
-        autoTTS: true,
-        interruptible: true,
-      }));
+    if (mode) {
+      localStorage.setItem('voice_mode', mode);
+      
+      // Update settings based on mode
+      if (mode === 'dictation') {
+        setSettings(prev => ({
+          ...prev,
+          silenceTimeout: 2000,
+          autoSend: true,
+          continuousListening: false,
+        }));
+      } else if (mode === 'live') {
+        setSettings(prev => ({
+          ...prev,
+          silenceTimeout: 1000,
+          autoSend: false,
+          continuousListening: true,
+        }));
+      }
     } else {
-      setSettings(prev => ({
-        ...prev,
-        autoTTS: false,
-        interruptible: false,
-      }));
+      localStorage.removeItem('voice_mode');
     }
   }, []);
 
   const activateMode = useCallback(() => {
-    console.log('[VoiceMode] Activating mode:', currentMode);
-    setIsActive(true);
+    if (currentMode) {
+      console.log('[VoiceMode] Activating mode:', currentMode);
+      setIsActive(true);
+    }
   }, [currentMode]);
 
   const deactivateMode = useCallback(() => {
