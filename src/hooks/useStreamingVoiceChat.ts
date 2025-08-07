@@ -32,13 +32,14 @@ export const useStreamingVoiceChat = () => {
   const streamingMessageRef = useRef<string>('');
   const currentMessageIdRef = useRef<string>('');
 
-  // Initialize audio streaming queue with TTS/STT mutual exclusion
+  // Initialize audio streaming queue with CRITICAL TTS/STT mutual exclusion
   const audioQueue = useAudioStreamQueue({
     onChunkStart: (chunk) => {
       console.log('TTS chunk started:', chunk.text.substring(0, 50));
       stateMachine.aiStartsResponding();
-      // Stop VAD when TTS starts to prevent feedback
+      // CRITICAL: Completely stop VAD when TTS starts to prevent feedback
       vadDetection.stopListening();
+      sttEngine.stopListening?.();
     },
     onChunkComplete: (chunk) => {
       console.log('TTS chunk completed');
@@ -46,14 +47,18 @@ export const useStreamingVoiceChat = () => {
     onQueueEmpty: () => {
       console.log('TTS queue empty - AI finished speaking');
       stateMachine.aiStopsResponding();
-      // Resume VAD when TTS finishes, but only if in voice mode
-      if (stateMachine.isVoiceMode && stateMachine.state !== 'interrupted') {
-        setTimeout(() => vadDetection.startListening(), 100); // Small delay to prevent immediate re-trigger
-      }
+      
+      // CRITICAL FIX: Notify VAD that TTS stopped and add longer cooldown
+      vadDetection.onTTSStop?.();
+      
+      // Don't auto-resume - require manual action to prevent loops
+      console.log('TTS finished - waiting for manual voice activation');
     },
     onInterrupted: () => {
       console.log('TTS interrupted by user speech');
       stateMachine.interrupt();
+      // Also notify VAD about TTS stopping
+      vadDetection.onTTSStop?.();
     }
   });
 
@@ -74,27 +79,35 @@ export const useStreamingVoiceChat = () => {
     }
   });
 
-  // Initialize voice activity detection with improved settings
+  // Initialize voice activity detection with EMERGENCY settings to prevent loops
   const vadDetection = useVoiceActivityDetection(
     {
-      threshold: 0.15, // Much less sensitive to prevent TTS feedback
-      minSpeechDuration: 500,
-      silenceDuration: 1200,
-      confidenceThreshold: 0.7
+      threshold: 0.25, // MUCH less sensitive to prevent TTS feedback (increased from 0.15)
+      minSpeechDuration: 800, // Longer duration required (increased from 500)
+      silenceDuration: 2000, // Longer silence required (increased from 1200)
+      confidenceThreshold: 0.8 // Higher confidence required (increased from 0.7)
     },
     () => {
       console.log('VAD: User started speaking');
-      stateMachine.userStartsSpeaking();
       
+      // CRITICAL: Only proceed if we're in proper listening state
+      if (stateMachine.state === 'listening') {
+        stateMachine.userStartsSpeaking();
+        
       // Interrupt TTS if AI is speaking
-      if (stateMachine.state === 'speaking') {
+      if (audioQueue.isPlaying) {
         audioQueue.interrupt(true);
         stateMachine.interrupt();
+      }
+      } else {
+        console.log('VAD: Ignoring speech - not in listening state');
       }
     },
     () => {
       console.log('VAD: User stopped speaking');
-      stateMachine.userStopsSpeaking();
+      if (stateMachine.state === 'listening') {
+        stateMachine.userStopsSpeaking();
+      }
     },
     audioQueue.isPlaying // Pass TTS state to VAD to prevent feedback
   );
@@ -254,14 +267,33 @@ export const useStreamingVoiceChat = () => {
   }, [vadDetection, sttEngine, audioQueue]);
 
   const recoverVoiceMode = useCallback(() => {
+    console.log('MANUAL VOICE MODE RECOVERY initiated');
+    
+    // Stop everything first
+    vadDetection.stopListening();
+    sttEngine.stopListening?.();
+    audioQueue.interrupt(false);
+    
+    // Reset circuit breaker and all state
     vadDetection.resetCircuitBreaker?.();
-    if (stateMachine.state === 'interrupted') {
-      stateMachine.reset();
-      if (stateMachine.isVoiceMode && !audioQueue.isPlaying) {
-        vadDetection.startListening();
+    stateMachine.reset();
+    
+    // Wait a moment, then SAFELY restart voice mode
+    setTimeout(() => {
+      if (!audioQueue.isPlaying) {
+        console.log('Starting safe voice mode recovery');
+        stateMachine.startVoiceMode?.();
+        
+        // Start listening after state settles
+        setTimeout(() => {
+          if (stateMachine.state === 'listening') {
+            vadDetection.startListening();
+            sttEngine.startListening?.();
+          }
+        }, 500);
       }
-    }
-  }, [vadDetection, stateMachine, audioQueue]);
+    }, 1000);
+  }, [vadDetection, stateMachine, audioQueue, sttEngine]);
 
   return {
     // State
