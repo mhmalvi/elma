@@ -378,7 +378,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                   voiceChat.isSpeaking ? "bg-blue-500 animate-pulse" :
                   voiceChat.isProcessing ? "bg-yellow-500 animate-pulse" : "bg-gray-400"
                 )} />
-                {voiceChat.isSystemDisabled ? `SYSTEM DISABLED` : `${getVoiceStatus()} (${voiceChat.systemState})`}
+                {voiceChat.isSystemDisabled ? `GLOBAL AUDIO MANAGER: DISABLED` : `${getVoiceStatus()} (${voiceChat.systemState})`}
               </div>
               
               {voiceChat.currentTranscript && !voiceChat.isSystemDisabled && (
@@ -417,14 +417,14 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
               )}
             </div>
 
-            {/* System Warnings */}
+            {/* Global Audio Manager Status */}
             {voiceChat.isSystemDisabled && (
               <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                 <div className="text-sm text-destructive mb-2">
-                  🚨 Emergency stop activated - All audio systems disabled
+                  🚨 Global Audio Manager: System Disabled
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Click "RESET SYSTEM" to restart voice functionality
+                  All browser audio APIs have been locked to prevent infinite TTS loops. Click "RESET SYSTEM" to restart.
                 </div>
               </div>
             )}
