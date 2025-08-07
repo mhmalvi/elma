@@ -127,11 +127,14 @@ export function AppSidebar() {
     // Force navigation to ensure clean state
     if (currentPath === '/chat') {
       // If already on chat, force a refresh of the route
+      console.log('NEW CHAT - Already on chat, refreshing conversation state');
       navigate('/');
       setTimeout(() => {
+        console.log('NEW CHAT - Navigating to chat after reset');
         navigate('/chat');
       }, 10);
     } else {
+      console.log('NEW CHAT - Direct navigation to chat');
       navigate('/chat');
     }
     
@@ -139,10 +142,15 @@ export function AppSidebar() {
   };
 
   const handleConversationClick = (conversationId: string) => {
+    console.log('Conversation clicked:', conversationId);
     const conversation = conversations.find(c => c.id === conversationId);
     if (conversation) {
+      console.log('Found conversation, selecting:', conversation.title);
       selectConversation(conversation);
+      console.log('Navigating to /chat');
       navigate('/chat');
+    } else {
+      console.log('Conversation not found in list');
     }
   };
 
@@ -328,10 +336,10 @@ export function AppSidebar() {
         {/* Action Buttons */}
         <div className="space-y-3">
           <Button 
-            onClick={() => {
-              console.log('NEW CHAT BUTTON CLICKED!');
-              handleNewChat();
-            }}
+           onClick={() => {
+             console.log('NEW CHAT BUTTON CLICKED!, conversations count:', conversations.length);
+             handleNewChat();
+           }}
             className={cn(
               "w-full font-semibold bg-background text-foreground border border-primary",
               "shadow-lg hover:shadow-primary/30 rounded-xl hover:bg-muted/50",
