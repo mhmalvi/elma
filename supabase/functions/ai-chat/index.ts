@@ -7,12 +7,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Utilities: logging, timeouts, retries
+const truncate = (s: string, n = 80) => (s ? (s.length > n ? `${s.slice(0, n)}...` : s) : '');
+
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+async function fetchWithTimeoutAndRetry(
+  url: string,
+  options: RequestInit,
+  cfg: { timeoutMs?: number; maxRetries?: number; backoffMs?: number; retryOn?: number[] } = {},
+): Promise<Response> {
+  const timeoutMs = cfg.timeoutMs ?? 15000;
+  const maxRetries = cfg.maxRetries ?? 2;
+  const backoffMs = cfg.backoffMs ?? 800;
+  const retryOn = cfg.retryOn ?? [408, 429, 500, 502, 503, 504];
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(id);
+      if (!resp.ok && retryOn.includes(resp.status) && attempt < maxRetries) {
+        await delay(backoffMs * (attempt + 1));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      clearTimeout(id);
+      // Retry on network/abort errors
+      if (attempt < maxRetries) {
+        await delay(backoffMs * (attempt + 1));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Should never reach here
+  throw new Error('fetchWithTimeoutAndRetry: exhausted retries');
+}
+
+function mapErrorToStatus(e: any): number {
+  const msg = String(e?.message || e);
+  if (msg.includes('Unauthorized') || msg.includes('JWT') || msg.includes('auth')) return 401;
+  if (msg.includes('Rate limit')) return 429;
+  if (msg.includes('timeout') || msg.includes('aborted') || e?.name === 'AbortError') return 504;
+  if (msg.includes('not configured') || msg.includes('missing')) return 500;
+  return 502;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestId: string | null = null;
   try {
     const { question, conversation_id, user_id } = await req.json();
     
@@ -20,12 +70,19 @@ serve(async (req) => {
       throw new Error('Question is required');
     }
 
+    // Request context
+    const requestId = crypto.randomUUID();
+    const startedAt = Date.now();
+    const safePreview = truncate(question, 80);
+    console.log(`[ai-chat][${requestId}] Start len=${question.length} preview="${safePreview}"`);
+
     // Get environment variables
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     const QDRANT_API_KEY = Deno.env.get('QDRANT_API_KEY');
     const QDRANT_ENDPOINT = Deno.env.get('QDRANT_ENDPOINT');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const QDRANT_COLLECTION = Deno.env.get('QDRANT_COLLECTION') || 'islamic_content';
 
     if (!OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY is not configured');
@@ -43,17 +100,18 @@ serve(async (req) => {
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      console.log('Authentication failed, proceeding without user context');
+      console.log(`[ai-chat][${requestId}] Auth failed`);
     }
 
-    console.log('Processing question (len):', question.length);
-    console.log('User ID:', user?.id);
+    console.log(`[ai-chat][${requestId}] Processing question len=${question.length}`);
+    console.log(`[ai-chat][${requestId}] User=${user?.id || 'anonymous'}`);
 
     const endpoint = 'ai-chat';
+    let currentConversationId: string | null = conversation_id || null;
 
     // Enforce authentication
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Unauthorized', requestId }), { status: 401, headers: corsHeaders });
     }
 
     // Database-backed rate limiting via RPC: 60 req/min per user
@@ -63,11 +121,11 @@ serve(async (req) => {
       window_minutes: 1
     });
     if (rlError) {
-      console.error('Rate limit RPC error:', rlError);
-      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders });
+      console.error(`[ai-chat][${requestId}] Rate limit RPC error`);
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable', requestId }), { status: 503, headers: corsHeaders });
     }
     if (!allowed) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded', requestId }), { status: 429, headers: corsHeaders });
     }
 
     let contextText = '';
@@ -79,7 +137,7 @@ serve(async (req) => {
         console.log('Generating embedding for Qdrant search...');
         
         // Generate embedding using a simpler approach
-        const embeddingResponse = await fetch('https://openrouter.ai/api/v1/embeddings', {
+        const embeddingResponse = await fetchWithTimeoutAndRetry('https://openrouter.ai/api/v1/embeddings', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -89,7 +147,7 @@ serve(async (req) => {
             model: 'text-embedding-3-small',
             input: question,
           }),
-        });
+        }, { timeoutMs: 10000, maxRetries: 2 });
 
         if (embeddingResponse.ok) {
           const embeddingData = await embeddingResponse.json();
@@ -97,8 +155,8 @@ serve(async (req) => {
           console.log('Generated embedding successfully');
 
           // Search Qdrant
-          console.log('Searching Qdrant for relevant context...');
-          const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_content/points/search`, {
+          console.log(`[ai-chat][${requestId}] Searching Qdrant for relevant context...`);
+          const searchResponse = await fetchWithTimeoutAndRetry(`${QDRANT_ENDPOINT}/collections/${QDRANT_COLLECTION}/points/search`, {
             method: 'POST',
             headers: {
               'api-key': QDRANT_API_KEY,
@@ -110,7 +168,7 @@ serve(async (req) => {
               with_payload: true,
               score_threshold: 0.6
             }),
-          });
+          }, { timeoutMs: 8000, maxRetries: 1 });
 
           if (searchResponse.ok) {
             const searchData = await searchResponse.json();
@@ -131,14 +189,30 @@ serve(async (req) => {
                 .join('\n\n---\n\n');
             }
           } else {
-            console.error('Qdrant search failed:', await searchResponse.text());
+            console.error(`[ai-chat][${requestId}] Qdrant search failed status=${searchResponse.status}`);
           }
         } else {
-          console.error('Embedding generation failed:', await embeddingResponse.text());
+          console.error(`[ai-chat][${requestId}] Embedding generation failed status=${embeddingResponse.status}`);
         }
       } catch (qdrantError) {
         console.error('Qdrant integration error:', qdrantError);
         // Continue without Qdrant context
+      }
+    }
+
+    // Fallback: DB semantic search if no Qdrant context
+    if (!contextText) {
+      try {
+        const { data: searchData, error: searchErr } = await supabase
+          .rpc('search_islamic_content', { search_query: question, result_limit: 3 });
+        if (!searchErr && Array.isArray(searchData) && searchData.length > 0) {
+          contextText = searchData
+            .map((r: any) => `${r.content}\n[Reference: ${r.reference}]`)
+            .join('\n\n---\n\n');
+          console.log(`[ai-chat][${requestId}] Using fallback DB context count=${searchData.length}`);
+        }
+      } catch (_e) {
+        console.log(`[ai-chat][${requestId}] Fallback search failed`);
       }
     }
 
@@ -165,8 +239,8 @@ Example response format:
 
 Source: Quran 2:155, Sahih Bukhari"`;
 
-    console.log('Generating AI response...');
-    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    console.log(`[ai-chat][${requestId}] Generating AI response...`);
+    const aiResponse = await fetchWithTimeoutAndRetry('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -183,11 +257,10 @@ Source: Quran 2:155, Sahih Bukhari"`;
         temperature: 0.7,
         max_tokens: 500
       }),
-    });
+    }, { timeoutMs: 20000, maxRetries: 2 });
 
     if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('OpenRouter API error:', errorText);
+      console.error(`[ai-chat][${requestId}] OpenRouter API error status=${aiResponse.status}`);
       throw new Error(`Failed to generate AI response: ${aiResponse.status}`);
     }
 
@@ -201,7 +274,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
     // Step 3: Store conversation in Supabase if user is authenticated
     if (user) {
       try {
-        let currentConversationId = conversation_id;
+        // currentConversationId declared earlier
 
         // Create or get conversation
         if (!currentConversationId) {
@@ -252,14 +325,18 @@ Source: Quran 2:155, Sahih Bukhari"`;
       }
     }
 
-    console.log('Successfully generated response');
+    const durationMs = Date.now() - startedAt;
+    console.log(`[ai-chat][${requestId}] Done in ${durationMs}ms contextUsed=${contextText.length > 0} qdrant=${qdrantResults?.length || 0}`);
     return new Response(
       JSON.stringify({ 
         answer: response,
         response,
         success: true,
+        requestId,
+        durationMs,
         contextUsed: contextText.length > 0,
-        conversationId: conversation_id || null
+        contextCount: qdrantResults?.length || 0,
+        conversationId: currentConversationId || conversation_id || null
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
