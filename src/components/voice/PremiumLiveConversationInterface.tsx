@@ -87,48 +87,45 @@ export const PremiumLiveConversationInterface = ({
     if (sttState.transcript) return 'success';
     return 'idle';
   };
-  return <div className={cn("w-full space-y-4 p-4 rounded-lg bg-card border", className)}>
-      {/* Header */}
-      
+  return <div className={cn("w-full space-y-3 p-4 rounded-2xl bg-card/60 backdrop-blur-xl border border-primary/20", className)}>
+      {/* Compact AI Avatar with Integrated Controls */}
+      <div className="relative flex flex-col items-center space-y-4">
+        {/* Language Selector - Compact */}
+        <div className="absolute top-0 right-0">
+          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
+        </div>
 
-      {/* Language Selector */}
-      <div className="flex justify-center">
-        <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
-      </div>
-
-      {/* AI Avatar and Waveform */}
-      <div className="relative flex flex-col items-center space-y-8">
         {/* AI Avatar */}
         <div className="relative">
-          <PremiumAIAvatar isListening={sttState.isListening} isSpeaking={ttsState.isSpeaking} isThinking={sttState.isProcessing} size="xl" />
-          
-          {/* Connection indicator */}
-          
+          <PremiumAIAvatar isListening={sttState.isListening} isSpeaking={ttsState.isSpeaking} isThinking={sttState.isProcessing} size="lg" />
         </div>
 
-        {/* Waveform Visualizer */}
-        <div className="w-64">
-          <PremiumWaveformVisualizer isActive={sttState.isListening || ttsState.isSpeaking} frequency={sttState.isListening ? 'high' : 'medium'} style="ambient" color={sttState.isListening ? 'primary' : 'accent'} bars={12} />
+        {/* Compact Waveform */}
+        <div className="w-48 h-8">
+          <PremiumWaveformVisualizer isActive={sttState.isListening || ttsState.isSpeaking} frequency={sttState.isListening ? 'high' : 'medium'} style="ambient" color={sttState.isListening ? 'primary' : 'primary'} bars={8} />
         </div>
 
-        {/* Main Control Button */}
-        <div className="relative">
-          <Button onClick={handleToggleConversation} size="lg" className={cn("w-20 h-20 rounded-full transition-all duration-500 shadow-xl", "hover:scale-110 hover:shadow-2xl", isActive ? "bg-destructive hover:bg-destructive/90 animate-gentle-pulse" : "bg-gradient-primary hover:bg-primary/90")}>
-            {isActive ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+        {/* Control Buttons Row */}
+        <div className="flex items-center gap-3">
+          {/* Interrupt Button (when AI is speaking) */}
+          {ttsState.isSpeaking && <Button onClick={handleInterrupt} variant="outline" size="sm" className="rounded-xl border-primary/30 hover:bg-primary/10 text-xs">
+              <VolumeX className="w-3 h-3 mr-1" />
+              Stop
+            </Button>}
+          
+          {/* Main Control Button - Compact */}
+          <Button onClick={handleToggleConversation} size="lg" className={cn("w-14 h-14 rounded-2xl transition-all duration-300 shadow-lg", "hover:scale-105 hover:shadow-xl", isActive ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90")}>
+            {isActive ? <Square className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
           </Button>
           
-          {/* Action rings */}
-          {isActive && <>
-              <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
-              <div className="absolute inset-0 rounded-full border border-primary/20 animate-gentle-pulse scale-125" />
-            </>}
+          {/* Status indicator */}
+          <div className={cn(
+            "w-2 h-2 rounded-full transition-all duration-300",
+            getConversationStatus() === 'listening' ? "bg-primary animate-pulse" : 
+            getConversationStatus() === 'speaking' ? "bg-accent animate-pulse" :
+            getConversationStatus() === 'processing' ? "bg-spiritual animate-spin" : "bg-muted"
+          )} />
         </div>
-
-        {/* Interrupt Button (when AI is speaking) */}
-        {ttsState.isSpeaking && <Button onClick={handleInterrupt} variant="outline" size="sm" className="animate-slide-in-up border-accent/50 hover:bg-accent/10">
-            <VolumeX className="w-4 h-4 mr-2" />
-            Interrupt AI
-          </Button>}
       </div>
 
       {/* Status Indicators */}
