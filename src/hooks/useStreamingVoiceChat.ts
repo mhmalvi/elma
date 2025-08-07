@@ -182,6 +182,10 @@ export const useStreamingVoiceChat = () => {
 
   const handleUserMessage = useCallback(async (transcript: string) => {
     if (!transcript.trim()) return;
+    if (stateMachine.state === 'processing' || stateMachine.state === 'speaking') {
+      console.log('Guard: Preventing duplicate send while AI is processing/speaking');
+      return;
+    }
 
     // Add user message
     const userMessage: Message = {
@@ -350,6 +354,15 @@ export const useStreamingVoiceChat = () => {
     await handleUserMessage(text);
   }, [stateMachine, handleUserMessage]);
 
+  const speakText = useCallback(async (text: string) => {
+    if (!text?.trim()) return;
+    // Interrupt any ongoing TTS before starting new playback
+    audioQueue.interrupt(true);
+    // Queue the provided text for TTS playback
+    audioQueue.addToBuffer(text);
+    audioQueue.flushBuffer();
+  }, [audioQueue]);
+
   const interruptAI = useCallback(() => {
     audioQueue.interrupt(true);
     stateMachine.interrupt();
@@ -379,6 +392,7 @@ export const useStreamingVoiceChat = () => {
     // Actions
     toggleVoiceMode,
     sendTextMessage,
+    speakText,
     interruptAI,
     recoverVoiceMode,
     
