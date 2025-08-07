@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Mic, Play, Pause, Copy, Bookmark, Sparkles, MessageCircle, BookOpen, Quote, Square, MicOff } from 'lucide-react';
+import { Send, Mic, Play, Pause, Copy, Bookmark, Sparkles, MessageCircle, BookOpen, Quote, Square, MicOff, XIcon, HandIcon, RefreshCwIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -314,68 +314,130 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
           </form>
         </div>
 
-        {/* Voice Mode Controls */}
+        {/* EMERGENCY Voice Mode Controls */}
         {showVoiceControls && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 border-t border-border/50">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className={cn(
-                "w-2 h-2 rounded-full transition-colors",
-                voiceChat.isListening ? "bg-green-500 animate-pulse" : 
-                voiceChat.isSpeaking ? "bg-blue-500 animate-pulse" :
-                voiceChat.isProcessing ? "bg-yellow-500 animate-pulse" : "bg-gray-400"
-              )} />
-              {getVoiceStatus()}
-            </div>
-            
-            {voiceChat.isVADDisabled && (
-              <div className="mt-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                <div className="text-sm text-destructive mb-2">
-                  🚨 Voice mode disabled due to feedback loop detection
-                </div>
+          <div className="space-y-3 px-4 py-2 bg-muted/30 border-t border-border/50">
+            {/* Emergency Controls Row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Emergency Stop Button */}
+              <Button
+                onClick={voiceChat.emergencyStop}
+                variant="destructive"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <XIcon className="w-4 h-4 mr-2" />
+                EMERGENCY STOP
+              </Button>
+
+              {/* System Reset Button */}
+              {voiceChat.isSystemDisabled && (
+                <Button
+                  onClick={voiceChat.resetVoiceSystem}
+                  variant="default"
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <RefreshCwIcon className="w-4 h-4 mr-2" />
+                  RESET SYSTEM
+                </Button>
+              )}
+
+              {/* Push-to-Talk Mode */}
+              {!voiceChat.isSystemDisabled && (
+                <Button
+                  onClick={voiceChat.switchToPushToTalk}
+                  variant={voiceChat.systemState === 'push_to_talk' ? "default" : "outline"}
+                  size="sm"
+                >
+                  <HandIcon className="w-4 h-4 mr-2" />
+                  Push-to-Talk
+                </Button>
+              )}
+
+              {/* Recovery for minor issues */}
+              {voiceChat.error && !voiceChat.isSystemDisabled && (
                 <Button
                   onClick={voiceChat.recoverVoiceMode}
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
-                  className="w-full"
                 >
-                  Manually Recover Voice Mode
+                  <RefreshCwIcon className="w-4 h-4 mr-2" />
+                  Recover
                 </Button>
-              </div>
-            )}
-            
-            {voiceChat.currentTranscript && (
-              <div className="text-sm text-foreground/80 italic">
-                "{voiceChat.currentTranscript}"
-              </div>
-            )}
+              )}
+            </div>
 
-            {voiceChat.audioLevel > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="text-xs text-muted-foreground">Volume:</div>
-                <div className="flex gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "w-1 h-3 rounded-full transition-colors",
-                        voiceChat.audioLevel > (i + 1) * 0.2 ? "bg-green-500" : "bg-gray-300"
-                      )}
-                    />
-                  ))}
+            {/* Status Row */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className={cn(
+                  "w-2 h-2 rounded-full transition-colors",
+                  voiceChat.isSystemDisabled ? "bg-red-500" :
+                  voiceChat.isListening ? "bg-green-500 animate-pulse" : 
+                  voiceChat.isSpeaking ? "bg-blue-500 animate-pulse" :
+                  voiceChat.isProcessing ? "bg-yellow-500 animate-pulse" : "bg-gray-400"
+                )} />
+                {voiceChat.isSystemDisabled ? `SYSTEM DISABLED` : `${getVoiceStatus()} (${voiceChat.systemState})`}
+              </div>
+              
+              {voiceChat.currentTranscript && !voiceChat.isSystemDisabled && (
+                <div className="text-sm text-foreground/80 italic">
+                  "{voiceChat.currentTranscript}"
+                </div>
+              )}
+
+              {voiceChat.audioLevel > 0 && !voiceChat.isSystemDisabled && (
+                <div className="flex items-center gap-1">
+                  <div className="text-xs text-muted-foreground">Volume:</div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "w-1 h-3 rounded-full transition-colors",
+                          voiceChat.audioLevel > (i + 1) * 0.2 ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {voiceChat.isSpeaking && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleStopSpeaking}
+                  className="ml-auto"
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Stop
+                </Button>
+              )}
+            </div>
+
+            {/* System Warnings */}
+            {voiceChat.isSystemDisabled && (
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <div className="text-sm text-destructive mb-2">
+                  🚨 Emergency stop activated - All audio systems disabled
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Click "RESET SYSTEM" to restart voice functionality
                 </div>
               </div>
             )}
-
-            {voiceChat.isSpeaking && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleStopSpeaking}
-                className="ml-auto"
-              >
-                <Square className="h-4 w-4 mr-2" />
-                Stop
-              </Button>
+            
+            {voiceChat.isVADDisabled && !voiceChat.isSystemDisabled && (
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <div className="text-sm text-destructive mb-2">
+                  🚨 Voice activity detection disabled due to feedback loop
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Use emergency controls or wait for automatic recovery
+                </div>
+              </div>
             )}
           </div>
         )}
