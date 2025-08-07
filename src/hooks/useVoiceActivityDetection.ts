@@ -18,10 +18,10 @@ interface VADState {
 }
 
 const DEFAULT_VAD_CONFIG = {
-  threshold: 0.25, // EMERGENCY: Much less sensitive to prevent TTS feedback
-  minSpeechDuration: 800, // ms - longer to avoid false positives
-  silenceDuration: 2000, // ms - longer silence before detecting end
-  confidenceThreshold: 0.8 // Higher confidence required
+  threshold: 0.5, // EMERGENCY: Even less sensitive
+  minSpeechDuration: 1000, // Require 1 full second of speech
+  silenceDuration: 3000, // Wait 3 seconds of silence
+  confidenceThreshold: 0.9 // Very high confidence required
 };
 
 export const useVoiceActivityDetection = (
