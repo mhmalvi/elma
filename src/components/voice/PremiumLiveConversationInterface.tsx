@@ -6,37 +6,48 @@ import { Progress } from '@/components/ui/progress';
 import { PremiumAIAvatar } from './PremiumAIAvatar';
 import { PremiumLanguageSelector } from './PremiumLanguageSelector';
 import { PremiumWaveformVisualizer } from './PremiumWaveformVisualizer';
-import { CompactStatusIndicator } from './CompactStatusIndicator';
+import { SmartStatusIndicator } from './SmartStatusIndicator';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
 import { useAdvancedTTS } from '@/hooks/useAdvancedTTS';
-import { Mic, MicOff, Square, Volume2, VolumeX, Pause, Play, RotateCcw, MessageCircle } from 'lucide-react';
+import { 
+  Mic, 
+  MicOff, 
+  Square, 
+  Volume2, 
+  VolumeX,
+  Pause,
+  Play,
+  RotateCcw
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+
 interface PremiumLiveConversationInterfaceProps {
   onTranscriptStream: (text: string, isFinal: boolean) => void;
   onInterrupt?: () => void;
-  conversationState?: 'idle' | 'listening' | 'processing' | 'speaking';
   className?: string;
 }
+
 export const PremiumLiveConversationInterface = ({
   onTranscriptStream,
   onInterrupt,
-  conversationState = 'idle',
   className
 }: PremiumLiveConversationInterfaceProps) => {
   const [isActive, setIsActive] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
-  const {
-    sttState,
-    startListening,
-    stopListening,
+  
+  const { 
+    sttState, 
+    startListening, 
+    stopListening, 
     clearTranscript,
-    changeLanguage
+    changeLanguage 
   } = useAdvancedVoiceSTT();
-  const {
-    ttsState,
-    speak,
-    stopSpeaking,
-    pauseResume
+  
+  const { 
+    ttsState, 
+    speak, 
+    stopSpeaking, 
+    pauseResume 
   } = useAdvancedTTS();
 
   // Handle transcript streaming
@@ -54,6 +65,7 @@ export const PremiumLiveConversationInterface = ({
       setCurrentLanguage(sttState.detectedLanguage);
     }
   }, [sttState.detectedLanguage, currentLanguage]);
+
   const handleToggleConversation = async () => {
     if (isActive) {
       stopListening();
@@ -65,14 +77,16 @@ export const PremiumLiveConversationInterface = ({
       setIsActive(true);
     }
   };
+
   const handleInterrupt = () => {
     stopSpeaking();
     onInterrupt?.();
   };
+
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     changeLanguage(language);
-
+    
     // Restart listening with new language if active
     if (isActive) {
       stopListening();
@@ -81,102 +95,221 @@ export const PremiumLiveConversationInterface = ({
       }, 100);
     }
   };
+
   const getConversationStatus = () => {
-    // Use conversation state from parent if available for better synchronization
-    if (conversationState === 'processing') return 'processing';
-    if (conversationState === 'speaking' || ttsState.isSpeaking) return 'speaking';
-    if (conversationState === 'listening' || sttState.isListening) return 'listening';
     if (sttState.isProcessing) return 'processing';
+    if (sttState.isListening) return 'listening';
+    if (ttsState.isSpeaking) return 'speaking';
     if (sttState.error) return 'error';
     if (sttState.transcript) return 'success';
     return 'idle';
   };
-  return <div className={cn("w-full space-y-2 p-3 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 backdrop-blur-xl border border-primary/20", className)}>
-      {/* Ultra Compact Live Mode Interface */}
-      <div className="relative flex items-center justify-between gap-3">
-        {/* Language Selector - Minimal */}
-        <div className="flex-shrink-0">
-          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
-        </div>
 
-        {/* Central AI Avatar with Live Animations */}
-        <div className="flex-1 flex flex-col items-center space-y-2">
-          <div className="relative">
-            <PremiumAIAvatar isListening={sttState.isListening} isSpeaking={ttsState.isSpeaking} isThinking={sttState.isProcessing} size="md" />
-            {/* Live mode pulse rings */}
-            {isActive && (
-              <>
-                <div className="absolute inset-0 rounded-full border-2 border-accent/30 animate-ping scale-110" />
-                <div className="absolute inset-0 rounded-full border border-accent/20 animate-pulse scale-125" />
-              </>
-            )}
-          </div>
-          
-          {/* Compact Waveform */}
-          <div className="w-32 h-6">
-            <PremiumWaveformVisualizer isActive={sttState.isListening || ttsState.isSpeaking} frequency={sttState.isListening ? 'high' : 'medium'} style="ambient" color="accent" bars={6} />
-          </div>
+  return (
+    <div className={cn(
+      "w-full space-y-4 p-4 rounded-lg bg-card border",
+      className
+    )}>
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-3 h-3 bg-primary rounded-full animate-gentle-pulse" />
+          <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Live AI Conversation
+          </h2>
+          <div className="w-3 h-3 bg-accent rounded-full animate-gentle-pulse" />
         </div>
-
-        {/* Control Button - Live Mode Style */}
-        <div className="flex-shrink-0 flex items-center gap-2">
-          {ttsState.isSpeaking && (
-            <Button onClick={handleInterrupt} variant="ghost" size="sm" className="h-8 w-8 rounded-xl border border-accent/30 hover:bg-accent/10">
-              <VolumeX className="w-3 h-3" />
-            </Button>
-          )}
-          
-          <Button onClick={handleToggleConversation} className={cn("h-12 w-12 rounded-2xl transition-all duration-300 shadow-lg", "hover:scale-105", isActive ? "bg-destructive hover:bg-destructive/90 animate-pulse" : "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90")}>
-            {isActive ? <Square className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
-          </Button>
-        </div>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          Natural, real-time voice conversation with instant AI responses
+        </p>
       </div>
 
-      {/* Compact Status Row */}
-      <div className="w-full">
-        <CompactStatusIndicator 
-          status={getConversationStatus()} 
-          confidence={sttState.confidence} 
-          language={currentLanguage} 
-          isOnline={true}
-          provider={ttsState.isSpeaking ? 'elevenlabs' : null}
-          className="w-full" 
+      {/* Language Selector */}
+      <div className="flex justify-center">
+        <PremiumLanguageSelector
+          currentLanguage={currentLanguage}
+          detectedLanguage={sttState.detectedLanguage}
+          onLanguageChange={handleLanguageChange}
+          isListening={sttState.isListening}
         />
       </div>
 
-      {/* Live Transcript Display - Compact */}
-      {(sttState.transcript || sttState.interimTranscript) && <Card className="p-3 bg-card/40 backdrop-blur-xl border border-accent/20 animate-slide-in-up">
-          <div className="space-y-2">
+      {/* AI Avatar and Waveform */}
+      <div className="relative flex flex-col items-center space-y-8">
+        {/* AI Avatar */}
+        <div className="relative">
+          <PremiumAIAvatar
+            isListening={sttState.isListening}
+            isSpeaking={ttsState.isSpeaking}
+            isThinking={sttState.isProcessing}
+            size="xl"
+          />
+          
+          {/* Connection indicator */}
+          <div className="absolute -top-2 -right-2">
+            <Badge 
+              variant={isActive ? "default" : "secondary"}
+              className="text-xs animate-fade-in"
+            >
+              {isActive ? 'Live' : 'Offline'}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Waveform Visualizer */}
+        <div className="w-64">
+          <PremiumWaveformVisualizer
+            isActive={sttState.isListening || ttsState.isSpeaking}
+            frequency={sttState.isListening ? 'high' : 'medium'}
+            style="ambient"
+            color={sttState.isListening ? 'primary' : 'accent'}
+            bars={12}
+          />
+        </div>
+
+        {/* Main Control Button */}
+        <div className="relative">
+          <Button
+            onClick={handleToggleConversation}
+            size="lg"
+            className={cn(
+              "w-20 h-20 rounded-full transition-all duration-500 shadow-xl",
+              "hover:scale-110 hover:shadow-2xl",
+              isActive 
+                ? "bg-destructive hover:bg-destructive/90 animate-gentle-pulse" 
+                : "bg-gradient-primary hover:bg-primary/90"
+            )}
+          >
+            {isActive ? (
+              <Square className="w-8 h-8" />
+            ) : (
+              <Mic className="w-8 h-8" />
+            )}
+          </Button>
+          
+          {/* Action rings */}
+          {isActive && (
+            <>
+              <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
+              <div className="absolute inset-0 rounded-full border border-primary/20 animate-gentle-pulse scale-125" />
+            </>
+          )}
+        </div>
+
+        {/* Interrupt Button (when AI is speaking) */}
+        {ttsState.isSpeaking && (
+          <Button
+            onClick={handleInterrupt}
+            variant="outline"
+            size="sm"
+            className="animate-slide-in-up border-accent/50 hover:bg-accent/10"
+          >
+            <VolumeX className="w-4 h-4 mr-2" />
+            Interrupt AI
+          </Button>
+        )}
+      </div>
+
+      {/* Status Indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SmartStatusIndicator
+          status={getConversationStatus()}
+          confidence={sttState.confidence}
+          language={currentLanguage}
+          isOnline={true}
+          wordCount={sttState.wordCount}
+          characterCount={sttState.characterCount}
+        />
+        
+        {/* TTS Progress */}
+        {ttsState.isSpeaking && (
+          <Card className="p-4 bg-card/80 backdrop-blur-xl">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium">AI Response</span>
+                </div>
+                <Button
+                  onClick={pauseResume}
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                >
+                  {ttsState.isSpeaking ? (
+                    <Pause className="w-3 h-3" />
+                  ) : (
+                    <Play className="w-3 h-3" />
+                  )}
+                </Button>
+              </div>
+              
+              <Progress value={ttsState.playbackProgress} className="h-2" />
+              
+              <div className="text-xs text-muted-foreground">
+                Speaking with premium voice synthesis
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Live Transcript Display */}
+      {(sttState.transcript || sttState.interimTranscript) && (
+        <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/20">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-xs text-accent">Live Transcript</h4>
-              <Button onClick={clearTranscript} variant="ghost" size="sm" className="h-6 w-6 p-0 text-xs">
-                <RotateCcw className="w-2.5 h-2.5" />
+              <h4 className="font-medium text-sm">Live Transcript</h4>
+              <Button
+                onClick={clearTranscript}
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Clear
               </Button>
             </div>
             
-            <div className="min-h-[40px] text-xs leading-relaxed">
-              {sttState.transcript && <span className="text-foreground">{sttState.transcript}</span>}
-              {sttState.interimTranscript && <span className="text-muted-foreground italic">
+            <div className="min-h-[80px] text-sm leading-relaxed">
+              {sttState.transcript && (
+                <span className="text-foreground">{sttState.transcript}</span>
+              )}
+              {sttState.interimTranscript && (
+                <span className="text-muted-foreground italic">
                   {sttState.interimTranscript}
-                </span>}
+                </span>
+              )}
             </div>
             
-            {sttState.confidence > 0 && <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {sttState.confidence > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Confidence:</span>
-                <Progress value={sttState.confidence * 100} className="h-1 w-12" />
+                <Progress value={sttState.confidence * 100} className="h-1 w-16" />
                 <span>{Math.round(sttState.confidence * 100)}%</span>
-              </div>}
+              </div>
+            )}
           </div>
-        </Card>}
+        </Card>
+      )}
 
-      {/* Error Display - Compact */}
-      {sttState.error && <Card className="p-2 bg-destructive/10 border border-destructive/20">
-          <div className="text-xs text-destructive text-center">
+      {/* Error Display */}
+      {sttState.error && (
+        <Card className="p-4 bg-destructive/10 border border-destructive/20">
+          <div className="text-sm text-destructive text-center">
             {sttState.error}
           </div>
-        </Card>}
+        </Card>
+      )}
 
       {/* Help Text */}
-      
-    </div>;
+      <div className="text-center text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+        {!isActive ? (
+          "Click the microphone to start a live conversation with AI. Speak naturally and get instant responses."
+        ) : (
+          "Conversation is live! Speak naturally, and I'll respond in real-time. Click stop to end the session."
+        )}
+      </div>
+    </div>
+  );
 };

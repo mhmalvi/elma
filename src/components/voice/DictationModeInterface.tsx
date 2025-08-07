@@ -35,12 +35,12 @@ export const DictationModeInterface = ({ onTranscriptComplete, className }: Dict
       setIsRecording(false);
       setShowProcessing(false);
       
-      if (settings.autoTTS) {
+      if (settings.autoSend) {
         onTranscriptComplete(sttState.transcript);
         handleReset();
       }
     }
-  }, [sttState.transcript, sttState.isListening, settings.autoTTS, onTranscriptComplete]);
+  }, [sttState.transcript, sttState.isListening, settings.autoSend, onTranscriptComplete]);
 
   // Handle recording state changes
   useEffect(() => {
