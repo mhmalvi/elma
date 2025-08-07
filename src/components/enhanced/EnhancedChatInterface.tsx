@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { FuturisticLiveMode } from '@/components/voice/FuturisticLiveMode';
-import { ContinuousLiveInterface } from '@/components/voice/ContinuousLiveInterface';
+import { LiveModeInterface } from '@/components/voice/LiveModeInterface';
 import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -452,7 +452,7 @@ export const EnhancedChatInterface = ({
                 className="w-full" 
               />
             ) : currentMode === 'continuous' ? (
-              <ContinuousLiveInterface 
+              <LiveModeInterface 
                 userId={user?.id}
                 className="w-full"
               />
