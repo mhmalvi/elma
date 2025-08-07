@@ -6,25 +6,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumAIAvatar } from './PremiumAIAvatar';
 import { PremiumLanguageSelector } from './PremiumLanguageSelector';
 import { PremiumWaveformVisualizer } from './PremiumWaveformVisualizer';
-import { SmartStatusIndicator } from './SmartStatusIndicator';
+import { CompactStatusIndicator } from './CompactStatusIndicator';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
-import { 
-  Mic, 
-  Square, 
-  Send, 
-  Edit3, 
-  RotateCcw,
-  CheckCircle,
-  Save,
-  X
-} from 'lucide-react';
+import { Mic, Square, Send, Edit3, RotateCcw, CheckCircle, Save, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
 interface PremiumDictationInterfaceProps {
   onTranscriptComplete: (text: string) => void;
   className?: string;
 }
-
 export const PremiumDictationInterface = ({
   onTranscriptComplete,
   className
@@ -33,13 +22,12 @@ export const PremiumDictationInterface = ({
   const [editedTranscript, setEditedTranscript] = useState('');
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [showSuccess, setShowSuccess] = useState(false);
-  
-  const { 
-    sttState, 
-    startListening, 
-    stopListening, 
+  const {
+    sttState,
+    startListening,
+    stopListening,
     clearTranscript,
-    changeLanguage 
+    changeLanguage
   } = useAdvancedVoiceSTT();
 
   // Handle transcript changes
@@ -55,7 +43,6 @@ export const PremiumDictationInterface = ({
       setCurrentLanguage(sttState.detectedLanguage);
     }
   }, [sttState.detectedLanguage, currentLanguage]);
-
   const handleStartRecording = async () => {
     clearTranscript();
     setEditedTranscript('');
@@ -63,35 +50,29 @@ export const PremiumDictationInterface = ({
     setShowSuccess(false);
     await startListening(currentLanguage);
   };
-
   const handleStopRecording = () => {
     stopListening();
   };
-
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     changeLanguage(language);
   };
-
   const handleEdit = () => {
     setIsEditing(true);
   };
-
   const handleSaveEdit = () => {
     setIsEditing(false);
     // Update the transcript state if needed
   };
-
   const handleCancelEdit = () => {
     setEditedTranscript(sttState.transcript);
     setIsEditing(false);
   };
-
   const handleSendTranscript = () => {
     if (editedTranscript.trim()) {
       onTranscriptComplete(editedTranscript.trim());
       setShowSuccess(true);
-      
+
       // Clear after a delay
       setTimeout(() => {
         clearTranscript();
@@ -100,14 +81,12 @@ export const PremiumDictationInterface = ({
       }, 2000);
     }
   };
-
   const handleReset = () => {
     clearTranscript();
     setEditedTranscript('');
     setIsEditing(false);
     setShowSuccess(false);
   };
-
   const getRecordingStatus = () => {
     if (showSuccess) return 'success';
     if (sttState.isProcessing) return 'processing';
@@ -115,118 +94,62 @@ export const PremiumDictationInterface = ({
     if (sttState.error) return 'error';
     return 'idle';
   };
-
   const hasTranscript = Boolean(editedTranscript?.trim());
-
-  return (
-    <div className={cn(
-      "w-full space-y-4 p-4 rounded-lg bg-card border",
-      className
-    )}>
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3">
-          <Edit3 className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Voice Memo Studio
-          </h2>
+  return <div className={cn("w-full space-y-2 p-3 rounded-2xl bg-gradient-to-br from-spiritual/5 to-primary/5 backdrop-blur-xl border border-spiritual/20", className)}>
+      {/* Ultra Compact Dictation Mode Interface */}
+      <div className="relative flex items-center justify-between gap-3">
+        {/* Language Selector - Minimal */}
+        <div className="flex-shrink-0">
+          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
         </div>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Record, review, and perfect your voice notes before sending
-        </p>
-      </div>
 
-      {/* Language Selector */}
-      <div className="flex justify-center">
-        <PremiumLanguageSelector
-          currentLanguage={currentLanguage}
-          detectedLanguage={sttState.detectedLanguage}
-          onLanguageChange={handleLanguageChange}
-          isListening={sttState.isListening}
-        />
-      </div>
-
-      {/* Recording Interface */}
-      <div className="relative flex flex-col items-center space-y-8">
-        {/* AI Avatar */}
-        <div className="relative">
-          <PremiumAIAvatar
-            isListening={sttState.isListening}
-            isThinking={sttState.isProcessing}
-            size="xl"
-          />
+        {/* Central AI Avatar with Dictation Animations */}
+        <div className="flex-1 flex flex-col items-center space-y-2">
+          <div className="relative">
+            <PremiumAIAvatar isListening={sttState.isListening} isThinking={sttState.isProcessing} size="md" />
+            {/* Dictation mode glow rings */}
+            {sttState.isListening && (
+              <>
+                <div className="absolute inset-0 rounded-full border-2 border-spiritual/40 animate-ping scale-110" />
+                <div className="absolute inset-0 rounded-full border border-spiritual/30 animate-bounce scale-125" />
+              </>
+            )}
+          </div>
           
-          {/* Status badge */}
-          <div className="absolute -top-2 -right-2">
-            <Badge 
-              variant={sttState.isListening ? "default" : hasTranscript ? "secondary" : "outline"}
-              className="text-xs animate-fade-in"
-            >
-              {sttState.isListening ? 'Recording' : hasTranscript ? 'Ready' : 'Standby'}
-            </Badge>
+          {/* Compact Waveform */}
+          <div className="w-32 h-6">
+            <PremiumWaveformVisualizer isActive={sttState.isListening} frequency="high" style="detailed" color="spiritual" bars={8} />
           </div>
         </div>
 
-        {/* Waveform Visualizer */}
-        <div className="w-64">
-          <PremiumWaveformVisualizer
-            isActive={sttState.isListening}
-            frequency="high"
-            style="detailed"
-            color="primary"
-            bars={10}
-          />
-        </div>
-
-        {/* Recording Controls */}
-        <div className="flex items-center gap-4">
-          {!sttState.isListening ? (
-            <Button
-              onClick={handleStartRecording}
-              size="lg"
-              className="w-16 h-16 rounded-full bg-gradient-primary hover:bg-primary/90 shadow-xl hover:scale-110 transition-all duration-300"
-            >
-              <Mic className="w-6 h-6" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleStopRecording}
-              size="lg"
-              variant="destructive"
-              className="w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-all duration-300 animate-gentle-pulse"
-            >
-              <Square className="w-6 h-6" />
-            </Button>
-          )}
-
+        {/* Control Buttons - Dictation Mode Style */}
+        <div className="flex-shrink-0 flex items-center gap-2">
           {hasTranscript && !sttState.isListening && (
-            <Button
-              onClick={handleReset}
-              variant="outline"
-              size="sm"
-              className="animate-slide-in-up"
-            >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
+            <Button onClick={handleReset} variant="ghost" size="sm" className="h-8 w-8 rounded-xl border border-spiritual/30 hover:bg-spiritual/10">
+              <RotateCcw className="w-3 h-3" />
             </Button>
           )}
+          
+          <Button onClick={!sttState.isListening ? handleStartRecording : handleStopRecording} className={cn("h-12 w-12 rounded-2xl transition-all duration-300 shadow-lg", "hover:scale-105", sttState.isListening ? "bg-destructive hover:bg-destructive/90 animate-bounce" : "bg-gradient-to-r from-spiritual to-primary hover:from-spiritual/90 hover:to-primary/90")}>
+            {sttState.isListening ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
 
-      {/* Status Indicator */}
-      <SmartStatusIndicator
-        status={getRecordingStatus()}
-        confidence={sttState.confidence}
-        language={currentLanguage}
-        isOnline={true}
-        wordCount={sttState.wordCount}
-        characterCount={sttState.characterCount}
-        message={showSuccess ? "Sent successfully!" : undefined}
-      />
+      {/* Compact Status Row */}
+      <div className="w-full">
+        <CompactStatusIndicator 
+          status={getRecordingStatus()} 
+          confidence={sttState.confidence} 
+          language={currentLanguage} 
+          isOnline={true}
+          message={showSuccess ? "Sent successfully!" : undefined}
+          className="w-full" 
+        />
+      </div>
 
       {/* Transcript Area */}
-      {hasTranscript && (
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/20 animate-slide-in-up">
+      {hasTranscript && <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/20 animate-slide-in-up">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm flex items-center gap-2">
@@ -235,54 +158,26 @@ export const PremiumDictationInterface = ({
               </h4>
               
               <div className="flex items-center gap-2">
-                {!isEditing ? (
-                  <Button
-                    onClick={handleEdit}
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                  >
+                {!isEditing ? <Button onClick={handleEdit} variant="ghost" size="sm" className="text-xs">
                     <Edit3 className="w-3 h-3 mr-1" />
                     Edit
-                  </Button>
-                ) : (
-                  <div className="flex gap-1">
-                    <Button
-                      onClick={handleSaveEdit}
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-spiritual"
-                    >
+                  </Button> : <div className="flex gap-1">
+                    <Button onClick={handleSaveEdit} variant="ghost" size="sm" className="text-xs text-spiritual">
                       <Save className="w-3 h-3 mr-1" />
                       Save
                     </Button>
-                    <Button
-                      onClick={handleCancelEdit}
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-destructive"
-                    >
+                    <Button onClick={handleCancelEdit} variant="ghost" size="sm" className="text-xs text-destructive">
                       <X className="w-3 h-3 mr-1" />
                       Cancel
                     </Button>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
 
             {/* Transcript Display/Editor */}
-            {isEditing ? (
-              <Textarea
-                value={editedTranscript}
-                onChange={(e) => setEditedTranscript(e.target.value)}
-                className="min-h-[120px] resize-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Edit your transcript..."
-              />
-            ) : (
-              <div className="min-h-[120px] p-4 bg-muted/30 rounded-lg text-sm leading-relaxed">
+            {isEditing ? <Textarea value={editedTranscript} onChange={e => setEditedTranscript(e.target.value)} className="min-h-[120px] resize-none focus:ring-2 focus:ring-primary/20" placeholder="Edit your transcript..." /> : <div className="min-h-[120px] p-4 bg-muted/30 rounded-lg text-sm leading-relaxed">
                 {editedTranscript}
-              </div>
-            )}
+              </div>}
 
             {/* Transcript Stats */}
             <div className="flex justify-between items-center text-xs text-muted-foreground border-t border-border/20 pt-3">
@@ -291,62 +186,37 @@ export const PremiumDictationInterface = ({
                 <span>{sttState.characterCount} characters</span>
               </div>
               
-              {sttState.confidence > 0 && (
-                <div className="flex items-center gap-2">
+              {sttState.confidence > 0 && <div className="flex items-center gap-2">
                   <span>Accuracy:</span>
                   <Badge variant="outline" className="text-xs">
                     {Math.round(sttState.confidence * 100)}%
                   </Badge>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
-        </Card>
-      )}
+        </Card>}
 
       {/* Action Buttons */}
-      {hasTranscript && !sttState.isListening && !isEditing && (
-        <div className="flex justify-center gap-4 animate-slide-in-up">
-          <Button
-            onClick={handleSendTranscript}
-            size="lg"
-            className="bg-gradient-primary hover:bg-primary/90 shadow-lg hover:scale-105 transition-all duration-300"
-            disabled={showSuccess}
-          >
-            {showSuccess ? (
-              <>
+      {hasTranscript && !sttState.isListening && !isEditing && <div className="flex justify-center gap-4 animate-slide-in-up">
+          <Button onClick={handleSendTranscript} size="lg" className="bg-gradient-primary hover:bg-primary/90 shadow-lg hover:scale-105 transition-all duration-300" disabled={showSuccess}>
+            {showSuccess ? <>
                 <CheckCircle className="w-5 h-5 mr-2" />
                 Sent!
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Send className="w-5 h-5 mr-2" />
                 Send Message
-              </>
-            )}
+              </>}
           </Button>
-        </div>
-      )}
+        </div>}
 
       {/* Error Display */}
-      {sttState.error && (
-        <Card className="p-4 bg-destructive/10 border border-destructive/20 animate-slide-in-up">
+      {sttState.error && <Card className="p-4 bg-destructive/10 border border-destructive/20 animate-slide-in-up">
           <div className="text-sm text-destructive text-center">
             {sttState.error}
           </div>
-        </Card>
-      )}
+        </Card>}
 
       {/* Help Text */}
-      <div className="text-center text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-        {!hasTranscript ? (
-          "Click the microphone to start recording your voice memo. Speak clearly and take your time."
-        ) : !isEditing ? (
-          "Review your transcript above. You can edit it before sending or record again."
-        ) : (
-          "Edit your transcript to make any corrections, then save your changes."
-        )}
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
