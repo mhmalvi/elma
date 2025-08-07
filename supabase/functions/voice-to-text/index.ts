@@ -42,6 +42,32 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    }
+
+    // Rate limit: 20/min per user
+    const { data: allowed, error: rlError } = await supabase.rpc('check_rate_limit', {
+      endpoint_name: 'voice-to-text',
+      max_requests: 20,
+      window_minutes: 1,
+    })
+    if (rlError) {
+      console.error('Rate limit error:', rlError)
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders })
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders })
+    }
+
     const { audio, language, metadata } = await req.json()
     
     if (!audio) {

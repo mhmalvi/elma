@@ -56,21 +56,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
-    // Basic rate limiting: 60 requests/min per user
-    const windowStart = new Date(Date.now() - 60 * 1000).toISOString();
-    const { data: rlRows } = await supabase
-      .from('rate_limits')
-      .select('request_count')
-      .eq('user_id', user.id)
-      .eq('endpoint', endpoint)
-      .gte('window_start', windowStart);
-
-    const currentCount = (rlRows || []).reduce((sum: number, r: any) => sum + (r.request_count || 0), 0);
-    if (currentCount >= 60) {
+    // Database-backed rate limiting via RPC: 60 req/min per user
+    const { data: allowed, error: rlError } = await supabase.rpc('check_rate_limit', {
+      endpoint_name: endpoint,
+      max_requests: 60,
+      window_minutes: 1
+    });
+    if (rlError) {
+      console.error('Rate limit RPC error:', rlError);
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders });
+    }
+    if (!allowed) {
       return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders });
     }
-    // Log this request
-    await supabase.from('rate_limits').insert({ user_id: user.id, endpoint });
 
     let contextText = '';
     let qdrantResults = null;
@@ -100,7 +98,7 @@ serve(async (req) => {
 
           // Search Qdrant
           console.log('Searching Qdrant for relevant context...');
-          const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_knowledge/points/search`, {
+          const searchResponse = await fetch(`${QDRANT_ENDPOINT}/collections/islamic_content/points/search`, {
             method: 'POST',
             headers: {
               'api-key': QDRANT_API_KEY,

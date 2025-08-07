@@ -18,6 +18,28 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    // Rate limit: 60/min per user
+    const { data: allowed, error: rlError } = await supabase.rpc('check_rate_limit', {
+      endpoint_name: 'query-islamic-content',
+      max_requests: 60,
+      window_minutes: 1,
+    });
+    if (rlError) {
+      console.error('Rate limit error:', rlError);
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders });
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders });
+    }
+
     const { query, limit = 5 } = await req.json()
 
     if (!query) {
@@ -80,7 +102,7 @@ serve(async (req) => {
     }
 
     // Search in Qdrant vector database
-    const searchResponse = await fetch(`${qdrantUrl}/collections/islamic_knowledge/points/search`, {
+    const searchResponse = await fetch(`${qdrantUrl}/collections/islamic_content/points/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

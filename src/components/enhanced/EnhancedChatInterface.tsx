@@ -365,15 +365,15 @@ export const EnhancedChatInterface = ({
                     </Card>
 
                     {!message.isUser && <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
+                      <Button aria-label={isPlayingAudio || isAutoSpeaking ? 'Pause speech' : 'Play speech'} variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
                         {(isPlayingAudio || isAutoSpeaking) ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                       </Button>
-                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(message.text)} className="h-6 px-2 text-xs">
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => addBookmark(message.id, message.text.substring(0, 50))} className="h-6 px-2 text-xs">
-                          <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
-                        </Button>
+                      <Button aria-label="Copy message" variant="ghost" size="sm" onClick={() => copyToClipboard(message.text)} className="h-6 px-2 text-xs">
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                      <Button aria-label={isBookmarked(message.id) ? 'Remove bookmark' : 'Add bookmark'} variant="ghost" size="sm" onClick={() => addBookmark(message.id, message.text.substring(0, 50))} className="h-6 px-2 text-xs">
+                        <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
+                      </Button>
                       </div>}
 
                     <div className="text-xs text-muted-foreground">

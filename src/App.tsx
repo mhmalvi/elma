@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
@@ -48,33 +49,35 @@ const App = () => (
             <AuthGuard>
               <ConversationsProvider>
                 <VoiceModeProvider>
-                  <AppLayout>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/home" element={<Home />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/bookmarks" element={<Bookmarks />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/voice-test" element={<VoiceTestSuite />} />
-                  <Route path="/voice-quality" element={<VoiceQuality />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/performance" element={
-                    <div className="p-6 space-y-6">
-                      <VoiceOptimizer />
-                      <MobileBrowserTester />
-                    </div>
-                  } />
-                  <Route path="/offline" element={
-                    <div className="p-6">
-                      <OfflineContentManager />
-                    </div>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                  </AppLayout>
+                  <ErrorBoundary>
+                    <AppLayout>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/home" element={<Home />} />
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/bookmarks" element={<Bookmarks />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/admin" element={<AdminDashboard />} />
+                        <Route path="/voice-test" element={<VoiceTestSuite />} />
+                        <Route path="/voice-quality" element={<VoiceQuality />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/performance" element={
+                          <div className="p-6 space-y-6">
+                            <VoiceOptimizer />
+                            <MobileBrowserTester />
+                          </div>
+                        } />
+                        <Route path="/offline" element={
+                          <div className="p-6">
+                            <OfflineContentManager />
+                          </div>
+                        } />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </AppLayout>
+                  </ErrorBoundary>
                 </VoiceModeProvider>
               </ConversationsProvider>
             </AuthGuard>
