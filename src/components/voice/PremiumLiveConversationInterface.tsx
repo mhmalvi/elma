@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { PremiumAIAvatar } from './PremiumAIAvatar';
 import { PremiumLanguageSelector } from './PremiumLanguageSelector';
 import { PremiumWaveformVisualizer } from './PremiumWaveformVisualizer';
-import { SmartStatusIndicator } from './SmartStatusIndicator';
+import { CompactStatusIndicator } from './CompactStatusIndicator';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
 import { useAdvancedTTS } from '@/hooks/useAdvancedTTS';
 import { Mic, MicOff, Square, Volume2, VolumeX, Pause, Play, RotateCcw, MessageCircle } from 'lucide-react';
@@ -14,11 +14,13 @@ import { cn } from '@/lib/utils';
 interface PremiumLiveConversationInterfaceProps {
   onTranscriptStream: (text: string, isFinal: boolean) => void;
   onInterrupt?: () => void;
+  conversationState?: 'idle' | 'listening' | 'processing' | 'speaking';
   className?: string;
 }
 export const PremiumLiveConversationInterface = ({
   onTranscriptStream,
   onInterrupt,
+  conversationState = 'idle',
   className
 }: PremiumLiveConversationInterfaceProps) => {
   const [isActive, setIsActive] = useState(false);
@@ -80,9 +82,11 @@ export const PremiumLiveConversationInterface = ({
     }
   };
   const getConversationStatus = () => {
+    // Use conversation state from parent if available for better synchronization
+    if (conversationState === 'processing') return 'processing';
+    if (conversationState === 'speaking' || ttsState.isSpeaking) return 'speaking';
+    if (conversationState === 'listening' || sttState.isListening) return 'listening';
     if (sttState.isProcessing) return 'processing';
-    if (sttState.isListening) return 'listening';
-    if (ttsState.isSpeaking) return 'speaking';
     if (sttState.error) return 'error';
     if (sttState.transcript) return 'success';
     return 'idle';
@@ -128,9 +132,16 @@ export const PremiumLiveConversationInterface = ({
         </div>
       </div>
 
-      {/* Status Row */}
+      {/* Compact Status Row */}
       <div className="w-full">
-        <SmartStatusIndicator status={getConversationStatus()} confidence={sttState.confidence} language={currentLanguage} isOnline={true} wordCount={sttState.wordCount} characterCount={sttState.characterCount} className="w-full" />
+        <CompactStatusIndicator 
+          status={getConversationStatus()} 
+          confidence={sttState.confidence} 
+          language={currentLanguage} 
+          isOnline={true}
+          provider={ttsState.isSpeaking ? 'elevenlabs' : null}
+          className="w-full" 
+        />
       </div>
 
       {/* Live Transcript Display - Compact */}
