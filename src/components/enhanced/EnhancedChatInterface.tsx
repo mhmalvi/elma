@@ -384,71 +384,70 @@ export const EnhancedChatInterface = ({
         </div>
       </ScrollArea>
 
-      {/* Premium Voice Mode Interface */}
-      {currentMode && <div className="border-t bg-background p-4">
-          <div className="max-w-4xl mx-auto">
-            {currentMode === 'dictation' ? <PremiumDictationInterface onTranscriptComplete={handleDictationComplete} className="w-full" /> : currentMode === 'live' ? <PremiumLiveConversationInterface onTranscriptStream={handleLiveTranscriptStream} onInterrupt={handleLiveInterrupt} className="w-full" /> : null}
+      {/* Minimal Voice Mode Interface */}
+      {currentMode && (
+        <div className="border-t border-border/5 bg-background/80 backdrop-blur-xl">
+          <div className="max-w-4xl mx-auto p-8">
+            {currentMode === 'dictation' ? (
+              <PremiumDictationInterface 
+                onTranscriptComplete={handleDictationComplete} 
+                className="w-full" 
+              />
+            ) : currentMode === 'live' ? (
+              <PremiumLiveConversationInterface 
+                onTranscriptStream={handleLiveTranscriptStream} 
+                onInterrupt={handleLiveInterrupt} 
+                className="w-full" 
+              />
+            ) : null}
           </div>
-        </div>}
+        </div>
+      )}
 
-      {/* Premium Input Area */}
-      <div className="border-t border-border/5 bg-gradient-to-b from-background/98 to-background/95 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Voice Mode Buttons - Top Right */}
-            <div className="flex justify-end mb-3">
-              <div className="flex gap-2 p-2 rounded-2xl bg-card/50 border border-border/10 backdrop-blur-sm">
+      {/* Refined Input Area */}
+      <div className="border-t border-border/3 bg-background/95 backdrop-blur-2xl">
+        <div className="max-w-4xl mx-auto p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Voice Mode Toggle - Minimal */}
+            <div className="flex justify-end">
+              <div className="flex gap-1 p-1 rounded-xl bg-muted/30 backdrop-blur-sm">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    if (currentMode === 'dictation') {
-                      setMode(null);
-                    } else {
-                      setMode('dictation');
-                    }
-                  }}
+                  onClick={() => setMode(currentMode === 'dictation' ? null : 'dictation')}
                   className={cn(
-                    "h-9 w-9 rounded-xl transition-all duration-300 hover:scale-105",
+                    "h-8 w-8 rounded-lg transition-all duration-200",
                     currentMode === 'dictation' 
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" 
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-primary/20 text-primary" 
+                      : "hover:bg-background/80 text-muted-foreground"
                   )}
                   disabled={isProcessing}
-                  title="Voice Memo Mode"
                 >
-                  <Mic className="w-4 h-4" />
+                  <Mic className="w-3.5 h-3.5" />
                 </Button>
                 
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    if (currentMode === 'live') {
-                      setMode(null);
-                    } else {
-                      setMode('live');
-                    }
-                  }}
+                  onClick={() => setMode(currentMode === 'live' ? null : 'live')}
                   className={cn(
-                    "h-9 w-9 rounded-xl transition-all duration-300 hover:scale-105",
+                    "h-8 w-8 rounded-lg transition-all duration-200",
                     currentMode === 'live' 
-                      ? "bg-accent text-accent-foreground shadow-md shadow-accent/25" 
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-accent/20 text-accent-foreground" 
+                      : "hover:bg-background/80 text-muted-foreground"
                   )}
                   disabled={isProcessing}
-                  title="Live Conversation Mode"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
 
-            {/* Main Input Container */}
-            <div className="relative group">
-              <div className="flex gap-3 items-end p-2 rounded-3xl bg-gradient-to-br from-card/90 to-muted/30 border border-border/10 shadow-xl shadow-black/3 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:shadow-black/5">
+            {/* Input Container - Clean Design */}
+            <div className="relative">
+              <div className="flex gap-3 items-end p-3 rounded-2xl border border-border/20 bg-background/60 backdrop-blur-sm transition-all duration-300 focus-within:border-primary/30 focus-within:bg-background/80">
                 {/* Input Field */}
                 <div className="flex-1 relative">
                   <Textarea 
@@ -456,65 +455,52 @@ export const EnhancedChatInterface = ({
                     value={inputValue} 
                     onChange={e => setInputValue(e.target.value)} 
                     onKeyDown={handleKeyDown} 
-                    placeholder="Ask about Islam, life guidance, Quran, Hadith..." 
-                    className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 text-sm leading-relaxed transition-all duration-200" 
+                    placeholder="Ask about Islamic guidance..." 
+                    className="min-h-[46px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
                     disabled={isProcessing} 
                   />
                   
-                  {/* Character count indicator */}
-                  {inputValue.length > 50 && (
-                    <div className="absolute bottom-2 right-3 text-xs text-muted-foreground/40 font-mono">
+                  {/* Character count - Subtle */}
+                  {inputValue.length > 100 && (
+                    <div className="absolute -bottom-4 right-0 text-xs text-muted-foreground/40">
                       {inputValue.length}
                     </div>
                   )}
                 </div>
 
-                {/* Send Button */}
-                <div className="flex-shrink-0">
-                  <Button 
-                    type="submit" 
-                    disabled={!inputValue.trim() || isProcessing} 
-                    size="sm" 
-                    className={cn(
-                      "h-11 w-11 rounded-2xl shadow-lg transition-all duration-300",
-                      "bg-gradient-to-br from-primary via-primary to-primary/90",
-                      "hover:from-primary/95 hover:via-primary/90 hover:to-primary/80",
-                      "hover:shadow-xl hover:shadow-primary/25 hover:scale-105 active:scale-95",
-                      "disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                    )}
-                  >
-                    {isProcessing ? (
-                      <div className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+                {/* Send Button - Minimal */}
+                <Button 
+                  type="submit" 
+                  disabled={!inputValue.trim() || isProcessing} 
+                  size="sm" 
+                  className={cn(
+                    "h-10 w-10 rounded-xl transition-all duration-300",
+                    "bg-primary hover:bg-primary/90",
+                    "disabled:opacity-30 disabled:cursor-not-allowed",
+                    !inputValue.trim() && "scale-90 opacity-50"
+                  )}
+                >
+                  {isProcessing ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                </Button>
               </div>
-              
-              {/* Enhanced glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10" />
             </div>
 
-            {/* Minimal Status Indicator */}
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
-              <div className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-muted/50 text-muted-foreground/80 rounded text-xs font-mono">⌘</kbd>
-                <span>+</span>
-                <kbd className="px-1.5 py-0.5 bg-muted/50 text-muted-foreground/80 rounded text-xs font-mono">↵</kbd>
-                <span className="text-muted-foreground/50">to send</span>
+            {/* Status - Ultra Minimal */}
+            {currentMode && (
+              <div className="flex justify-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    currentMode === 'dictation' ? "bg-primary animate-pulse" : "bg-accent animate-pulse"
+                  )} />
+                  <span>{currentMode === 'dictation' ? 'Memo' : 'Live'} mode</span>
+                </div>
               </div>
-              
-              {currentMode && <>
-                  <span className="text-muted-foreground/30">•</span>
-                  <div className="flex items-center gap-1">
-                    <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", currentMode === 'dictation' ? "bg-primary/70" : "bg-accent/70")} />
-                    <span className="text-muted-foreground/60 font-medium">
-                      {currentMode === 'dictation' ? 'Voice Memo' : 'Live Chat'} ready
-                    </span>
-                  </div>
-                </>}
-            </div>
+            )}
           </form>
         </div>
       </div>
