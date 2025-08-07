@@ -34,7 +34,7 @@ import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
+
 interface Message {
   id: string;
   text: string;
@@ -455,92 +455,21 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
 
       {/* Premium Voice Mode Interface */}
       {currentMode && (
-        <div className={cn(
-          "relative border-t border-border/20 overflow-hidden",
-          "bg-gradient-to-br from-card/60 via-background/80 to-secondary/20",
-          "backdrop-blur-xl"
-        )}>
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-[0.02]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_0px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="border-t bg-background p-4">
+          <div className="max-w-4xl mx-auto">
+            {currentMode === 'dictation' ? (
+              <PremiumDictationInterface
+                onTranscriptComplete={handleDictationComplete}
+                className="w-full"
+              />
+            ) : currentMode === 'live' ? (
+              <PremiumLiveConversationInterface
+                onTranscriptStream={handleLiveTranscriptStream}
+                onInterrupt={handleLiveInterrupt}
+                className="w-full"
+              />
+            ) : null}
           </div>
-          
-          {/* Content Container */}
-          <div className="relative z-10 max-w-5xl mx-auto px-8 py-10">
-            {/* Premium Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full animate-gentle-pulse",
-                    currentMode === 'dictation' ? "bg-primary" : "bg-accent"
-                  )} />
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    {currentMode === 'dictation' ? 'Voice Memo Studio' : 'Live AI Conversation'}
-                  </h3>
-                </div>
-                <p className="text-sm text-muted-foreground/80 ml-5">
-                  {currentMode === 'dictation' 
-                    ? 'Record, refine, and send your thoughts with precision' 
-                    : 'Natural real-time conversation with intelligent AI'}
-                </p>
-              </div>
-              
-              {/* Enhanced Mode Selector */}
-              <div className="relative">
-                <VoiceModeSelector />
-                
-                {/* Premium glow effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              </div>
-            </div>
-            
-            {/* Voice Interface Content */}
-            <div className={cn(
-              "relative rounded-2xl border border-border/30 overflow-hidden",
-              "bg-gradient-to-br from-card/40 to-secondary/20",
-              "shadow-2xl shadow-black/5",
-              "backdrop-blur-sm"
-            )}>
-              {/* Inner glow */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-              
-              {/* Interface Content */}
-              <div className="relative z-10 p-8">
-                {currentMode === 'dictation' ? (
-                  <PremiumDictationInterface
-                    onTranscriptComplete={handleDictationComplete}
-                    className="space-y-6"
-                  />
-                ) : currentMode === 'live' ? (
-                  <PremiumLiveConversationInterface
-                    onTranscriptStream={handleLiveTranscriptStream}
-                    onInterrupt={handleLiveInterrupt}
-                    className="space-y-6"
-                  />
-                ) : null}
-              </div>
-              
-              {/* Bottom accent line */}
-              <div className={cn(
-                "h-1 bg-gradient-to-r",
-                currentMode === 'dictation' 
-                  ? "from-primary/50 via-primary to-primary/50"
-                  : "from-accent/50 via-accent to-accent/50"
-              )} />
-            </div>
-            
-            {/* Floating help text */}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-muted-foreground/60 font-medium tracking-wide">
-                ✨ Powered by advanced AI • Multi-language support • Real-time processing
-              </p>
-            </div>
-          </div>
-          
-          {/* Side decorative elements */}
-          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-40 h-40 bg-gradient-to-tl from-accent/10 to-transparent rounded-full blur-3xl" />
         </div>
       )}
 
@@ -562,8 +491,17 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               {/* Clean input area without duplicate selectors */}
             </div>
 
-            {/* Single Voice Mode Selector */}
-            <VoiceModeSelector className="h-[50px]" />
+            {/* Simplified Voice Mode Toggle */}
+            <div className="flex items-center">
+              <PremiumVoiceModeToggle 
+                currentMode={currentMode}
+                onModeChange={(mode) => {
+                  console.log('Mode change requested:', mode);
+                }} 
+                isActive={true}
+                className="w-auto h-auto scale-75" 
+              />
+            </div>
 
             <Button
               type="submit"
