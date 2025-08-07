@@ -328,19 +328,17 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
             </div>
             
             {voiceChat.isVADDisabled && (
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
-                  <p className="text-xs text-yellow-400">
-                    Voice detection temporarily disabled due to excessive interruptions.
-                  </p>
+              <div className="mt-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <div className="text-sm text-destructive mb-2">
+                  🚨 Voice mode disabled due to feedback loop detection
                 </div>
                 <Button
+                  onClick={voiceChat.recoverVoiceMode}
                   variant="outline"
                   size="sm"
-                  onClick={voiceChat.recoverVoiceMode}
-                  className="bg-yellow-500/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20"
+                  className="w-full"
                 >
-                  Reset Voice
+                  Manually Recover Voice Mode
                 </Button>
               </div>
             )}

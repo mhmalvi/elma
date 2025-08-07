@@ -77,9 +77,8 @@ export const useConversationStateMachine = (
           break;
 
         case 'AI_STOPS_RESPONDING':
-          if (currentState === 'speaking' && prev.isVoiceMode) {
-            newState = 'listening'; // Auto-resume listening in voice mode
-          } else if (currentState === 'speaking') {
+          if (currentState === 'speaking') {
+            // CRITICAL FIX: Don't auto-resume listening, require manual action
             newState = 'idle';
           }
           break;
@@ -91,7 +90,8 @@ export const useConversationStateMachine = (
           break;
 
         case 'RESET':
-          newState = prev.isVoiceMode ? 'listening' : 'idle';
+          // CRITICAL FIX: Manual reset only goes to idle, requires explicit voice activation
+          newState = 'idle';
           break;
       }
 
@@ -123,8 +123,20 @@ export const useConversationStateMachine = (
     return true;
   }, [onStateChange]);
 
-  // Remove auto-transition from interrupted state
-  // User must manually recover or explicitly start listening again
+  // Add debounce to prevent rapid state transitions
+  const lastTransitionTimeRef = useRef<number>(0);
+  
+  const debouncedTransition = useCallback((event: StateTransitionEvent) => {
+    const now = Date.now();
+    // Critical: Increase debounce time to prevent rapid loops
+    if (now - lastTransitionTimeRef.current < 500) { // Increased from 100ms to 500ms
+      console.log('State transition debounced');
+      return false;
+    }
+    lastTransitionTimeRef.current = now;
+    return transition(event);
+  }, [transition]);
+
   useEffect(() => {
     return () => {
       if (transitionTimeoutRef.current) {
@@ -134,32 +146,41 @@ export const useConversationStateMachine = (
   }, []);
 
   const toggleVoiceMode = useCallback(() => {
-    transition({ type: 'VOICE_MODE_TOGGLE' });
-  }, [transition]);
+    debouncedTransition({ type: 'VOICE_MODE_TOGGLE' });
+  }, [debouncedTransition]);
 
   const userStartsSpeaking = useCallback(() => {
-    transition({ type: 'USER_STARTS_SPEAKING' });
-  }, [transition]);
+    debouncedTransition({ type: 'USER_STARTS_SPEAKING' });
+  }, [debouncedTransition]);
 
   const userStopsSpeaking = useCallback(() => {
-    transition({ type: 'USER_STOPS_SPEAKING' });
-  }, [transition]);
+    debouncedTransition({ type: 'USER_STOPS_SPEAKING' });
+  }, [debouncedTransition]);
 
   const aiStartsResponding = useCallback(() => {
-    transition({ type: 'AI_STARTS_RESPONDING' });
-  }, [transition]);
+    debouncedTransition({ type: 'AI_STARTS_RESPONDING' });
+  }, [debouncedTransition]);
 
   const aiStopsResponding = useCallback(() => {
-    transition({ type: 'AI_STOPS_RESPONDING' });
-  }, [transition]);
+    debouncedTransition({ type: 'AI_STOPS_RESPONDING' });
+  }, [debouncedTransition]);
 
   const interrupt = useCallback(() => {
-    transition({ type: 'INTERRUPT' });
-  }, [transition]);
+    debouncedTransition({ type: 'INTERRUPT' });
+  }, [debouncedTransition]);
 
   const reset = useCallback(() => {
-    transition({ type: 'RESET' });
-  }, [transition]);
+    debouncedTransition({ type: 'RESET' });
+  }, [debouncedTransition]);
+
+  // New function for safe voice mode restart
+  const startVoiceMode = useCallback(() => {
+    if (!stateMachine.isVoiceMode) {
+      toggleVoiceMode();
+    } else {
+      debouncedTransition({ type: 'VOICE_MODE_TOGGLE' });
+    }
+  }, [stateMachine.isVoiceMode, toggleVoiceMode, debouncedTransition]);
 
   return {
     state: stateMachine.state,
@@ -171,6 +192,7 @@ export const useConversationStateMachine = (
     aiStartsResponding,
     aiStopsResponding,
     interrupt,
-    reset
+    reset,
+    startVoiceMode // New safe voice mode starter
   };
 };
