@@ -220,9 +220,8 @@ export const useStreamingVoiceChat = () => {
       stateMachine.aiStartsResponding();
 
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
-          message: transcript,
-          stream: true
+        body: {
+          question: transcript
         }
       });
 
@@ -287,7 +286,7 @@ export const useStreamingVoiceChat = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [vadDetection, sttEngine, audioQueue]);
+  }, []);
 
   const enhancedEmergencyStop = useCallback(() => {
     emergencyStop();
