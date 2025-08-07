@@ -63,6 +63,7 @@ serve(async (req) => {
   }
 
   let requestId: string | null = null;
+  let startedAt = Date.now();
   try {
     const { question, conversation_id, user_id } = await req.json();
     
@@ -71,8 +72,8 @@ serve(async (req) => {
     }
 
     // Request context
-    const requestId = crypto.randomUUID();
-    const startedAt = Date.now();
+    requestId = crypto.randomUUID();
+    startedAt = Date.now();
     const safePreview = truncate(question, 80);
     console.log(`[ai-chat][${requestId}] Start len=${question.length} preview="${safePreview}"`);
 
@@ -343,15 +344,19 @@ Source: Quran 2:155, Sahih Bukhari"`;
       }
     );
 
-  } catch (error) {
-    console.error('Error in ai-chat function:', error);
+  } catch (error: any) {
+    const status = mapErrorToStatus(error);
+    const durationMs = Date.now() - startedAt;
+    console.error(`[ai-chat][${requestId}] Error status=${status} duration=${durationMs}ms`, error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
+      JSON.stringify({
+        error: String(error?.message || 'Unexpected error'),
+        success: false,
+        requestId,
+        durationMs
       }),
       {
-        status: 500,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

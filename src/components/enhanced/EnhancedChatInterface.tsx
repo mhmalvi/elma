@@ -88,6 +88,8 @@ export const EnhancedChatInterface = ({
   } = useAutoTTS();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [debugMeta, setDebugMeta] = useState<{ requestId?: string; durationMs?: number; contextUsed?: boolean; contextCount?: number } | null>(null);
+  const showDebug = typeof window !== 'undefined' && localStorage.getItem('airchat.debug') === 'true';
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -154,22 +156,45 @@ export const EnhancedChatInterface = ({
         created_at: new Date().toISOString()
       };
       addMessage(userMessage);
-      console.log('Sending message to AI for conversation:', conversation.id);
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          question: messageText,
-          user_id: user?.id,
-          conversation_id: conversation.id
-        }
-      });
+      setDebugMeta(null);
+      // Invoke with one automatic retry on transient errors (429/504/timeout)
+      const invoke = async () =>
+        await supabase.functions.invoke('ai-chat', {
+          body: {
+            question: messageText,
+            user_id: user?.id,
+            conversation_id: conversation.id
+          }
+        });
+
+      let data: any | null = null;
+      let error: any | null = null;
+      let attempt = 0;
+      do {
+        const res = await invoke();
+        data = res.data;
+        error = res.error;
+        if (!error) break;
+        const em = String(error?.message || '');
+        const status = (error as any)?.status as number | undefined;
+        const retryable = status === 429 || status === 504 || /429|Rate limit|timeout/i.test(em);
+        if (!retryable || attempt >= 1) break;
+        await new Promise(r => setTimeout(r, 700 * (attempt + 1)));
+        attempt++;
+      } while (attempt < 2);
+
       if (error) {
         console.error('AI chat error:', error);
         throw new Error(error.message || 'Failed to get AI response');
       }
+
       console.log('AI response received:', data);
+      setDebugMeta({
+        requestId: data?.requestId,
+        durationMs: data?.durationMs,
+        contextUsed: data?.contextUsed,
+        contextCount: data?.contextCount,
+      });
 
       // Add AI response to UI immediately
       if (data.answer || data.response) {
@@ -216,10 +241,15 @@ export const EnhancedChatInterface = ({
       // Remove the optimistic user message on error
       // The real-time subscription will handle proper message sync
 
+      const rawMsg = String((error as any)?.message || '');
+      let description = 'Failed to send message. Please try again.';
+      if (/429|Rate limit/i.test(rawMsg)) description = 'You are being rate limited. Please wait a moment and try again.';
+      else if (/timeout|504/i.test(rawMsg)) description = 'The server timed out. Please try again.';
+      const errReqId = (error as any)?.context?.requestId;
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: errReqId ? `${description} (req: ${String(errReqId).slice(0,8)})` : description,
+        variant: 'destructive'
       });
     } finally {
       setIsProcessing(false);
@@ -289,6 +319,13 @@ export const EnhancedChatInterface = ({
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
+          {showDebug && debugMeta && (
+            <div className="sticky top-2 z-10 flex justify-end">
+              <div className="text-xs px-2 py-1 rounded-md border border-border bg-card shadow-sm">
+                <span className="font-medium">req</span> {debugMeta.requestId?.slice(0,8) || '—'} • {debugMeta.durationMs ?? '—'}ms • ctx {debugMeta.contextCount ?? 0}
+              </div>
+            </div>
+          )}
           {displayMessages.length === 0 && !currentConversation && !messagesLoading ?
         // Welcome State
         <div className="text-center py-12">
