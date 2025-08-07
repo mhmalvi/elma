@@ -488,7 +488,11 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               
               {/* Enhanced Mode Selector */}
               <div className="relative">
-                <VoiceModeSelector />
+                <PremiumVoiceModeToggle 
+                  currentMode={currentMode}
+                  onModeChange={() => {}} 
+                  isActive={true}
+                />
                 
                 {/* Premium glow effect */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -508,12 +512,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               {/* Interface Content */}
               <div className="relative z-10 p-8">
                 {currentMode === 'dictation' ? (
-                  <DictationModeInterface
+                  <PremiumDictationInterface
                     onTranscriptComplete={handleDictationComplete}
                     className="space-y-6"
                   />
                 ) : currentMode === 'live' ? (
-                  <LiveConversationInterface
+                  <PremiumLiveConversationInterface
                     onTranscriptStream={handleLiveTranscriptStream}
                     onInterrupt={handleLiveInterrupt}
                     className="space-y-6"
@@ -563,7 +567,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
             </div>
 
             {/* Single Voice Mode Selector */}
-            <VoiceModeSelector className="h-[50px]" />
+            <PremiumVoiceModeToggle 
+              currentMode={currentMode}
+              onModeChange={() => {}} 
+              isActive={true}
+              className="h-[50px]" 
+            />
 
             <Button
               type="submit"
