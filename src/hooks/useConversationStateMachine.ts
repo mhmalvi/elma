@@ -28,7 +28,7 @@ export const useConversationStateMachine = (
   // State transition matrix
   const validTransitions: Record<ConversationState, ConversationState[]> = {
     idle: ['listening', 'processing'],
-    listening: ['processing', 'idle', 'interrupted'],
+    listening: ['processing', 'idle', 'interrupted', 'speaking'],
     processing: ['speaking', 'listening', 'idle'],
     speaking: ['listening', 'interrupted', 'idle'],
     interrupted: ['listening', 'idle', 'processing']
@@ -71,7 +71,7 @@ export const useConversationStateMachine = (
           break;
 
         case 'AI_STARTS_RESPONDING':
-          if (currentState === 'processing') {
+          if (currentState === 'processing' || currentState === 'listening') {
             newState = 'speaking';
           }
           break;
