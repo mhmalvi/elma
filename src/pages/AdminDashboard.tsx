@@ -10,6 +10,8 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { RoleManagement } from '@/components/admin/RoleManagement';
 import { AdminDiagnostics } from '@/components/admin/AdminDiagnostics';
 import { useToast } from '@/hooks/use-toast';
+import { EdgeFunctionMonitor } from '@/components/monitoring/EdgeFunctionMonitor';
+import { ProductionMonitoring } from '@/components/monitoring/ProductionMonitoring';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -69,7 +71,7 @@ const AdminDashboard = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="tenants" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
               Tenants
@@ -85,6 +87,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="diagnostics" className="flex items-center gap-2">
               <Monitor className="w-4 h-4" />
               Diagnostics
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+              <Monitor className="w-4 h-4" />
+              Monitoring
             </TabsTrigger>
           </TabsList>
 
@@ -102,6 +108,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="diagnostics" className="space-y-6">
             <AdminDiagnostics />
+          </TabsContent>
+          <TabsContent value="monitoring" className="space-y-6">
+            <EdgeFunctionMonitor />
+            <ProductionMonitoring />
           </TabsContent>
         </Tabs>
       </div>
