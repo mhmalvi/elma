@@ -94,8 +94,8 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
         console.log('[AutoTTS] Force stopping previous speech to prevent collision');
         stopSpeaking();
         
-        // Longer pause for live mode to ensure clean audio transition
-        const pauseTime = currentMode === 'live' ? 200 : 100;
+        // Longer pause for voice mode to ensure clean audio transition
+        const pauseTime = currentMode === 'voice' ? 200 : 100;
         await new Promise(resolve => setTimeout(resolve, pauseTime));
       }
 
@@ -109,8 +109,8 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
       const providers = getProviderHierarchy(detectedLanguage, usePremium);
       let speechSuccess = false;
 
-      // For live mode, prioritize speed and reliability
-      if (currentMode === 'live') {
+      // For voice mode, prioritize speed and reliability
+      if (currentMode === 'voice') {
         providers.sort((a, b) => {
           // Prioritize ElevenLabs for quality, but ensure fallback is ready
           if (a.type === 'elevenlabs') return -1;
@@ -143,9 +143,9 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
         currentProviderRef.current = null;
         isAutoActiveRef.current = false;
         
-        // Minimal error feedback for live mode to maintain flow
-        if (currentMode === 'live') {
-          console.warn('[AutoTTS] Live mode: TTS failed, continuing conversation flow');
+        // Minimal error feedback for voice mode to maintain flow
+        if (currentMode === 'voice') {
+          console.warn('[AutoTTS] Voice mode: TTS failed, continuing conversation flow');
         } else if (currentMode) {
           toast({
             title: "Voice Playback Error",
