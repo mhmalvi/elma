@@ -215,30 +215,38 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                     </Card>
 
                     {!message.isUser && !message.isProcessing && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2 relative z-10">
                         <Button
-                          variant="outline"
+                          type="button"
+                          variant="secondary"
                           size="sm"
-                          onClick={() => voiceChat.speakMessage(message.id)}
+                          onClick={() => {
+                            console.log('UI: Play clicked for', message.id)
+                            voiceChat.speakMessage(message.id)
+                          }}
                           className="h-7 px-3 text-xs"
                           aria-label="Play message audio"
                           data-testid={`play-btn-${message.id}`}
                           disabled={voiceChat.playingMessageId === message.id && voiceChat.isSpeaking}
                         >
-                          <Play className="w-3 h-3 mr-1" />
-                          Play
+                          <Play className="w-3 h-3" />
+                          <span className="ml-1">Play</span>
                         </Button>
                         <Button
-                          variant="outline"
+                          type="button"
+                          variant="secondary"
                           size="sm"
-                          onClick={() => voiceChat.stopSpeaking()}
+                          onClick={() => {
+                            console.log('UI: Stop clicked for', message.id)
+                            voiceChat.stopSpeaking()
+                          }}
                           className="h-7 px-3 text-xs"
                           aria-label="Stop message audio"
                           data-testid={`stop-btn-${message.id}`}
                           disabled={voiceChat.playingMessageId !== message.id || !voiceChat.isSpeaking}
                         >
-                          <Square className="w-3 h-3 mr-1" />
-                          Stop
+                          <Square className="w-3 h-3" />
+                          <span className="ml-1">Stop</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -248,8 +256,8 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                           aria-label="Copy message"
                           data-testid={`copy-btn-${message.id}`}
                         >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy
+                          <Copy className="w-3 h-3" />
+                          <span className="ml-1">Copy</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -259,8 +267,8 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                           aria-label={isBookmarked(message.id) ? "Remove bookmark" : "Bookmark message"}
                           data-testid={`bookmark-btn-${message.id}`}
                         >
-                          <Bookmark className={cn("w-3 h-3 mr-1", isBookmarked(message.id) && "fill-current text-primary")} />
-                          {isBookmarked(message.id) ? 'Bookmarked' : 'Bookmark'}
+                          <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
+                          <span className="ml-1">{isBookmarked(message.id) ? 'Bookmarked' : 'Bookmark'}</span>
                         </Button>
                       </div>
                     )}
