@@ -17,25 +17,25 @@ export const EnhancedVoiceModeSelector = ({
     isActive
   } = useVoiceMode();
 
-  const handleModeSelect = (mode: 'voice' | 'text') => {
+  const handleModeSelect = (mode: 'dictation' | 'live') => {
     if (isActive) return;
     setMode(mode);
   };
 
   const modes = [
     {
-      id: 'text' as const,
-      icon: MessageCircle,
-      label: 'Text Mode',
-      description: 'Type your messages'
+      id: 'dictation',
+      icon: Mic,
+      label: 'Voice Memo',
+      description: 'Record, review, send'
     },
     {
-      id: 'voice' as const,
-      icon: Mic,
-      label: 'Voice Mode',
-      description: 'Speak naturally'
+      id: 'live',
+      icon: MessageCircle,
+      label: 'Live Chat',
+      description: 'Real-time conversation'
     }
-  ];
+  ] as const;
 
   return (
     <div className={cn(
@@ -48,7 +48,7 @@ export const EnhancedVoiceModeSelector = ({
       <div className={cn(
         "absolute top-1 bottom-1 bg-gradient-to-r rounded-xl transition-all duration-500 ease-out",
         "shadow-md border border-border/20",
-        currentMode === 'text' 
+        currentMode === 'dictation' 
           ? "left-1 right-1/2 from-primary/90 to-primary-glow/80" 
           : "left-1/2 right-1 from-accent/90 to-accent/80",
         !currentMode && "opacity-0"
@@ -108,7 +108,7 @@ export const EnhancedVoiceModeSelector = ({
         <div className={cn(
           "absolute inset-0 rounded-2xl transition-opacity duration-300",
           "ring-2 ring-offset-2 ring-offset-background",
-          currentMode === 'text' ? "ring-primary/30" : "ring-accent/30",
+          currentMode === 'dictation' ? "ring-primary/30" : "ring-accent/30",
           isActive ? "opacity-100 animate-pulse" : "opacity-0"
         )} />
       )}
