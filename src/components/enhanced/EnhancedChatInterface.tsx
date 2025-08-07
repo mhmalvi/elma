@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { FuturisticLiveMode } from '@/components/voice/FuturisticLiveMode';
+import { ContinuousLiveInterface } from '@/components/voice/ContinuousLiveInterface';
 import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -450,6 +451,11 @@ export const EnhancedChatInterface = ({
                 conversationState={chatState.conversationState}
                 className="w-full" 
               />
+            ) : currentMode === 'continuous' ? (
+              <ContinuousLiveInterface 
+                userId={user?.id}
+                className="w-full"
+              />
             ) : null}
           </div>
         </div>
@@ -517,6 +523,22 @@ export const EnhancedChatInterface = ({
                     >
                       <MessageCircle className="w-4 h-4" />
                     </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode(currentMode === 'continuous' ? null : 'continuous')}
+                      className={cn(
+                        "h-9 w-9 rounded-xl transition-all duration-200",
+                        currentMode === 'continuous' 
+                          ? "bg-accent text-accent-foreground shadow-sm" 
+                          : "hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground"
+                      )}
+                      disabled={isProcessing}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   {/* Separator */}
@@ -554,7 +576,7 @@ export const EnhancedChatInterface = ({
                     "w-1.5 h-1.5 rounded-full",
                     currentMode === 'dictation' ? "bg-primary animate-pulse" : "bg-accent animate-pulse"
                   )} />
-                  <span>{currentMode === 'dictation' ? 'Memo' : 'Live'} mode</span>
+                  <span>{currentMode === 'dictation' ? 'Memo' : currentMode === 'live' ? 'Live' : 'Continuous'} mode</span>
                 </div>
               </div>
             )}
