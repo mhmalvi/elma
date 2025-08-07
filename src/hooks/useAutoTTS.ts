@@ -52,7 +52,7 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
     return providers.sort((a, b) => a.priority - b.priority);
   }, []);
 
-  // Enhanced auto-speak with collision prevention
+// Enhanced auto-speak with collision prevention and live mode optimization
   const autoSpeak = useCallback(async (
     text: string, 
     options: Partial<AutoTTSOptions> = {}
@@ -67,20 +67,36 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
     // Skip if auto-speak is disabled
     if (!shouldAutoSpeak) return false;
 
-    // Skip empty or duplicate text
-    if (!text.trim() || text === lastTextRef.current) return false;
+    // Skip empty text
+    if (!text.trim()) return false;
+
+    // For live mode, be more aggressive about preventing duplicates
+    const normalizedText = text.trim().toLowerCase();
+    const lastNormalized = lastTextRef.current.trim().toLowerCase();
+    
+    if (normalizedText === lastNormalized) {
+      console.log('[AutoTTS] Skipping duplicate text:', text.slice(0, 30));
+      return false;
+    }
 
     // Store current text to prevent duplicates
     lastTextRef.current = text;
 
     try {
-      console.log('[AutoTTS] Starting auto-speak:', { text: text.slice(0, 50), options });
+      console.log('[AutoTTS] Starting auto-speak:', { 
+        text: text.slice(0, 50), 
+        mode: currentMode,
+        options 
+      });
 
-      // CRITICAL: Stop any existing TTS to prevent collisions
+      // CRITICAL: Stop any existing TTS immediately to prevent collisions
       if (isAutoActiveRef.current || ttsState.isSpeaking) {
-        console.log('[AutoTTS] Stopping previous speech to prevent collision');
+        console.log('[AutoTTS] Force stopping previous speech to prevent collision');
         stopSpeaking();
-        await new Promise(resolve => setTimeout(resolve, 100)); // Brief pause for cleanup
+        
+        // Longer pause for live mode to ensure clean audio transition
+        const pauseTime = currentMode === 'live' ? 200 : 100;
+        await new Promise(resolve => setTimeout(resolve, pauseTime));
       }
 
       isAutoActiveRef.current = true;
@@ -89,13 +105,23 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
       const detectedLanguage = language || detectLanguage(text);
       console.log('[AutoTTS] Using language:', detectedLanguage);
 
-      // Try providers in hierarchy order
+      // Enhanced provider hierarchy for live mode
       const providers = getProviderHierarchy(detectedLanguage, usePremium);
       let speechSuccess = false;
 
+      // For live mode, prioritize speed and reliability
+      if (currentMode === 'live') {
+        providers.sort((a, b) => {
+          // Prioritize ElevenLabs for quality, but ensure fallback is ready
+          if (a.type === 'elevenlabs') return -1;
+          if (b.type === 'elevenlabs') return 1;
+          return a.priority - b.priority;
+        });
+      }
+
       for (const provider of providers) {
         try {
-          console.log(`[AutoTTS] Attempting ${provider.type} provider`);
+          console.log(`[AutoTTS] Attempting ${provider.type} provider for live mode`);
           currentProviderRef.current = provider.type;
 
           const success = await speak(text, detectedLanguage, provider.type === 'elevenlabs');
@@ -107,16 +133,20 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
           }
         } catch (error) {
           console.warn(`[AutoTTS] ${provider.type} provider failed:`, error);
-          continue; // Try next provider
+          // Immediately try next provider for live mode
+          continue;
         }
       }
 
       if (!speechSuccess) {
         console.error('[AutoTTS] All providers failed');
         currentProviderRef.current = null;
+        isAutoActiveRef.current = false;
         
-        // Show user-friendly error only for voice modes
-        if (currentMode) {
+        // Minimal error feedback for live mode to maintain flow
+        if (currentMode === 'live') {
+          console.warn('[AutoTTS] Live mode: TTS failed, continuing conversation flow');
+        } else if (currentMode) {
           toast({
             title: "Voice Playback Error",
             description: "Unable to play voice response. Text is still available.",

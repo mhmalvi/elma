@@ -14,11 +14,13 @@ import { cn } from '@/lib/utils';
 interface PremiumLiveConversationInterfaceProps {
   onTranscriptStream: (text: string, isFinal: boolean) => void;
   onInterrupt?: () => void;
+  conversationState?: 'idle' | 'listening' | 'processing' | 'speaking';
   className?: string;
 }
 export const PremiumLiveConversationInterface = ({
   onTranscriptStream,
   onInterrupt,
+  conversationState = 'idle',
   className
 }: PremiumLiveConversationInterfaceProps) => {
   const [isActive, setIsActive] = useState(false);
@@ -80,9 +82,11 @@ export const PremiumLiveConversationInterface = ({
     }
   };
   const getConversationStatus = () => {
+    // Use conversation state from parent if available for better synchronization
+    if (conversationState === 'processing') return 'processing';
+    if (conversationState === 'speaking' || ttsState.isSpeaking) return 'speaking';
+    if (conversationState === 'listening' || sttState.isListening) return 'listening';
     if (sttState.isProcessing) return 'processing';
-    if (sttState.isListening) return 'listening';
-    if (ttsState.isSpeaking) return 'speaking';
     if (sttState.error) return 'error';
     if (sttState.transcript) return 'success';
     return 'idle';
