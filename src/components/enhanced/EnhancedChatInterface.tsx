@@ -344,7 +344,7 @@ export const EnhancedChatInterface = ({
         <>
               {displayMessages.map(message => <div key={message.id} className={cn("flex gap-3 animate-fade-in", message.isUser ? "justify-end" : "justify-start")}>
                   {!message.isUser && <Avatar className="w-8 h-8 mt-1">
-                      <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
+                      <AvatarImage src="/airchatbot-logo.png" alt="AirChatBot" />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         AI
                       </AvatarFallback>
@@ -392,7 +392,7 @@ export const EnhancedChatInterface = ({
               {/* Processing indicator */}
               {isProcessing && <div className="flex gap-3 animate-fade-in justify-start">
                   <Avatar className="w-8 h-8 mt-1">
-                    <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
+                    <AvatarImage src="/airchatbot-logo.png" alt="AirChatBot" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                       AI
                     </AvatarFallback>

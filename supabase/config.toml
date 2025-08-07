@@ -39,13 +39,13 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.voice-to-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.text-to-voice]
-verify_jwt = false
+verify_jwt = true
 
 [functions.query-islamic-content]
-verify_jwt = false
+verify_jwt = true

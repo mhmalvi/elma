@@ -59,13 +59,13 @@ serve(async (req) => {
       const { data: quranResults } = await supabase
         .from('quran_verses')
         .select('*')
-        .textSearch('translation', query)
+        .textSearch('translation_english', query)
         .limit(3)
 
       const { data: hadithResults } = await supabase
         .from('hadith_collection')
         .select('*')
-        .textSearch('translation', query)
+        .textSearch('translation_english', query)
         .limit(2)
 
       return new Response(
@@ -80,7 +80,7 @@ serve(async (req) => {
     }
 
     // Search in Qdrant vector database
-    const searchResponse = await fetch(`${qdrantUrl}/collections/islamic_content/points/search`, {
+    const searchResponse = await fetch(`${qdrantUrl}/collections/islamic_knowledge/points/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ serve(async (req) => {
       const { data: results } = await supabase
         .from('quran_verses')
         .select('*')
-        .textSearch('translation', query)
+        .textSearch('translation_english', query)
         .limit(limit)
 
       return new Response(
