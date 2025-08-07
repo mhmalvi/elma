@@ -405,49 +405,12 @@ export const EnhancedChatInterface = ({
       )}
 
       {/* Refined Input Area */}
-      <div className="border-t border-border/3 bg-background/95 backdrop-blur-2xl">
-        <div className="max-w-4xl mx-auto p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Voice Mode Toggle - Minimal */}
-            <div className="flex justify-end">
-              <div className="flex gap-1 p-1 rounded-xl bg-muted/30 backdrop-blur-sm">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMode(currentMode === 'dictation' ? null : 'dictation')}
-                  className={cn(
-                    "h-8 w-8 rounded-lg transition-all duration-200",
-                    currentMode === 'dictation' 
-                      ? "bg-primary/20 text-primary" 
-                      : "hover:bg-background/80 text-muted-foreground"
-                  )}
-                  disabled={isProcessing}
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMode(currentMode === 'live' ? null : 'live')}
-                  className={cn(
-                    "h-8 w-8 rounded-lg transition-all duration-200",
-                    currentMode === 'live' 
-                      ? "bg-accent/20 text-accent-foreground" 
-                      : "hover:bg-background/80 text-muted-foreground"
-                  )}
-                  disabled={isProcessing}
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Input Container - Clean Design */}
+      <div className="border-t border-border/20 bg-background/95 backdrop-blur-2xl">
+        <div className="max-w-4xl mx-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Input Container with Enhanced Visual Hierarchy */}
             <div className="relative">
-              <div className="flex gap-3 items-end p-3 rounded-2xl border border-border/20 bg-background/60 backdrop-blur-sm transition-all duration-300 focus-within:border-primary/30 focus-within:bg-background/80">
+              <div className="flex gap-2 items-end p-4 rounded-2xl border border-border/30 bg-background/80 backdrop-blur-sm transition-all duration-300 focus-within:border-accent/40 focus-within:bg-background/90 focus-within:shadow-lg focus-within:shadow-accent/10">
                 {/* Input Field */}
                 <div className="flex-1 relative">
                   <Textarea 
@@ -456,36 +419,78 @@ export const EnhancedChatInterface = ({
                     onChange={e => setInputValue(e.target.value)} 
                     onKeyDown={handleKeyDown} 
                     placeholder="Ask about Islamic guidance..." 
-                    className="min-h-[46px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
+                    className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
                     disabled={isProcessing} 
                   />
                   
                   {/* Character count - Subtle */}
                   {inputValue.length > 100 && (
-                    <div className="absolute -bottom-4 right-0 text-xs text-muted-foreground/40">
+                    <div className="absolute -bottom-5 right-0 text-xs text-muted-foreground/40">
                       {inputValue.length}
                     </div>
                   )}
                 </div>
 
-                {/* Send Button - Minimal */}
-                <Button 
-                  type="submit" 
-                  disabled={!inputValue.trim() || isProcessing} 
-                  size="sm" 
-                  className={cn(
-                    "h-10 w-10 rounded-xl transition-all duration-300",
-                    "bg-primary hover:bg-primary/90",
-                    "disabled:opacity-30 disabled:cursor-not-allowed",
-                    !inputValue.trim() && "scale-90 opacity-50"
-                  )}
-                >
-                  {isProcessing ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Send className="w-3.5 h-3.5" />
-                  )}
-                </Button>
+                {/* Button Group - Voice modes + Send */}
+                <div className="flex items-center gap-1">
+                  {/* Voice Mode Buttons */}
+                  <div className="flex gap-0.5 p-0.5 rounded-lg bg-muted/20 backdrop-blur-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode(currentMode === 'dictation' ? null : 'dictation')}
+                      className={cn(
+                        "h-8 w-8 rounded-md transition-all duration-200",
+                        currentMode === 'dictation' 
+                          ? "bg-accent text-accent-foreground shadow-sm" 
+                          : "hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground"
+                      )}
+                      disabled={isProcessing}
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode(currentMode === 'live' ? null : 'live')}
+                      className={cn(
+                        "h-8 w-8 rounded-md transition-all duration-200",
+                        currentMode === 'live' 
+                          ? "bg-accent text-accent-foreground shadow-sm" 
+                          : "hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground"
+                      )}
+                      disabled={isProcessing}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-border/40 mx-1" />
+
+                  {/* Send Button */}
+                  <Button 
+                    type="submit" 
+                    disabled={!inputValue.trim() || isProcessing} 
+                    size="sm" 
+                    className={cn(
+                      "h-10 w-10 rounded-xl transition-all duration-300",
+                      "bg-accent hover:bg-accent/90 text-accent-foreground",
+                      "disabled:opacity-40 disabled:cursor-not-allowed",
+                      "shadow-sm hover:shadow-md hover:shadow-accent/20",
+                      !inputValue.trim() && "scale-95 opacity-60"
+                    )}
+                  >
+                    {isProcessing ? (
+                      <div className="w-3.5 h-3.5 border-2 border-accent-foreground/60 border-t-accent-foreground rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 
