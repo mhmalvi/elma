@@ -64,8 +64,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
   };
 
   const handleSpeakMessage = async (text: string) => {
-    // For now, we can implement this later if needed
-    console.log('Speak message:', text);
+    await voiceChat.speakText?.(text);
   };
 
   const handleStopSpeaking = () => {
@@ -289,6 +288,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
 
               {/* Voice Mode Toggle */}
               <Button
+                type="button"
                 variant={voiceChat.isVoiceMode ? "default" : "outline"}
                 size="icon"
                 onClick={toggleVoiceMode}
@@ -303,7 +303,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
 
               {/* Send Button */}
               <Button
-                onClick={() => sendMessage(inputValue)}
+                type="submit"
                 disabled={!inputValue.trim() || voiceChat.isProcessing}
                 size="icon"
                 className="shrink-0"
