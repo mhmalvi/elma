@@ -107,8 +107,7 @@ export const PremiumLiveConversationInterface = ({
 
   return (
     <div className={cn(
-      "w-full max-w-2xl mx-auto space-y-6 p-6 rounded-2xl",
-      "bg-card/80 backdrop-blur-sm border border-border/30 shadow-lg",
+      "w-full space-y-4 p-4 rounded-lg bg-card border",
       className
     )}>
       {/* Header */}
