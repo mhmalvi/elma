@@ -186,7 +186,7 @@ export const EnhancedChatInterface = ({
         };
         addMessage(aiMessage);
 
-        // CRITICAL: Automatic TTS for AI responses
+        // CRITICAL: Automatic TTS for AI responses with live mode optimization
         const responseText = data.answer || data.response;
         if (responseText) {
           console.log('[EnhancedChat] Auto-speaking AI response:', responseText.slice(0, 50));
@@ -194,11 +194,20 @@ export const EnhancedChatInterface = ({
           // Determine if auto-speak should be enabled based on mode
           const shouldAutoSpeak = currentMode === 'live' || currentMode === 'dictation';
           
-          await autoSpeak(responseText, {
-            autoSpeak: shouldAutoSpeak,
-            usePremium: true,
-            interruptible: true
-          });
+          // For live mode, ensure immediate TTS playback
+          if (shouldAutoSpeak) {
+            // Stop any existing auto-speak to prevent overlap
+            stopAutoSpeak();
+            
+            // Brief delay to ensure clean audio transition
+            setTimeout(async () => {
+              await autoSpeak(responseText, {
+                autoSpeak: true,
+                usePremium: true,
+                interruptible: currentMode === 'live'
+              });
+            }, currentMode === 'live' ? 100 : 0);
+          }
         }
       }
     } catch (error) {
@@ -227,12 +236,13 @@ export const EnhancedChatInterface = ({
     }
   };
 
-  // Voice mode handlers
+  // Voice mode handlers with conversation state management
   const {
     handleDictationComplete,
     handleLiveTranscriptStream,
     handleLiveInterrupt,
-    currentTranscript
+    currentTranscript,
+    conversationState
   } = useVoiceModes(sendMessage);
 
   // Handle current transcript from voice modes
@@ -422,7 +432,8 @@ export const EnhancedChatInterface = ({
             ) : currentMode === 'live' ? (
               <PremiumLiveConversationInterface 
                 onTranscriptStream={handleLiveTranscriptStream} 
-                onInterrupt={handleLiveInterrupt} 
+                onInterrupt={handleLiveInterrupt}
+                conversationState={conversationState}
                 className="w-full" 
               />
             ) : null}
