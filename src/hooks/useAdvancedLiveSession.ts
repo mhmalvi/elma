@@ -26,7 +26,8 @@ export interface UseAdvancedLiveSessionReturn {
 export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionReturn => {
   const { toast } = useToast();
   
-  const [sessionState, setSessionState] = useState<LiveSessionState>({
+  // Initialize state with stable object
+  const [sessionState, setSessionState] = useState<LiveSessionState>(() => ({
     isActive: false,
     conversationState: 'idle',
     currentLanguage: 'en',
@@ -34,9 +35,9 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     conversationHistory: [],
     error: null,
     sessionId: null
-  });
+  }));
 
-  // Use existing working hooks
+  // Use existing working hooks with error boundaries
   const sttHook = useAdvancedVoiceSTT();
   const ttsHook = useAdvancedTTS();
 
@@ -218,6 +219,11 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
     try {
       console.log('[AdvancedLiveSession] Starting live session');
       
+      // Reset refs
+      isProcessingRef.current = false;
+      interruptionRef.current = false;
+      lastTranscriptRef.current = '';
+      
       // Generate session ID
       const sessionId = `live_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
@@ -229,13 +235,15 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         conversationState: 'listening',
         sessionId,
         error: null,
-        turnCount: 0
+        turnCount: 0,
+        conversationHistory: []
       }));
 
       console.log('[AdvancedLiveSession] Starting STT listening...');
       
-      // Start STT
-      await sttHook.startListening(sessionState.currentLanguage);
+      // Start STT with current language
+      const currentLang = sessionState.currentLanguage || 'en';
+      await sttHook.startListening(currentLang);
 
       console.log('[AdvancedLiveSession] Session started successfully');
 
@@ -249,6 +257,8 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
       
       setSessionState(prev => ({
         ...prev,
+        isActive: false,
+        conversationState: 'idle',
         error: error instanceof Error ? error.message : 'Failed to start session'
       }));
 
@@ -258,7 +268,7 @@ export const useAdvancedLiveSession = (userId?: string): UseAdvancedLiveSessionR
         variant: "destructive",
       });
     }
-  }, [sttHook, sessionState.currentLanguage, toast]);
+  }, [sttHook, toast]);
 
   // End session
   const endSession = useCallback(() => {
