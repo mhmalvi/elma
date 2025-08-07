@@ -8,22 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
-import { 
-  Send, 
-  Mic,
-  Square, 
-  Play, 
-  Pause, 
-  VolumeX, 
-  Copy, 
-  Share,
-  Bookmark,
-  MoreHorizontal,
-  Sparkles,
-  MessageCircle,
-  BookOpen,
-  Quote
-} from 'lucide-react';
+import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -34,7 +19,6 @@ import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-
 interface Message {
   id: string;
   text: string;
@@ -47,18 +31,29 @@ interface Message {
   };
   isProcessing?: boolean;
 }
-
 interface EnhancedChatInterfaceProps {
   className?: string;
 }
+export const EnhancedChatInterface = ({
+  className
+}: EnhancedChatInterfaceProps) => {
+  const {
+    user
+  } = useAuth();
+  const {
+    profile
+  } = useProfile();
+  const {
+    addBookmark,
+    isBookmarked
+  } = useBookmarks();
+  const {
+    toast
+  } = useToast();
+  const {
+    currentMode
+  } = useVoiceMode();
 
-export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps) => {
-  const { user } = useAuth();
-  const { profile } = useProfile();
-  const { addBookmark, isBookmarked } = useBookmarks();
-  const { toast } = useToast();
-  const { currentMode } = useVoiceMode();
-  
   // Use conversation management context
   const conversationHookResult = useConversationsContext();
   const {
@@ -69,19 +64,20 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     messagesLoading,
     selectConversation
   } = conversationHookResult;
-  
+
   // Debug hook result
   console.log('ENHANCED CHAT INTERFACE - Hook result:', {
     currentConversation: currentConversation?.id,
     messagesCount: conversationMessages.length,
     hookResult: conversationHookResult
   });
-  
-  const { speakText, isPlayingAudio, stopAudio } = useVoiceIntegration();
-
+  const {
+    speakText,
+    isPlayingAudio,
+    stopAudio
+  } = useVoiceIntegration();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -104,12 +100,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     console.log('- Raw messages:', conversationMessages);
   }, [currentConversation, conversationMessages, displayMessages, messagesLoading]);
 
-
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   }, []);
-
   useEffect(() => {
     scrollToBottom();
   }, [displayMessages, scrollToBottom]);
@@ -119,10 +115,8 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
   // Send message to AI
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || isProcessing) return;
-
     setInputValue('');
     setIsProcessing(true);
-
     try {
       // Create conversation if none exists
       let conversation = currentConversation;
@@ -150,22 +144,21 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
         created_at: new Date().toISOString()
       };
       addMessage(userMessage);
-
       console.log('Sending message to AI for conversation:', conversation.id);
-      
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('ai-chat', {
+        body: {
           question: messageText,
           user_id: user?.id,
           conversation_id: conversation.id
         }
       });
-
       if (error) {
         console.error('AI chat error:', error);
         throw new Error(error.message || 'Failed to get AI response');
       }
-
       console.log('AI response received:', data);
 
       // Add AI response to UI immediately
@@ -188,13 +181,12 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
           await speakText(data.answer || data.response);
         }
       }
-
     } catch (error) {
       console.error('Error sending message:', error);
-      
+
       // Remove the optimistic user message on error
       // The real-time subscription will handle proper message sync
-      
+
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -204,12 +196,10 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       setIsProcessing(false);
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(inputValue);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -222,7 +212,7 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
     handleDictationComplete,
     handleLiveTranscriptStream,
     handleLiveInterrupt,
-    currentTranscript,
+    currentTranscript
   } = useVoiceModes(sendMessage);
 
   // Handle current transcript from voice modes
@@ -231,7 +221,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       setInputValue(currentTranscript);
     }
   }, [currentTranscript]);
-
   const handleSpeakMessage = async (text: string) => {
     if (isPlayingAudio) {
       stopAudio();
@@ -239,7 +228,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       await speakText(text);
     }
   };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -247,7 +235,6 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       description: "Message copied to clipboard"
     });
   };
-
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -255,27 +242,19 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
       textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   };
-
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue]);
 
   // Welcome messages for empty state
-  const welcomePrompts = [
-    "What does Islam teach about patience?",
-    "Can you explain the concept of Tawhid?",
-    "What are the pillars of Islam?",
-    "Tell me about the importance of prayer in Islam"
-  ];
-
-  return (
-    <div className={cn("flex flex-col h-full bg-background", className)}>
+  const welcomePrompts = ["What does Islam teach about patience?", "Can you explain the concept of Tawhid?", "What are the pillars of Islam?", "Tell me about the importance of prayer in Islam"];
+  return <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {displayMessages.length === 0 && !currentConversation && !messagesLoading ? (
-            // Welcome State
-            <div className="text-center py-12">
+          {displayMessages.length === 0 && !currentConversation && !messagesLoading ?
+        // Welcome State
+        <div className="text-center py-12">
               <div className="mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-8 h-8 text-primary" />
@@ -312,120 +291,69 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               <div className="mt-8">
                 <p className="text-sm text-muted-foreground mb-4">Try these example questions:</p>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {welcomePrompts.map((prompt, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => sendMessage(prompt)}
-                      className="text-xs hover:bg-primary/10"
-                      disabled={isProcessing}
-                    >
+                  {welcomePrompts.map((prompt, index) => <Button key={index} variant="outline" size="sm" onClick={() => sendMessage(prompt)} className="text-xs hover:bg-primary/10" disabled={isProcessing}>
                       <Quote className="w-3 h-3 mr-1" />
                       {prompt}
-                    </Button>
-                  ))}
+                    </Button>)}
                 </div>
               </div>
-            </div>
-          ) : messagesLoading ? (
-            // Loading state
-            <div className="text-center py-12">
+            </div> : messagesLoading ?
+        // Loading state
+        <div className="text-center py-12">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading conversation...</p>
-            </div>
-          ) : (
-            // Messages
-            <>
-              {displayMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-3 animate-fade-in",
-                    message.isUser ? "justify-end" : "justify-start"
-                  )}
-                >
-                  {!message.isUser && (
-                    <Avatar className="w-8 h-8 mt-1">
+            </div> :
+        // Messages
+        <>
+              {displayMessages.map(message => <div key={message.id} className={cn("flex gap-3 animate-fade-in", message.isUser ? "justify-end" : "justify-start")}>
+                  {!message.isUser && <Avatar className="w-8 h-8 mt-1">
                       <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         AI
                       </AvatarFallback>
-                    </Avatar>
-                  )}
+                    </Avatar>}
 
-                  <div className={cn(
-                    "max-w-[80%] space-y-2",
-                    message.isUser ? "items-end" : "items-start"
-                  )}>
-                    <Card className={cn(
-                      "p-4 transition-all duration-200",
-                      message.isUser 
-                        ? "bg-primary text-primary-foreground ml-auto" 
-                        : "bg-muted"
-                     )}>
+                  <div className={cn("max-w-[80%] space-y-2", message.isUser ? "items-end" : "items-start")}>
+                    <Card className={cn("p-4 transition-all duration-200", message.isUser ? "bg-primary text-primary-foreground ml-auto" : "bg-muted")}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.text}
                       </p>
 
-                      {message.source && (
-                        <div className="mt-3 pt-3 border-t border-border/20">
+                      {message.source && <div className="mt-3 pt-3 border-t border-border/20">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <BookOpen className="w-3 h-3" />
                             <span>Source: {message.source.reference || message.source}</span>
                           </div>
-                        </div>
-                      )}
+                        </div>}
                     </Card>
 
-                    {!message.isUser && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSpeakMessage(message.text)}
-                          className="h-6 px-2 text-xs"
-                        >
+                    {!message.isUser && <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleSpeakMessage(message.text)} className="h-6 px-2 text-xs">
                           {isPlayingAudio ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(message.text)}
-                          className="h-6 px-2 text-xs"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(message.text)} className="h-6 px-2 text-xs">
                           <Copy className="w-3 h-3" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addBookmark(message.id, message.text.substring(0, 50))}
-                          className="h-6 px-2 text-xs"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => addBookmark(message.id, message.text.substring(0, 50))} className="h-6 px-2 text-xs">
                           <Bookmark className={cn("w-3 h-3", isBookmarked(message.id) && "fill-current text-primary")} />
                         </Button>
-                      </div>
-                    )}
+                      </div>}
 
                     <div className="text-xs text-muted-foreground">
                       {message.timestamp.toLocaleTimeString()}
                     </div>
                   </div>
 
-                  {message.isUser && (
-                    <Avatar className="w-8 h-8 mt-1">
+                  {message.isUser && <Avatar className="w-8 h-8 mt-1">
                       <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                         {profile?.display_name?.[0]?.toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
+                    </Avatar>}
+                </div>)}
 
               {/* Processing indicator */}
-              {isProcessing && (
-                <div className="flex gap-3 animate-fade-in justify-start">
+              {isProcessing && <div className="flex gap-3 animate-fade-in justify-start">
                   <Avatar className="w-8 h-8 mt-1">
                     <AvatarImage src="/src/assets/airchatbot-logo.png" alt="AirChatBot" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -438,40 +366,29 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                       <div className="flex items-center gap-2">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{
+                      animationDelay: '0.1s'
+                    }}></div>
+                          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{
+                      animationDelay: '0.2s'
+                    }}></div>
                         </div>
                         <span className="text-sm">Thinking...</span>
                       </div>
                     </Card>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                </div>}
+            </>}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
       {/* Premium Voice Mode Interface */}
-      {currentMode && (
-        <div className="border-t bg-background p-4">
+      {currentMode && <div className="border-t bg-background p-4">
           <div className="max-w-4xl mx-auto">
-            {currentMode === 'dictation' ? (
-              <PremiumDictationInterface
-                onTranscriptComplete={handleDictationComplete}
-                className="w-full"
-              />
-            ) : currentMode === 'live' ? (
-              <PremiumLiveConversationInterface
-                onTranscriptStream={handleLiveTranscriptStream}
-                onInterrupt={handleLiveInterrupt}
-                className="w-full"
-              />
-            ) : null}
+            {currentMode === 'dictation' ? <PremiumDictationInterface onTranscriptComplete={handleDictationComplete} className="w-full" /> : currentMode === 'live' ? <PremiumLiveConversationInterface onTranscriptStream={handleLiveTranscriptStream} onInterrupt={handleLiveInterrupt} className="w-full" /> : null}
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Premium Input Area */}
       <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
@@ -482,54 +399,21 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
               <div className="flex gap-4 items-end p-1 rounded-2xl bg-gradient-to-br from-card/80 to-muted/20 border border-border/20 shadow-lg shadow-black/5 backdrop-blur-sm">
                 {/* Input Field */}
                 <div className="flex-1 relative">
-                  <Textarea
-                    ref={textareaRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask about Islam, life guidance, Quran, Hadith..."
-                    className="min-h-[52px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed"
-                    disabled={isProcessing}
-                  />
+                  <Textarea ref={textareaRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask about Islam, life guidance, Quran, Hadith..." className="min-h-[52px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" disabled={isProcessing} />
                   
                   {/* Character count indicator */}
-                  {inputValue.length > 50 && (
-                    <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/50">
+                  {inputValue.length > 50 && <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/50">
                       {inputValue.length}
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Voice Mode Toggle */}
-                <div className="flex-shrink-0">
-                  <PremiumVoiceModeToggle 
-                    currentMode={currentMode}
-                    onModeChange={(mode) => {
-                      console.log('Mode change requested:', mode);
-                    }} 
-                    isActive={true}
-                    className="scale-90 opacity-80 hover:opacity-100 transition-opacity" 
-                  />
-                </div>
+                
 
                 {/* Send Button */}
                 <div className="flex-shrink-0">
-                  <Button
-                    type="submit"
-                    disabled={!inputValue.trim() || isProcessing}
-                    size="sm"
-                    className={cn(
-                      "h-11 w-11 rounded-xl shadow-md transition-all duration-300",
-                      "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
-                      "hover:shadow-lg hover:scale-105 active:scale-95",
-                      "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    )}
-                  >
-                    {isProcessing ? (
-                      <div className="w-4 h-4 border-2 border-white/70 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
+                  <Button type="submit" disabled={!inputValue.trim() || isProcessing} size="sm" className={cn("h-11 w-11 rounded-xl shadow-md transition-all duration-300", "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70", "hover:shadow-lg hover:scale-105 active:scale-95", "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none")}>
+                    {isProcessing ? <div className="w-4 h-4 border-2 border-white/70 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
@@ -547,24 +431,18 @@ export const EnhancedChatInterface = ({ className }: EnhancedChatInterfaceProps)
                 <span className="text-muted-foreground/50">to send</span>
               </div>
               
-              {currentMode && (
-                <>
+              {currentMode && <>
                   <span className="text-muted-foreground/30">•</span>
                   <div className="flex items-center gap-1">
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full animate-pulse",
-                      currentMode === 'dictation' ? "bg-primary/70" : "bg-accent/70"
-                    )} />
+                    <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", currentMode === 'dictation' ? "bg-primary/70" : "bg-accent/70")} />
                     <span className="text-muted-foreground/60 font-medium">
                       {currentMode === 'dictation' ? 'Voice Memo' : 'Live Chat'} ready
                     </span>
                   </div>
-                </>
-              )}
+                </>}
             </div>
           </form>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
