@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type VoiceModeType = 'dictation' | 'live' | null;
+export type VoiceModeType = 'dictation' | 'live' | 'continuous' | null;
 
 interface VoiceModeSettings {
   silenceTimeout: number;
@@ -62,6 +62,14 @@ export const VoiceModeProvider = ({ children }: VoiceModeProviderProps) => {
           silenceTimeout: 1000,
           autoSend: false,
           continuousListening: true,
+        }));
+      } else if (mode === 'continuous') {
+        setSettings(prev => ({
+          ...prev,
+          silenceTimeout: 500,
+          autoSend: false,
+          continuousListening: true,
+          interruptible: true,
         }));
       }
     } else {
