@@ -5,9 +5,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { VoiceModeSelector } from '@/components/voice/VoiceModeSelector';
-import { DictationModeInterface } from '@/components/voice/DictationModeInterface';
-import { LiveConversationInterface } from '@/components/voice/LiveConversationInterface';
+import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggle';
+import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
+import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
 import { 
   Send, 
   Mic,
