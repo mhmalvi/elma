@@ -81,7 +81,7 @@ export const SmartStatusIndicator = ({
   
   return (
     <Card className={cn(
-      "p-4 transition-all duration-300 w-full",
+      "p-4 transition-all duration-300 w-full min-w-0 flex-1",
       config.bgColor,
       className
     )}>
