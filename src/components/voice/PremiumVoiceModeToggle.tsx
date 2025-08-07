@@ -68,7 +68,7 @@ export const PremiumVoiceModeToggle = ({
       </div>
 
       {/* Mode Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
         {VOICE_MODES.map((mode) => {
           const IconComponent = mode.icon;
           const isSelected = currentMode === mode.id;
@@ -77,10 +77,11 @@ export const PremiumVoiceModeToggle = ({
             <Card
               key={mode.id}
               className={cn(
-                "relative p-6 cursor-pointer transition-all duration-500 group",
-                "hover:scale-[1.02] hover:shadow-xl",
-                "bg-card/60 backdrop-blur-xl border border-border/50",
-                isSelected && "border-primary/50 bg-primary/5 shadow-lg",
+                "relative p-4 cursor-pointer transition-all duration-300 group",
+                "hover:scale-[1.02] hover:shadow-lg",
+                "bg-card/80 backdrop-blur-sm border border-border/50",
+                "max-w-xs mx-auto",
+                isSelected && "border-primary/50 bg-primary/5 shadow-md",
                 isSelected && isActive && "animate-gentle-pulse"
               )}
               onClick={() => onModeChange(mode.id)}
@@ -95,16 +96,16 @@ export const PremiumVoiceModeToggle = ({
               )}
 
               {/* Content */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className={cn(
-                    "p-3 rounded-xl transition-all duration-300",
+                    "p-2 rounded-lg transition-all duration-300",
                     isSelected ? "bg-primary/20" : "bg-muted/50",
-                    "group-hover:scale-110"
+                    "group-hover:scale-105"
                   )}>
                     <IconComponent className={cn(
-                      "w-6 h-6 transition-colors duration-300",
+                      "w-5 h-5 transition-colors duration-300",
                       isSelected ? "text-primary" : "text-muted-foreground"
                     )} />
                   </div>
@@ -112,7 +113,7 @@ export const PremiumVoiceModeToggle = ({
                   {mode.badge && (
                     <Badge 
                       variant={isSelected ? "default" : "secondary"}
-                      className="text-xs animate-fade-in"
+                      className="text-xs"
                     >
                       {mode.badge}
                     </Badge>
@@ -120,17 +121,17 @@ export const PremiumVoiceModeToggle = ({
                 </div>
 
                 {/* Title & Description */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div>
-                    <h4 className="font-semibold text-foreground">
+                    <h4 className="font-medium text-sm text-foreground">
                       {mode.title}
                     </h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {mode.subtitle}
                     </p>
                   </div>
                   
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                     {mode.description}
                   </p>
                 </div>
