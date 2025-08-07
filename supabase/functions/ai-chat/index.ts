@@ -46,8 +46,31 @@ serve(async (req) => {
       console.log('Authentication failed, proceeding without user context');
     }
 
-    console.log('Processing question:', question);
+    console.log('Processing question (len):', question.length);
     console.log('User ID:', user?.id);
+
+    const endpoint = 'ai-chat';
+
+    // Enforce authentication
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    // Basic rate limiting: 60 requests/min per user
+    const windowStart = new Date(Date.now() - 60 * 1000).toISOString();
+    const { data: rlRows } = await supabase
+      .from('rate_limits')
+      .select('request_count')
+      .eq('user_id', user.id)
+      .eq('endpoint', endpoint)
+      .gte('window_start', windowStart);
+
+    const currentCount = (rlRows || []).reduce((sum: number, r: any) => sum + (r.request_count || 0), 0);
+    if (currentCount >= 60) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders });
+    }
+    // Log this request
+    await supabase.from('rate_limits').insert({ user_id: user.id, endpoint });
 
     let contextText = '';
     let qdrantResults = null;
