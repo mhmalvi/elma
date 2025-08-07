@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { PremiumAIAvatar } from './PremiumAIAvatar';
 import { PremiumLanguageSelector } from './PremiumLanguageSelector';
 import { PremiumWaveformVisualizer } from './PremiumWaveformVisualizer';
-import { SmartStatusIndicator } from './SmartStatusIndicator';
+import { CompactStatusIndicator } from './CompactStatusIndicator';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
 import { useAdvancedTTS } from '@/hooks/useAdvancedTTS';
 import { Mic, MicOff, Square, Volume2, VolumeX, Pause, Play, RotateCcw, MessageCircle } from 'lucide-react';
@@ -128,9 +128,16 @@ export const PremiumLiveConversationInterface = ({
         </div>
       </div>
 
-      {/* Status Row */}
+      {/* Compact Status Row */}
       <div className="w-full">
-        <SmartStatusIndicator status={getConversationStatus()} confidence={sttState.confidence} language={currentLanguage} isOnline={true} wordCount={sttState.wordCount} characterCount={sttState.characterCount} className="w-full" />
+        <CompactStatusIndicator 
+          status={getConversationStatus()} 
+          confidence={sttState.confidence} 
+          language={currentLanguage} 
+          isOnline={true}
+          provider={ttsState.isSpeaking ? 'elevenlabs' : null}
+          className="w-full" 
+        />
       </div>
 
       {/* Live Transcript Display - Compact */}

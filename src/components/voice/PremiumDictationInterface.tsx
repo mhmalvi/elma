@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PremiumAIAvatar } from './PremiumAIAvatar';
 import { PremiumLanguageSelector } from './PremiumLanguageSelector';
 import { PremiumWaveformVisualizer } from './PremiumWaveformVisualizer';
-import { SmartStatusIndicator } from './SmartStatusIndicator';
+import { CompactStatusIndicator } from './CompactStatusIndicator';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
 import { Mic, Square, Send, Edit3, RotateCcw, CheckCircle, Save, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -136,9 +136,16 @@ export const PremiumDictationInterface = ({
         </div>
       </div>
 
-      {/* Status Row */}
+      {/* Compact Status Row */}
       <div className="w-full">
-        <SmartStatusIndicator status={getRecordingStatus()} confidence={sttState.confidence} language={currentLanguage} isOnline={true} wordCount={sttState.wordCount} characterCount={sttState.characterCount} message={showSuccess ? "Sent successfully!" : undefined} className="w-full" />
+        <CompactStatusIndicator 
+          status={getRecordingStatus()} 
+          confidence={sttState.confidence} 
+          language={currentLanguage} 
+          isOnline={true}
+          message={showSuccess ? "Sent successfully!" : undefined}
+          className="w-full" 
+        />
       </div>
 
       {/* Transcript Area */}
