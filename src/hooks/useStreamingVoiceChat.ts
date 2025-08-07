@@ -36,6 +36,7 @@ export const useStreamingVoiceChat = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingMessageRef = useRef<string>('');
   const currentMessageIdRef = useRef<string>('');
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
 
   // Initialize audio streaming queue with GLOBAL MANAGER controls
   const audioQueue = useAudioStreamQueue({
@@ -62,6 +63,7 @@ export const useStreamingVoiceChat = () => {
       audioManager.releaseOperation('tts');
       stateMachine.aiStopsResponding();
       vadDetection.onTTSStop?.();
+      setPlayingMessageId(null);
       
       // MANDATORY cooldown after TTS
       setTimeout(() => {
@@ -75,6 +77,7 @@ export const useStreamingVoiceChat = () => {
       audioManager.releaseOperation('tts');
       stateMachine.interrupt();
       vadDetection.onTTSStop?.();
+      setPlayingMessageId(null);
     }
   });
 
@@ -363,6 +366,24 @@ export const useStreamingVoiceChat = () => {
     audioQueue.flushBuffer();
   }, [audioQueue]);
 
+  // Speak a specific AI message by ID and track which one is playing
+  const speakMessage = useCallback((messageId: string) => {
+    const msg = chatState.messages.find(m => m.id === messageId);
+    if (!msg || msg.isUser || msg.isProcessing) return;
+    audioQueue.interrupt(true);
+    setPlayingMessageId(messageId);
+    audioQueue.addToBuffer(msg.text);
+    audioQueue.flushBuffer();
+  }, [chatState.messages, audioQueue]);
+
+  // Stop any ongoing speech and clear playing state
+  const stopSpeaking = useCallback(() => {
+    audioQueue.interrupt(true);
+    setPlayingMessageId(null);
+    stateMachine.interrupt();
+    audioManager.releaseOperation('tts');
+  }, [audioQueue, stateMachine, audioManager]);
+
   const interruptAI = useCallback(() => {
     audioQueue.interrupt(true);
     stateMachine.interrupt();
@@ -382,6 +403,7 @@ export const useStreamingVoiceChat = () => {
     error: chatState.error,
     systemState,
     isSystemDisabled: audioManager.isSystemDisabled,
+    playingMessageId,
     
     // Voice status
     isUserSpeaking: vadDetection.isUserSpeaking,
@@ -393,6 +415,8 @@ export const useStreamingVoiceChat = () => {
     toggleVoiceMode,
     sendTextMessage,
     speakText,
+    speakMessage,
+    stopSpeaking,
     interruptAI,
     recoverVoiceMode,
     
