@@ -391,35 +391,92 @@ export const EnhancedChatInterface = ({
         </div>}
 
       {/* Premium Input Area */}
-      <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
+      <div className="border-t border-border/5 bg-gradient-to-b from-background/98 to-background/95 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Main Input Container */}
-            <div className="relative">
-              <div className="flex gap-4 items-end p-1 rounded-2xl bg-gradient-to-br from-card/80 to-muted/20 border border-border/20 shadow-lg shadow-black/5 backdrop-blur-sm">
-                {/* Input Field */}
-                <div className="flex-1 relative">
-                  <Textarea ref={textareaRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask about Islam, life guidance, Quran, Hadith..." className="min-h-[52px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" disabled={isProcessing} />
+            <div className="relative group">
+              <div className="flex gap-3 items-end p-2 rounded-3xl bg-gradient-to-br from-card/90 to-muted/30 border border-border/10 shadow-xl shadow-black/3 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:shadow-black/5">
+                {/* Voice Mode Buttons */}
+                <div className="flex gap-1 flex-shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => currentMode === 'dictation' ? {} : {}}
+                    className={cn(
+                      "h-10 w-10 rounded-2xl transition-all duration-200 hover:scale-105",
+                      currentMode === 'dictation' 
+                        ? "bg-primary/15 text-primary shadow-inner" 
+                        : "hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                    )}
+                    disabled={isProcessing}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
                   
-                  {/* Character count indicator */}
-                  {inputValue.length > 50 && <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/50">
-                      {inputValue.length}
-                    </div>}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => currentMode === 'live' ? {} : {}}
+                    className={cn(
+                      "h-10 w-10 rounded-2xl transition-all duration-200 hover:scale-105",
+                      currentMode === 'live' 
+                        ? "bg-accent/15 text-accent-foreground shadow-inner" 
+                        : "hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                    )}
+                    disabled={isProcessing}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </Button>
                 </div>
 
-                {/* Voice Mode Toggle */}
-                
+                {/* Input Field */}
+                <div className="flex-1 relative">
+                  <Textarea 
+                    ref={textareaRef} 
+                    value={inputValue} 
+                    onChange={e => setInputValue(e.target.value)} 
+                    onKeyDown={handleKeyDown} 
+                    placeholder="Ask about Islam, life guidance, Quran, Hadith..." 
+                    className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 text-sm leading-relaxed transition-all duration-200" 
+                    disabled={isProcessing} 
+                  />
+                  
+                  {/* Character count indicator */}
+                  {inputValue.length > 50 && (
+                    <div className="absolute bottom-2 right-3 text-xs text-muted-foreground/40 font-mono">
+                      {inputValue.length}
+                    </div>
+                  )}
+                </div>
 
                 {/* Send Button */}
                 <div className="flex-shrink-0">
-                  <Button type="submit" disabled={!inputValue.trim() || isProcessing} size="sm" className={cn("h-11 w-11 rounded-xl shadow-md transition-all duration-300", "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70", "hover:shadow-lg hover:scale-105 active:scale-95", "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none")}>
-                    {isProcessing ? <div className="w-4 h-4 border-2 border-white/70 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+                  <Button 
+                    type="submit" 
+                    disabled={!inputValue.trim() || isProcessing} 
+                    size="sm" 
+                    className={cn(
+                      "h-11 w-11 rounded-2xl shadow-lg transition-all duration-300",
+                      "bg-gradient-to-br from-primary via-primary to-primary/90",
+                      "hover:from-primary/95 hover:via-primary/90 hover:to-primary/80",
+                      "hover:shadow-xl hover:shadow-primary/25 hover:scale-105 active:scale-95",
+                      "disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                    )}
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               </div>
               
-              {/* Subtle glow effect */}
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
+              {/* Enhanced glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10" />
             </div>
 
             {/* Minimal Status Indicator */}
