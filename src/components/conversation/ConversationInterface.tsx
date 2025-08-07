@@ -327,6 +327,24 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
               {getVoiceStatus()}
             </div>
             
+            {voiceChat.isVADDisabled && (
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
+                  <p className="text-xs text-yellow-400">
+                    Voice detection temporarily disabled due to excessive interruptions.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={voiceChat.recoverVoiceMode}
+                  className="bg-yellow-500/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20"
+                >
+                  Reset Voice
+                </Button>
+              </div>
+            )}
+            
             {voiceChat.currentTranscript && (
               <div className="text-sm text-foreground/80 italic">
                 "{voiceChat.currentTranscript}"

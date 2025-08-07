@@ -32,10 +32,13 @@ export const useStreamingVoiceChat = () => {
   const streamingMessageRef = useRef<string>('');
   const currentMessageIdRef = useRef<string>('');
 
-  // Initialize audio streaming queue
+  // Initialize audio streaming queue with TTS/STT mutual exclusion
   const audioQueue = useAudioStreamQueue({
     onChunkStart: (chunk) => {
       console.log('TTS chunk started:', chunk.text.substring(0, 50));
+      stateMachine.aiStartsResponding();
+      // Stop VAD when TTS starts to prevent feedback
+      vadDetection.stopListening();
     },
     onChunkComplete: (chunk) => {
       console.log('TTS chunk completed');
@@ -43,9 +46,14 @@ export const useStreamingVoiceChat = () => {
     onQueueEmpty: () => {
       console.log('TTS queue empty - AI finished speaking');
       stateMachine.aiStopsResponding();
+      // Resume VAD when TTS finishes, but only if in voice mode
+      if (stateMachine.isVoiceMode && stateMachine.state !== 'interrupted') {
+        setTimeout(() => vadDetection.startListening(), 100); // Small delay to prevent immediate re-trigger
+      }
     },
     onInterrupted: () => {
       console.log('TTS interrupted by user speech');
+      stateMachine.interrupt();
     }
   });
 
@@ -66,12 +74,12 @@ export const useStreamingVoiceChat = () => {
     }
   });
 
-  // Initialize voice activity detection
+  // Initialize voice activity detection with improved settings
   const vadDetection = useVoiceActivityDetection(
     {
-      threshold: 0.01,
-      minSpeechDuration: 300,
-      silenceDuration: 600,
+      threshold: 0.15, // Much less sensitive to prevent TTS feedback
+      minSpeechDuration: 500,
+      silenceDuration: 1200,
       confidenceThreshold: 0.7
     },
     () => {
@@ -87,7 +95,8 @@ export const useStreamingVoiceChat = () => {
     () => {
       console.log('VAD: User stopped speaking');
       stateMachine.userStopsSpeaking();
-    }
+    },
+    audioQueue.isPlaying // Pass TTS state to VAD to prevent feedback
   );
 
   // Initialize STT engine
@@ -244,6 +253,16 @@ export const useStreamingVoiceChat = () => {
     };
   }, [vadDetection, sttEngine, audioQueue]);
 
+  const recoverVoiceMode = useCallback(() => {
+    vadDetection.resetCircuitBreaker?.();
+    if (stateMachine.state === 'interrupted') {
+      stateMachine.reset();
+      if (stateMachine.isVoiceMode && !audioQueue.isPlaying) {
+        vadDetection.startListening();
+      }
+    }
+  }, [vadDetection, stateMachine, audioQueue]);
+
   return {
     // State
     state: stateMachine.state,
@@ -254,11 +273,13 @@ export const useStreamingVoiceChat = () => {
     isUserSpeaking: vadDetection.isUserSpeaking,
     audioLevel: vadDetection.audioLevel,
     confidence: vadDetection.confidence,
+    isVADDisabled: vadDetection.isDisabled,
     
     // Actions
     toggleVoiceMode,
     sendTextMessage,
     interruptAI,
+    recoverVoiceMode,
     
     // Status
     isListening: stateMachine.state === 'listening',

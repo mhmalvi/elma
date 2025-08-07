@@ -123,26 +123,15 @@ export const useConversationStateMachine = (
     return true;
   }, [onStateChange]);
 
-  // Auto-transition from interrupted to listening after delay
+  // Remove auto-transition from interrupted state
+  // User must manually recover or explicitly start listening again
   useEffect(() => {
-    if (stateMachine.state === 'interrupted') {
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-      }
-      
-      transitionTimeoutRef.current = setTimeout(() => {
-        if (stateMachine.isVoiceMode) {
-          transition({ type: 'RESET' });
-        }
-      }, 1000);
-    }
-
     return () => {
       if (transitionTimeoutRef.current) {
         clearTimeout(transitionTimeoutRef.current);
       }
     };
-  }, [stateMachine.state, stateMachine.isVoiceMode, transition]);
+  }, []);
 
   const toggleVoiceMode = useCallback(() => {
     transition({ type: 'VOICE_MODE_TOGGLE' });

@@ -15,16 +15,17 @@ interface VADState {
 }
 
 const DEFAULT_VAD_CONFIG: VADConfig = {
-  threshold: 0.01,
-  minSpeechDuration: 300, // ms
-  silenceDuration: 800, // ms
-  confidenceThreshold: 0.6
+  threshold: 0.15, // Much less sensitive to prevent TTS feedback
+  minSpeechDuration: 500, // ms - longer to avoid false positives
+  silenceDuration: 1200, // ms - longer silence before detecting end
+  confidenceThreshold: 0.7 // Higher confidence required
 };
 
 export const useVoiceActivityDetection = (
   config: Partial<VADConfig> = {},
   onSpeechStart?: () => void,
-  onSpeechEnd?: () => void
+  onSpeechEnd?: () => void,
+  isTTSPlaying: boolean = false // New parameter to disable VAD during TTS
 ) => {
   const [vadState, setVADState] = useState<VADState>({
     isUserSpeaking: false,
@@ -32,6 +33,11 @@ export const useVoiceActivityDetection = (
     audioLevel: 0,
     isListening: false
   });
+
+  // Circuit breaker state
+  const interruptionCountRef = useRef<number>(0);
+  const lastInterruptionTimeRef = useRef<number>(0);
+  const isDisabledRef = useRef<boolean>(false);
 
   const vadConfig = { ...DEFAULT_VAD_CONFIG, ...config };
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -50,8 +56,20 @@ export const useVoiceActivityDetection = (
     return Math.sqrt(sum / dataArray.length);
   }, []);
 
+  // Use refs for internal state to avoid stale closures
+  const internalStateRef = useRef({
+    isUserSpeaking: false,
+    isListening: false
+  });
+
   const analyzeAudio = useCallback(() => {
-    if (!analyserRef.current || isProcessingRef.current) return;
+    if (!analyserRef.current || isProcessingRef.current || isTTSPlaying || isDisabledRef.current) {
+      // Skip processing if TTS is playing or VAD is disabled
+      if (internalStateRef.current.isListening) {
+        requestAnimationFrame(analyzeAudio);
+      }
+      return;
+    }
 
     isProcessingRef.current = true;
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -63,6 +81,7 @@ export const useVoiceActivityDetection = (
     
     const isSpeechDetected = rms > vadConfig.threshold && confidence > vadConfig.confidenceThreshold;
 
+    // Only update React state for audio levels
     setVADState(prev => ({
       ...prev,
       audioLevel,
@@ -71,23 +90,43 @@ export const useVoiceActivityDetection = (
 
     const now = Date.now();
 
-    if (isSpeechDetected && !vadState.isUserSpeaking) {
+    // Circuit breaker: check for excessive interruptions
+    if (now - lastInterruptionTimeRef.current < 10000) {
+      if (interruptionCountRef.current > 5) {
+        console.warn('VAD: Too many interruptions, temporarily disabling');
+        isDisabledRef.current = true;
+        setTimeout(() => {
+          isDisabledRef.current = false;
+          interruptionCountRef.current = 0;
+        }, 5000);
+        isProcessingRef.current = false;
+        return;
+      }
+    } else {
+      interruptionCountRef.current = 0;
+    }
+
+    if (isSpeechDetected && !internalStateRef.current.isUserSpeaking) {
       // Potential speech start
       if (speechStartTimeRef.current === 0) {
         speechStartTimeRef.current = now;
       } else if (now - speechStartTimeRef.current >= vadConfig.minSpeechDuration) {
         // Confirmed speech start
+        internalStateRef.current.isUserSpeaking = true;
         setVADState(prev => ({ ...prev, isUserSpeaking: true }));
+        interruptionCountRef.current++;
+        lastInterruptionTimeRef.current = now;
         onSpeechStart?.();
         speechStartTimeRef.current = 0;
       }
-    } else if (!isSpeechDetected && vadState.isUserSpeaking) {
+    } else if (!isSpeechDetected && internalStateRef.current.isUserSpeaking) {
       // Potential speech end
       if (vadTimeoutRef.current) {
         clearTimeout(vadTimeoutRef.current);
       }
       
       vadTimeoutRef.current = setTimeout(() => {
+        internalStateRef.current.isUserSpeaking = false;
         setVADState(prev => ({ ...prev, isUserSpeaking: false }));
         onSpeechEnd?.();
         speechStartTimeRef.current = 0;
@@ -99,10 +138,10 @@ export const useVoiceActivityDetection = (
 
     isProcessingRef.current = false;
 
-    if (vadState.isListening) {
+    if (internalStateRef.current.isListening) {
       requestAnimationFrame(analyzeAudio);
     }
-  }, [vadConfig, vadState.isUserSpeaking, vadState.isListening, calculateRMS, onSpeechStart, onSpeechEnd]);
+  }, [vadConfig, calculateRMS, onSpeechStart, onSpeechEnd, isTTSPlaying]);
 
   const startListening = useCallback(async () => {
     try {
@@ -126,6 +165,7 @@ export const useVoiceActivityDetection = (
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
 
+      internalStateRef.current.isListening = true;
       setVADState(prev => ({ ...prev, isListening: true }));
       analyzeAudio();
       
@@ -154,6 +194,10 @@ export const useVoiceActivityDetection = (
 
     analyserRef.current = null;
     speechStartTimeRef.current = 0;
+    internalStateRef.current = {
+      isUserSpeaking: false,
+      isListening: false
+    };
 
     setVADState({
       isUserSpeaking: false,
@@ -170,13 +214,21 @@ export const useVoiceActivityDetection = (
     };
   }, [stopListening]);
 
+  const resetCircuitBreaker = useCallback(() => {
+    isDisabledRef.current = false;
+    interruptionCountRef.current = 0;
+    console.log('VAD: Circuit breaker reset');
+  }, []);
+
   return {
     vadState,
     startListening,
     stopListening,
+    resetCircuitBreaker,
     isUserSpeaking: vadState.isUserSpeaking,
     confidence: vadState.confidence,
     audioLevel: vadState.audioLevel,
-    isListening: vadState.isListening
+    isListening: vadState.isListening,
+    isDisabled: isDisabledRef.current
   };
 };
