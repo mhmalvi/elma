@@ -79,28 +79,21 @@ export const useStreamingVoiceChat = () => {
     }
   });
 
-  // Initialize voice activity detection with EMERGENCY settings to prevent loops
+  // EMERGENCY: Disable VAD completely when any TTS is active
   const vadDetection = useVoiceActivityDetection(
     {
-      threshold: 0.25, // MUCH less sensitive to prevent TTS feedback (increased from 0.15)
-      minSpeechDuration: 800, // Longer duration required (increased from 500)
-      silenceDuration: 2000, // Longer silence required (increased from 1200)
-      confidenceThreshold: 0.8 // Higher confidence required (increased from 0.7)
+      threshold: 0.6, // Very high threshold
+      minSpeechDuration: 1500, // 1.5 seconds minimum
+      silenceDuration: 3000, // 3 seconds silence
+      confidenceThreshold: 0.95 // 95% confidence required
     },
     () => {
-      console.log('VAD: User started speaking');
-      
-      // CRITICAL: Only proceed if we're in proper listening state
-      if (stateMachine.state === 'listening') {
+      // CRITICAL: Only proceed if NOT playing TTS and in proper state
+      if (!audioQueue.isPlaying && stateMachine.state === 'listening') {
+        console.log('VAD: LEGITIMATE user speech detected');
         stateMachine.userStartsSpeaking();
-        
-      // Interrupt TTS if AI is speaking
-      if (audioQueue.isPlaying) {
-        audioQueue.interrupt(true);
-        stateMachine.interrupt();
-      }
       } else {
-        console.log('VAD: Ignoring speech - not in listening state');
+        console.log('VAD: Ignoring speech - TTS active or wrong state');
       }
     },
     () => {
@@ -109,7 +102,7 @@ export const useStreamingVoiceChat = () => {
         stateMachine.userStopsSpeaking();
       }
     },
-    audioQueue.isPlaying // Pass TTS state to VAD to prevent feedback
+    audioQueue.isPlaying // Completely disable when TTS is playing
   );
 
   // Initialize STT engine
