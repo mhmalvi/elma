@@ -10,12 +10,12 @@ import { Send, Mic, Play, Pause, Copy, Share, Bookmark, MoreHorizontal, Sparkles
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
-import { useAutoTTS } from '@/hooks/useAutoTTS';
 import { useConversationsContext } from '@/contexts/ConversationsContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useAdvancedVoiceSTT } from '@/hooks/useAdvancedVoiceSTT';
+import { useRealtimeVoiceChat } from '@/hooks/useRealtimeVoiceChat';
+import { useStreamingTTS } from '@/hooks/useStreamingTTS';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +41,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
   const { profile } = useProfile();
   const { addBookmark, isBookmarked } = useBookmarks();
   const { toast } = useToast();
-  const { currentMode, settings } = useVoiceMode();
+  const { currentMode, settings, setMode } = useVoiceMode();
 
   // Use conversation management context
   const {
@@ -52,17 +52,28 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
     messagesLoading,
   } = useConversationsContext();
 
-  const { speakText, isPlayingAudio, stopAudio } = useVoiceIntegration();
-  
-  // Enhanced auto-TTS system
-  const { autoSpeak, stopAutoSpeak, isAutoSpeaking } = useAutoTTS();
-  
-  // Voice input
+  // Real-time voice chat system
+  const {
+    chatState,
+    toggleConversation,
+    interrupt,
+    changeLanguage,
+    sendTextMessage
+  } = useRealtimeVoiceChat(user?.id);
+
+  // Streaming TTS for immediate response
+  const {
+    streamState,
+    isStreaming: isTTSStreaming,
+    startStreamingResponse,
+    stopStreaming
+  } = useStreamingTTS();
+
+  // Voice input for manual control
   const { sttState, startListening, stopListening, clearTranscript } = useAdvancedVoiceSTT();
 
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -84,18 +95,18 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
     scrollToBottom();
   }, [displayMessages, scrollToBottom]);
 
-  // Handle voice transcript
+  // Handle voice transcript for manual mode
   useEffect(() => {
-    if (sttState.transcript && sttState.transcript !== sttState.interimTranscript) {
+    if (sttState.transcript && sttState.transcript !== sttState.interimTranscript && currentMode !== 'voice') {
       setInputValue(sttState.transcript);
       if (settings.autoTTS) {
         sendMessage(sttState.transcript);
       }
       clearTranscript();
-    } else if (sttState.interimTranscript) {
+    } else if (sttState.interimTranscript && currentMode !== 'voice') {
       setInputValue(sttState.interimTranscript);
     }
-  }, [sttState.transcript, sttState.interimTranscript, settings.autoTTS, clearTranscript]);
+  }, [sttState.transcript, sttState.interimTranscript, settings.autoTTS, clearTranscript, currentMode]);
 
   // Send message to AI
   const sendMessage = async (messageText: string) => {
@@ -157,17 +168,16 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
         };
         addMessage(aiMessage);
 
-        // Auto-speak AI response if in voice mode
+        // Auto-speak AI response with streaming TTS for immediate response
         const responseText = data.answer || data.response;
         if (responseText && (currentMode === 'voice' || settings.autoTTS)) {
-          stopAutoSpeak();
-          setTimeout(async () => {
-            await autoSpeak(responseText, {
-              autoSpeak: true,
-              usePremium: settings.usePremiumVoice,
-              interruptible: settings.interruptible
-            });
-          }, 100);
+          // Stop any current streaming
+          stopStreaming();
+          
+          // Start streaming TTS immediately - no delay
+          await startStreamingResponse(responseText, settings.language);
+          
+          // Note: Auto-resume listening is handled by useRealtimeVoiceChat hook
         }
       }
     } catch (error) {
@@ -195,25 +205,31 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
   };
 
   const toggleVoiceMode = async () => {
-    if (isVoiceMode) {
-      stopListening();
-      setIsVoiceMode(false);
+    if (currentMode === 'voice') {
+      // Stop real-time voice chat
+      await toggleConversation();
+      
+      // Switch to text mode
+      setMode('text');
+      
+      // Also stop manual voice if active
+      if (sttState.isListening) {
+        stopListening();
+      }
     } else {
-      setIsVoiceMode(true);
-      await startListening(settings.language);
+      // Switch to voice mode
+      setMode('voice');
+      
+      // Start real-time voice conversation
+      await toggleConversation();
     }
   };
 
   const handleSpeakMessage = async (text: string) => {
-    if (isPlayingAudio || isAutoSpeaking) {
-      stopAudio();
-      stopAutoSpeak();
+    if (isTTSStreaming || streamState.isStreaming) {
+      stopStreaming();
     } else {
-      await autoSpeak(text, {
-        autoSpeak: true,
-        usePremium: settings.usePremiumVoice,
-        interruptible: true
-      });
+      await startStreamingResponse(text, settings.language);
     }
   };
 
@@ -351,7 +367,7 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                           onClick={() => handleSpeakMessage(message.text)}
                           className="h-6 px-2 text-xs"
                         >
-                          {(isPlayingAudio || isAutoSpeaking) ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          {(isTTSStreaming || streamState.isStreaming) ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                         </Button>
                         <Button
                           variant="ghost"
@@ -429,22 +445,29 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={isVoiceMode ? "Listening... Speak your message" : "Ask about Islamic teachings, life advice, or spiritual guidance..."}
+                  placeholder={currentMode === 'voice' ? "Voice mode active - speak naturally" : "Ask about Islamic teachings, life advice, or spiritual guidance..."}
                   className={cn(
                     "min-h-[48px] max-h-[120px] resize-none pr-20 text-sm",
                     "bg-background/50 border-border/50 focus:border-primary/50",
-                    isVoiceMode && "border-blue-400/50 bg-blue-50/50"
+                    currentMode === 'voice' && "border-green-400/50 bg-green-50/50"
                   )}
-                  disabled={isProcessing}
+                  disabled={isProcessing || currentMode === 'voice'}
                   rows={1}
                 />
                 
                 {/* Voice status indicator */}
-                {isVoiceMode && (
+                {currentMode === 'voice' && (
                   <div className="absolute right-14 top-1/2 -translate-y-1/2">
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs text-muted-foreground">Listening</span>
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        chatState.conversationState === 'listening' && "bg-green-500 animate-pulse",
+                        chatState.conversationState === 'processing' && "bg-yellow-500 animate-spin",
+                        chatState.conversationState === 'speaking' && "bg-blue-500 animate-bounce"
+                      )}></div>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {chatState.conversationState}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -454,14 +477,14 @@ export const ConversationInterface = ({ className }: ConversationInterfaceProps)
               <Button
                 type="button"
                 onClick={toggleVoiceMode}
-                variant={isVoiceMode ? "default" : "outline"}
+                variant="outline"
                 size="icon"
                 className={cn(
-                  "h-12 w-12 shrink-0",
-                  isVoiceMode && "bg-red-500 hover:bg-red-600 text-white"
+                  "h-12 w-12 shrink-0 transition-all duration-200",
+                  currentMode === 'voice' && "bg-green-500 hover:bg-green-600 text-white border-green-500"
                 )}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className={cn("w-5 h-5", currentMode === 'voice' && "animate-pulse")} />
               </Button>
 
               {/* Send button */}
