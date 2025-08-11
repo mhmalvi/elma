@@ -88,8 +88,20 @@ export const PremiumLanguageSelector = ({
 }: PremiumLanguageSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const selectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === currentLanguage || currentLanguage?.startsWith(lang.code)) || PREMIUM_LANGUAGES[0];
   const detectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === detectedLanguage || detectedLanguage?.startsWith(lang.code));
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const width = 320; // w-80
+      const left = Math.min(rect.left + window.scrollX, window.innerWidth - width - 16);
+      const top = rect.bottom + 8 + window.scrollY;
+      setMenuPos({ top, left, width });
+    }
+  }, [isOpen]);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -102,6 +114,7 @@ export const PremiumLanguageSelector = ({
   return <div className={cn("relative z-[9999]", className)} ref={dropdownRef}>
       {/* Main Language Button */}
       <Button
+        ref={buttonRef}
         variant="outline"
         className={cn(
           "h-10 px-3 rounded-xl flex items-center gap-2 border-border/60",
@@ -124,11 +137,15 @@ export const PremiumLanguageSelector = ({
       </Button>
 
       {/* Premium Dropdown */}
-      {isOpen && <Card className={cn(
-            "absolute top-12 left-0 w-80 p-2 z-[9999] animate-slide-in-up",
+      {isOpen && (
+        <Card
+          className={cn(
+            "fixed w-80 p-2 z-[9999] animate-slide-in-up",
             "bg-card border border-border/50 shadow-2xl",
-            "rounded-2xl"
-          )}>
+            "rounded-2xl max-h-[70vh] overflow-y-auto"
+          )}
+          style={{ top: menuPos?.top ?? 0, left: menuPos?.left ?? 0, width: menuPos?.width ?? 320 }}
+        >
           <div className="space-y-1">
             {PREMIUM_LANGUAGES.map(language => (
               <Button
@@ -178,6 +195,6 @@ export const PremiumLanguageSelector = ({
               Auto-detection active
             </div>
           </div>
-        </Card>}
+        </Card>)}
     </div>;
 };
