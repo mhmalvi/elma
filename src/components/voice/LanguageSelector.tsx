@@ -80,9 +80,9 @@ export const LanguageSelector = ({
       {/* Dropdown menu */}
       {isOpen && (
         <div className={cn(
-          "absolute top-full left-0 mt-2 w-full min-w-[200px] z-50",
-          "bg-gradient-to-br from-card to-secondary/20",
-          "border border-border/40 rounded-xl shadow-2xl backdrop-blur-xl",
+          "absolute top-full left-0 mt-2 w-full min-w-[200px] z-[9999]",
+          "bg-card",
+          "border border-border/40 rounded-xl shadow-2xl",
           "animate-slide-in-up"
         )}>
           <div className="p-2 space-y-1">
