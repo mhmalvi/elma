@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useAdvancedTTS } from './useAdvancedTTS';
 import { useVoiceMode } from '@/contexts/VoiceModeContext';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface AutoTTSOptions {
   autoSpeak: boolean;

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Clock, Mic, Volume2, MessageSquare, TestTube } from 'lucide-react';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
 import { VoiceQualityTester } from './VoiceQualityTester';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TestResult {

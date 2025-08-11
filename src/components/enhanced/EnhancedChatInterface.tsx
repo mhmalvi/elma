@@ -9,7 +9,7 @@ import { PremiumVoiceModeToggle } from '@/components/voice/PremiumVoiceModeToggl
 import { PremiumDictationInterface } from '@/components/voice/PremiumDictationInterface';
 import { PremiumLiveConversationInterface } from '@/components/voice/PremiumLiveConversationInterface';
 import { Send, Mic, Square, Play, Pause, VolumeX, Copy, Share, Bookmark, MoreHorizontal, Sparkles, MessageCircle, BookOpen, Quote } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';

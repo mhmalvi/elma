@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Smartphone, Wifi, Mic, Volume2, Battery, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
 
 interface BrowserTest {
