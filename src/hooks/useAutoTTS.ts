@@ -28,15 +28,19 @@ export const useAutoTTS = (): UseAutoTTSReturn => {
 
   // Language detection helper
   const detectLanguage = useCallback((text: string): string => {
-    // Simple language detection based on text patterns
-    const arabicPattern = /[\u0600-\u06FF]/;
-    const bengaliPattern = /[\u0980-\u09FF]/;
-    const urduPattern = /[\u0600-\u06FF].*[\u0627-\u06FF]/;
-    
-    if (arabicPattern.test(text)) return 'ar';
+    // Simple language detection based on script ranges
+    const arabicLike = /[\u0600-\u06FF]/; // Arabic script (covers Arabic/Urdu)
+    const bengaliPattern = /[\u0980-\u09FF]/; // Bengali
+    const devanagariPattern = /[\u0900-\u097F]/; // Hindi
+
     if (bengaliPattern.test(text)) return 'bn';
-    if (urduPattern.test(text)) return 'ur';
-    
+    if (devanagariPattern.test(text)) return 'hi';
+    if (arabicLike.test(text)) {
+      // Prefer Urdu if common Nastaliq-specific letters appear
+      const urduChars = /[\u0679\u0686\u0698\u06BA\u06BE\u06C1\u06CC]/;
+      return urduChars.test(text) ? 'ur' : 'ar';
+    }
+
     return 'en'; // Default to English
   }, []);
 
