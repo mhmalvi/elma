@@ -22,16 +22,19 @@ export interface TTSVoice {
 }
 
 export const PREMIUM_VOICES: TTSVoice[] = [
-  // ElevenLabs Premium Voices
+  // ElevenLabs Premium Voices (English defaults)
   { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria', language: 'en', gender: 'female', provider: 'elevenlabs', premium: true },
   { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger', language: 'en', gender: 'male', provider: 'elevenlabs', premium: true },
   { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', language: 'en', gender: 'female', provider: 'elevenlabs', premium: true },
   { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', language: 'en', gender: 'female', provider: 'elevenlabs', premium: true },
+  // ElevenLabs Premium Voices mapped for Bengali (use Multilingual v2)
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte (Bengali)', language: 'bn', gender: 'female', provider: 'elevenlabs', premium: true },
+  { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria (Bengali)', language: 'bn', gender: 'female', provider: 'elevenlabs', premium: true },
   
   // Browser fallback voices
   { id: 'browser-en-us', name: 'Browser English', language: 'en', gender: 'neutral', provider: 'browser', premium: false },
   { id: 'browser-ar-sa', name: 'Browser Arabic', language: 'ar', gender: 'neutral', provider: 'browser', premium: false },
-  { id: 'browser-bn-bd', name: 'Browser Bengali', language: 'bn', gender: 'neutral', provider: 'browser', premium: false },
+  { id: 'browser-bn', name: 'Browser Bengali', language: 'bn', gender: 'neutral', provider: 'browser', premium: false },
   { id: 'browser-ur-pk', name: 'Browser Urdu', language: 'ur', gender: 'neutral', provider: 'browser', premium: false },
   { id: 'browser-hi-in', name: 'Browser Hindi', language: 'hi', gender: 'neutral', provider: 'browser', premium: false },
 ];
@@ -78,17 +81,16 @@ export const useAdvancedTTS = () => {
       // Optimize text for better TTS (limit length for premium voices)
       const optimizedText = text.slice(0, 500); // Reasonable limit for quality
 
+      const voiceSettings = language === 'bn'
+        ? { stability: 0.45, similarity_boost: 0.55, style: 0.2, use_speaker_boost: true }
+        : { stability: 0.7, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true };
+
       const requestPayload = {
         text: optimizedText,
         voice: voiceId,
         options: {
           model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.7,
-            similarity_boost: 0.8,
-            style: 0.5,
-            use_speaker_boost: true
-          }
+          voice_settings: voiceSettings
         }
       };
 
@@ -199,28 +201,32 @@ export const useAdvancedTTS = () => {
       // Try to find the best voice for the language
       const voices = window.speechSynthesis.getVoices();
       const languageMap = {
-        'en': 'en-US',
-        'ar': 'ar-SA',
-        'bn': 'bn-BD',
-        'ur': 'ur-PK',
-        'hi': 'hi-IN',
-        'tr': 'tr-TR',
-        'fr': 'fr-FR',
-        'de': 'de-DE'
-      };
+        'en': ['en-US', 'en-GB'],
+        'ar': ['ar-SA', 'ar'],
+        'bn': ['bn-BD', 'bn-IN', 'bn'],
+        'ur': ['ur-PK', 'ur-IN', 'ur'],
+        'hi': ['hi-IN', 'hi'],
+        'tr': ['tr-TR', 'tr'],
+        'fr': ['fr-FR', 'fr-CA', 'fr'],
+        'de': ['de-DE', 'de']
+      } as const;
 
-      const targetLang = languageMap[language as keyof typeof languageMap] || 'en-US';
-      const preferredVoice = voices.find(voice => 
-        voice.lang.startsWith(targetLang) || 
-        voice.name.includes('Google') ||
-        voice.name.includes('Microsoft')
-      );
+      const targets = languageMap[language as keyof typeof languageMap] || ['en-US'];
+
+      // Prefer exact locale, then language prefix, then name hints
+      const preferredVoice = 
+        voices.find(v => targets.some(t => v.lang === t)) ||
+        voices.find(v => targets.some(t => v.lang.startsWith(t.split('-')[0]))) ||
+        (language === 'bn' 
+          ? voices.find(v => /Bengali|Bangla|বাংলা/i.test(`${v.name} ${v.lang}`)) 
+          : undefined) ||
+        voices.find(v => v.name.includes('Google') || v.name.includes('Microsoft'));
 
       if (preferredVoice) {
         utterance.voice = preferredVoice;
         utterance.lang = preferredVoice.lang;
       } else {
-        utterance.lang = targetLang;
+        utterance.lang = targets[0];
       }
 
       utterance.onstart = () => {

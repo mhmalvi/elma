@@ -244,17 +244,18 @@ export const useVoiceIntegration = () => {
         // Reduce text length to save credits and avoid quota issues
         const shortText = text.slice(0, 200) // Much shorter for credit efficiency
         
+        const isBengali = /[\u0980-\u09FF]/.test(shortText);
+        const selectedVoice = isBengali ? 'XB0fDUnXU5powFXDhCwa' : '9BWtsMINqrJLrRacOk9x';
+        const voiceSettings = isBengali
+          ? { stability: 0.45, similarity_boost: 0.55, style: 0.2, use_speaker_boost: true }
+          : { stability: 0.6, similarity_boost: 0.8, style: 0.4, use_speaker_boost: true };
+
         const requestPayload = { 
           text: shortText, // Limit to 200 chars to save credits
-          voice: '9BWtsMINqrJLrRacOk9x', // Aria voice - warm, natural, engaging
+          voice: selectedVoice,
           options: {
             model_id: 'eleven_multilingual_v2', // High-quality multilingual model
-            voice_settings: {
-              stability: 0.6,        // More stable, less random
-              similarity_boost: 0.8, // Higher voice consistency
-              style: 0.4,            // Moderate expressiveness
-              use_speaker_boost: true // Enhanced clarity
-            }
+            voice_settings: voiceSettings
           }
         }
         
@@ -317,15 +318,15 @@ export const useVoiceIntegration = () => {
           utterance.pitch = 1
           utterance.volume = 0.8
           
-          // Try to use a pleasant voice
+          // Try to use a pleasant voice with proper language
           const voices = window.speechSynthesis.getVoices()
-          const preferredVoice = voices.find(voice => 
-            voice.name.includes('Google') || 
-            voice.name.includes('Microsoft') ||
-            voice.lang.startsWith('en')
-          )
+          const isBengali = /[\u0980-\u09FF]/.test(text)
+          const preferredVoice = isBengali
+            ? (voices.find(v => /^(bn-BD|bn-IN|bn)/.test(v.lang)) || voices.find(v => /Bengali|Bangla|বাংলা/i.test(`${v.name} ${v.lang}`)))
+            : (voices.find(v => v.name.includes('Google') || v.name.includes('Microsoft') || v.lang.startsWith('en')))
           if (preferredVoice) {
             utterance.voice = preferredVoice
+            utterance.lang = preferredVoice.lang
           }
           
           utterance.onstart = () => {
