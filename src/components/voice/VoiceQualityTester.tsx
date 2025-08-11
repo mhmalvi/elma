@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useVoiceIntegration } from '@/hooks/useVoiceIntegration';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Mic, Volume2, CheckCircle, AlertTriangle, XCircle, BarChart3 } from 'lucide-react';
 
 interface QualityTest {

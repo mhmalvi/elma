@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 export const useVoiceIntegration = () => {
   const [isRecording, setIsRecording] = useState(false)
