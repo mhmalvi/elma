@@ -21,7 +21,6 @@ import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 interface Message {
   id: string;
   text: string;
