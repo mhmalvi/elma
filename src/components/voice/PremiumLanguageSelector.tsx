@@ -88,8 +88,8 @@ export const PremiumLanguageSelector = ({
 }: PremiumLanguageSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const selectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === currentLanguage) || PREMIUM_LANGUAGES[0];
-  const detectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === detectedLanguage);
+  const selectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === currentLanguage || currentLanguage?.startsWith(lang.code)) || PREMIUM_LANGUAGES[0];
+  const detectedLang = PREMIUM_LANGUAGES.find(lang => lang.code === detectedLanguage || detectedLanguage?.startsWith(lang.code));
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

@@ -55,14 +55,19 @@ export const useAdvancedTTS = () => {
   // Get optimal voice for language
   const getOptimalVoice = useCallback((language: string, usePremium: boolean = true) => {
     const voices = PREMIUM_VOICES.filter(v => v.language === language);
-    
+
     if (usePremium) {
-      const premiumVoice = voices.find(v => v.premium && v.provider === 'elevenlabs');
-      if (premiumVoice) return premiumVoice;
+      // Prefer a premium ElevenLabs voice for the requested language
+      const premiumLanguageMatch = voices.find(v => v.premium && v.provider === 'elevenlabs');
+      if (premiumLanguageMatch) return premiumLanguageMatch;
+
+      // If no language-specific premium voice exists, fall back to a default ElevenLabs voice
+      const anyPremium = PREMIUM_VOICES.find(v => v.premium && v.provider === 'elevenlabs');
+      if (anyPremium) return anyPremium;
     }
-    
-    // Fallback to browser voice
-    return voices.find(v => v.provider === 'browser') || PREMIUM_VOICES[0];
+
+    // Fallback to browser voice for the language, then any browser voice
+    return voices.find(v => v.provider === 'browser') || PREMIUM_VOICES.find(v => v.provider === 'browser') || PREMIUM_VOICES[0];
   }, []);
 
   // Enhanced speech synthesis with ElevenLabs

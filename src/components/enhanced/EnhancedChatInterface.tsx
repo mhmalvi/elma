@@ -234,7 +234,8 @@ export const EnhancedChatInterface = ({
               await autoSpeak(responseText, {
                 autoSpeak: true,
                 usePremium: true,
-                interruptible: currentMode === 'live'
+                interruptible: currentMode === 'live',
+                language
               });
             }, currentMode === 'live' ? 100 : 0);
           }
@@ -296,7 +297,8 @@ export const EnhancedChatInterface = ({
       await autoSpeak(text, {
         autoSpeak: true,
         usePremium: true,
-        interruptible: true
+        interruptible: true,
+        language
       });
     }
   };
