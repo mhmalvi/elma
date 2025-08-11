@@ -15,6 +15,7 @@ import Bookmarks from "./pages/Bookmarks";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminTest from "./pages/AdminTest";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -59,6 +60,7 @@ const App = () => (
                         <Route path="/bookmarks" element={<Bookmarks />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/admin" element={<AdminDashboard />} />
+                        <Route path="/admin/test" element={<AdminTest />} />
                         <Route path="/voice-test" element={<VoiceTestSuite />} />
                         <Route path="/voice-quality" element={<VoiceQuality />} />
                         <Route path="/privacy" element={<Privacy />} />

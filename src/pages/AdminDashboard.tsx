@@ -65,7 +65,13 @@ const AdminDashboard = () => {
           <Shield className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-semibold">Master Admin Dashboard</h1>
         </div>
-        <div className="w-24" />
+        <Button
+          onClick={() => navigate('/admin/test')}
+          variant="outline"
+          size="sm"
+        >
+          System Tests
+        </Button>
       </div>
 
       {/* Content */}

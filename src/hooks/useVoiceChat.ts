@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useVoiceIntegration } from './useVoiceIntegration';
+import { logger } from '@/utils/logger';
 
 interface Message {
   id: string;
@@ -137,6 +138,8 @@ export const useVoiceChat = () => {
   const handleUserMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
+    const correlationId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       text: text.trim(),
@@ -149,12 +152,41 @@ export const useVoiceChat = () => {
     setIsProcessing(true);
 
     try {
+      logger.info('Sending user message', {
+        correlationId,
+        component: 'useVoiceChat',
+        metadata: { messageLength: text.trim().length }
+      });
+
       // Call enhanced AI chat function with RAG
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { question: text.trim() }
+        body: { 
+          question: text.trim(),
+          correlation_id: correlationId
+        }
       });
 
       if (error) {
+        // Handle specific error types with user-friendly messages
+        if (error.message?.includes('Rate limit exceeded')) {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: "Please wait a moment before sending another message.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('Unauthorized')) {
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to continue using the chat.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to send message. Please try again.",
+            variant: "destructive",
+          });
+        }
         throw new Error(error.message);
       }
 
@@ -173,11 +205,21 @@ export const useVoiceChat = () => {
 
       setMessages(prev => [...prev, aiMessage]);
       
+      logger.info('AI response received', {
+        correlationId,
+        component: 'useVoiceChat',
+        metadata: { responseLength: data.response.length }
+      });
+      
       // Use enhanced TTS for response
       await speakText(data.response);
 
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      logger.error('Error in user message handling', {
+        correlationId,
+        component: 'useVoiceChat',
+        error: error as Error
+      });
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
