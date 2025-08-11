@@ -65,20 +65,21 @@ serve(async (req) => {
   let requestId: string | null = null;
   let startedAt = Date.now();
   try {
-    const { question, conversation_id, user_id } = await req.json();
+    const { question, conversation_id, user_id, correlation_id } = await req.json();
     
-    if (!question) {
+    if (!question || typeof question !== 'string' || question.trim().length === 0) {
       throw new Error('Question is required');
     }
 
     // Request context
-    requestId = crypto.randomUUID();
+    requestId = correlation_id || crypto.randomUUID();
     startedAt = Date.now();
-    const safePreview = truncate(question, 80);
+    const safePreview = truncate(question, 40);
     console.log(`[ai-chat][${requestId}] Start len=${question.length} preview="${safePreview}"`);
 
     // Get environment variables
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const QDRANT_API_KEY = Deno.env.get('QDRANT_API_KEY');
     const QDRANT_ENDPOINT = Deno.env.get('QDRANT_ENDPOINT');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -137,63 +138,71 @@ serve(async (req) => {
       try {
         console.log('Generating embedding for Qdrant search...');
         
-        // Generate embedding using a simpler approach
-        const embeddingResponse = await fetchWithTimeoutAndRetry('https://openrouter.ai/api/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: question,
-          }),
-        }, { timeoutMs: 10000, maxRetries: 2 });
-
-        if (embeddingResponse.ok) {
-          const embeddingData = await embeddingResponse.json();
-          const questionEmbedding = embeddingData.data[0].embedding;
-          console.log('Generated embedding successfully');
-
-          // Search Qdrant
-          console.log(`[ai-chat][${requestId}] Searching Qdrant for relevant context...`);
-          const searchResponse = await fetchWithTimeoutAndRetry(`${QDRANT_ENDPOINT}/collections/${QDRANT_COLLECTION}/points/search`, {
+        if (!OPENAI_API_KEY) {
+          console.warn(`[ai-chat][${requestId}] OPENAI_API_KEY missing; skipping Qdrant search`);
+        } else {
+          // Generate embeddings using OpenAI directly for compatibility
+          const embeddingResponse = await fetchWithTimeoutAndRetry('https://api.openai.com/v1/embeddings', {
             method: 'POST',
             headers: {
-              'api-key': QDRANT_API_KEY,
+              'Authorization': `Bearer ${OPENAI_API_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              vector: questionEmbedding,
-              limit: 3,
-              with_payload: true,
-              score_threshold: 0.6
+              model: 'text-embedding-3-small',
+              input: question,
             }),
-          }, { timeoutMs: 8000, maxRetries: 1 });
+          }, { timeoutMs: 10000, maxRetries: 2 });
 
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            qdrantResults = searchData.result;
-            console.log('Found relevant documents:', qdrantResults?.length || 0);
-            
-            if (qdrantResults && qdrantResults.length > 0) {
-              contextText = qdrantResults
-                .map((result: any) => {
-                  const payload = result.payload;
-                  let context = '';
-                  if (payload.text) context += payload.text;
-                  if (payload.verse) context += `\n[Verse: ${payload.verse}]`;
-                  if (payload.hadith) context += `\n[Hadith: ${payload.hadith}]`;
-                  if (payload.reference) context += `\n[Reference: ${payload.reference}]`;
-                  return context;
-                })
-                .join('\n\n---\n\n');
+          if (embeddingResponse.ok) {
+            const embeddingData = await embeddingResponse.json();
+            const questionEmbedding = embeddingData?.data?.[0]?.embedding;
+            if (questionEmbedding) {
+              console.log('Generated embedding successfully');
+              
+              // Search Qdrant
+              console.log(`[ai-chat][${requestId}] Searching Qdrant for relevant context...`);
+              const searchResponse = await fetchWithTimeoutAndRetry(`${QDRANT_ENDPOINT}/collections/${QDRANT_COLLECTION}/points/search`, {
+                method: 'POST',
+                headers: {
+                  'api-key': QDRANT_API_KEY,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  vector: questionEmbedding,
+                  limit: 3,
+                  with_payload: true,
+                  score_threshold: 0.6
+                }),
+              }, { timeoutMs: 8000, maxRetries: 1 });
+
+              if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                qdrantResults = searchData.result;
+                console.log('Found relevant documents:', qdrantResults?.length || 0);
+                
+                if (qdrantResults && qdrantResults.length > 0) {
+                  contextText = qdrantResults
+                    .map((result: any) => {
+                      const payload = result.payload;
+                      let context = '';
+                      if (payload.text) context += payload.text;
+                      if (payload.verse) context += `\n[Verse: ${payload.verse}]`;
+                      if (payload.hadith) context += `\n[Hadith: ${payload.hadith}]`;
+                      if (payload.reference) context += `\n[Reference: ${payload.reference}]`;
+                      return context;
+                    })
+                    .join('\n\n---\n\n');
+                }
+              } else {
+                console.error(`[ai-chat][${requestId}] Qdrant search failed status=${searchResponse.status}`);
+              }
+            } else {
+              console.warn(`[ai-chat][${requestId}] No embedding returned by OpenAI`);
             }
           } else {
-            console.error(`[ai-chat][${requestId}] Qdrant search failed status=${searchResponse.status}`);
+            console.error(`[ai-chat][${requestId}] OpenAI embeddings error status=${embeddingResponse.status}`);
           }
-        } else {
-          console.error(`[ai-chat][${requestId}] Embedding generation failed status=${embeddingResponse.status}`);
         }
       } catch (qdrantError) {
         console.error('Qdrant integration error:', qdrantError);
