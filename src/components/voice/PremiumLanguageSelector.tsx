@@ -97,8 +97,12 @@ export const PremiumLanguageSelector = ({
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const width = 320; // w-80
-      const left = Math.min(rect.left + window.scrollX, window.innerWidth - width - 16);
-      const top = rect.bottom + 8 + window.scrollY;
+      const left = Math.min(rect.left, window.innerWidth - width - 16);
+      let top = rect.bottom + 8;
+      const menuHeight = Math.min(window.innerHeight * 0.7, 480);
+      if (top + menuHeight > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - 8 - menuHeight);
+      }
       setMenuPos({ top, left, width });
     }
   }, [isOpen]);
