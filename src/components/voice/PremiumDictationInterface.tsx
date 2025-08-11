@@ -100,7 +100,7 @@ export const PremiumDictationInterface = ({
       <div className="relative flex items-center justify-between gap-3">
         {/* Language Selector - Minimal */}
         <div className="flex-shrink-0">
-          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} />
+          <PremiumLanguageSelector currentLanguage={currentLanguage} detectedLanguage={sttState.detectedLanguage} onLanguageChange={handleLanguageChange} isListening={sttState.isListening} className="mr-2" />
         </div>
 
         {/* Central AI Avatar with Dictation Animations */}

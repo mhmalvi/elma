@@ -20,6 +20,8 @@ import { useVoiceMode } from '@/contexts/VoiceModeContext';
 import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Message {
   id: string;
   text: string;
@@ -55,6 +57,7 @@ export const EnhancedChatInterface = ({
     currentMode,
     setMode
   } = useVoiceMode();
+  const { language, languageInfo } = useLanguage();
 
   // Use conversation management context
   const conversationHookResult = useConversationsContext();
@@ -163,7 +166,8 @@ export const EnhancedChatInterface = ({
           body: {
             question: messageText,
             user_id: user?.id,
-            conversation_id: conversation.id
+            conversation_id: conversation.id,
+            language
           }
         });
 

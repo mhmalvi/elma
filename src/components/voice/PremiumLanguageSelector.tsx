@@ -101,10 +101,30 @@ export const PremiumLanguageSelector = ({
   }, []);
   return <div className={cn("relative z-50", className)} ref={dropdownRef}>
       {/* Main Language Button */}
-      
+      <Button
+        variant="outline"
+        className={cn(
+          "h-10 px-3 rounded-xl flex items-center gap-2 border-border/60",
+          "bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/40"
+        )}
+        onClick={() => setIsOpen(v => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={`Select language, current ${selectedLang.name}`}
+      >
+        <span className="text-xl leading-none">{selectedLang.flag}</span>
+        <span className="text-sm font-medium">{selectedLang.name}</span>
+        {detectedLang && detectedLang.code !== currentLanguage && (
+          <Badge variant="secondary" className="text-[10px] ml-2">
+            <Mic className="w-3 h-3 mr-1" />
+            {detectedLang.name}
+          </Badge>
+        )}
+        <ChevronDown className={cn("w-4 h-4 ml-1 transition-transform", isOpen && "rotate-180")} />
+      </Button>
 
       {/* Premium Dropdown */}
-      {isOpen && <Card className={cn("absolute top-16 left-0 w-80 p-2 z-50 animate-slide-in-up", "bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl", "rounded-2xl")}>
+      {isOpen && <Card className={cn("absolute top-12 left-0 w-80 p-2 z-50 animate-slide-in-up", "bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl", "rounded-2xl")}>
           <div className="space-y-1">
             {PREMIUM_LANGUAGES.map(language => <Button key={language.code} variant="ghost" onClick={() => {
           onLanguageChange(language.code);
