@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import i18n from '@/i18n';
 
 export type AppLanguageCode = 'en' | 'ar' | 'bn' | 'hi' | 'ur';
 
@@ -50,6 +51,8 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     // Update document attributes for SEO/RTL
     document.documentElement.setAttribute('lang', language);
     document.documentElement.setAttribute('dir', languageInfo.rtl ? 'rtl' : 'ltr');
+    // Sync i18n
+    try { i18n.changeLanguage(language); } catch (_) {}
   }, [language, languageInfo.rtl]);
 
   const setLanguage = (code: AppLanguageCode) => {

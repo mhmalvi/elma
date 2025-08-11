@@ -64,7 +64,7 @@ export const ChatHeader = ({
               {title}
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground" lang={language} dir={language === 'ar' || language === 'ur' ? 'rtl' : 'ltr'}>
                 {subtitle}
               </p>
               {isVoiceMode && (
