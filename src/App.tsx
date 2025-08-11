@@ -48,40 +48,42 @@ const App = () => (
           
           <Route path="/*" element={
             <AuthGuard>
-              <ConversationsProvider>
-                <VoiceModeProvider>
-                  <ErrorBoundary>
-                    <AppLayout>
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/chat" element={<Chat />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/bookmarks" element={<Bookmarks />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/admin" element={<AdminDashboard />} />
-                        <Route path="/admin/test" element={<AdminTest />} />
-                        <Route path="/voice-test" element={<VoiceTestSuite />} />
-                        <Route path="/voice-quality" element={<VoiceQuality />} />
-                        <Route path="/privacy" element={<Privacy />} />
-                        <Route path="/terms" element={<Terms />} />
-                        <Route path="/performance" element={
-                          <div className="p-6 space-y-6">
-                            <VoiceOptimizer />
-                            <MobileBrowserTester />
-                          </div>
-                        } />
-                        <Route path="/offline" element={
-                          <div className="p-6">
-                            <OfflineContentManager />
-                          </div>
-                        } />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </AppLayout>
-                  </ErrorBoundary>
-                </VoiceModeProvider>
-              </ConversationsProvider>
+              <LanguageProvider>
+                <ConversationsProvider>
+                  <VoiceModeProvider>
+                    <ErrorBoundary>
+                      <AppLayout>
+                        <Routes>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/home" element={<Home />} />
+                          <Route path="/chat" element={<Chat />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/bookmarks" element={<Bookmarks />} />
+                          <Route path="/settings" element={<Settings />} />
+                          <Route path="/admin" element={<AdminDashboard />} />
+                          <Route path="/admin/test" element={<AdminTest />} />
+                          <Route path="/voice-test" element={<VoiceTestSuite />} />
+                          <Route path="/voice-quality" element={<VoiceQuality />} />
+                          <Route path="/privacy" element={<Privacy />} />
+                          <Route path="/terms" element={<Terms />} />
+                          <Route path="/performance" element={
+                            <div className="p-6 space-y-6">
+                              <VoiceOptimizer />
+                              <MobileBrowserTester />
+                            </div>
+                          } />
+                          <Route path="/offline" element={
+                            <div className="p-6">
+                              <OfflineContentManager />
+                            </div>
+                          } />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </AppLayout>
+                    </ErrorBoundary>
+                  </VoiceModeProvider>
+                </ConversationsProvider>
+              </LanguageProvider>
             </AuthGuard>
           } />
         </Routes>
