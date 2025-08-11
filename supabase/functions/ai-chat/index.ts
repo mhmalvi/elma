@@ -227,7 +227,7 @@ serve(async (req) => {
     }
 
     // Step 2: Generate AI response
-    const systemPrompt = `You are AirChatBot, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith.
+    const systemPrompt = `You are Elma, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith.
 
 ${contextText ? `RELEVANT CONTEXT FROM ISLAMIC SOURCES:
 ${contextText}
