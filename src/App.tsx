@@ -24,6 +24,7 @@ import { VoiceOptimizer } from "./components/performance/VoiceOptimizer";
 import { OfflineContentManager } from "./components/offline/OfflineContentManager";
 import { MobileBrowserTester } from "./components/performance/MobileBrowserTester";
 import VoiceQuality from "./pages/VoiceQuality";
+import { ConversationsProvider } from "./contexts/ConversationsContext";
 import { VoiceModeProvider } from "./contexts/VoiceModeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
