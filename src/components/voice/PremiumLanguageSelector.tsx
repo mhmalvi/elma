@@ -99,7 +99,7 @@ export const PremiumLanguageSelector = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  return <div className={cn("relative z-50", className)} ref={dropdownRef}>
+  return <div className={cn("relative z-[9999]", className)} ref={dropdownRef}>
       {/* Main Language Button */}
       <Button
         variant="outline"
@@ -124,12 +124,27 @@ export const PremiumLanguageSelector = ({
       </Button>
 
       {/* Premium Dropdown */}
-      {isOpen && <Card className={cn("absolute top-12 left-0 w-80 p-2 z-50 animate-slide-in-up", "bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl", "rounded-2xl")}>
+      {isOpen && <Card className={cn(
+            "absolute top-12 left-0 w-80 p-2 z-[9999] animate-slide-in-up",
+            "bg-card border border-border/50 shadow-2xl",
+            "rounded-2xl"
+          )}>
           <div className="space-y-1">
-            {PREMIUM_LANGUAGES.map(language => <Button key={language.code} variant="ghost" onClick={() => {
-          onLanguageChange(language.code);
-          setIsOpen(false);
-        }} className={cn("w-full justify-start h-12 rounded-xl transition-all duration-300", "hover:bg-primary/10 hover:scale-[1.02]", language.code === currentLanguage && "bg-primary/15 shadow-md", language.code === detectedLanguage && language.code !== currentLanguage && "bg-accent/10")}>
+            {PREMIUM_LANGUAGES.map(language => (
+              <Button
+                key={language.code}
+                variant="ghost"
+                onClick={() => {
+                  onLanguageChange(language.code);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "w-full justify-start h-12 rounded-xl transition-all duration-300",
+                  "hover:bg-primary/10 hover:scale-[1.02]",
+                  language.code === currentLanguage && "bg-primary/15 shadow-md",
+                  language.code === detectedLanguage && language.code !== currentLanguage && "bg-accent/10"
+                )}
+              >
                 <div className="flex items-center gap-3 w-full">
                   <span className="text-2xl">{language.flag}</span>
                   <div className="flex-1 text-left">
@@ -138,17 +153,22 @@ export const PremiumLanguageSelector = ({
                       {language.nativeName}
                     </div>
                   </div>
-                  
-                  {language.code === currentLanguage && <Badge variant="default" className="text-xs">
+
+                  {language.code === currentLanguage && (
+                    <Badge variant="default" className="text-xs">
                       Active
-                    </Badge>}
-                  
-                  {language.code === detectedLanguage && language.code !== currentLanguage && <Badge variant="secondary" className="text-xs animate-pulse">
+                    </Badge>
+                  )}
+
+                  {language.code === detectedLanguage && language.code !== currentLanguage && (
+                    <Badge variant="secondary" className="text-xs animate-pulse">
                       <Mic className="w-3 h-3 mr-1" />
                       Detected
-                    </Badge>}
+                    </Badge>
+                  )}
                 </div>
-              </Button>)}
+              </Button>
+            ))}
           </div>
 
           {/* Detection Status */}
