@@ -65,13 +65,16 @@ serve(async (req) => {
   let requestId: string | null = null;
   let startedAt = Date.now();
   try {
-    const { question, conversation_id, user_id, correlation_id } = await req.json();
+    const { question, conversation_id, user_id, correlation_id, language } = await req.json();
     
     if (!question || typeof question !== 'string' || question.trim().length === 0) {
       throw new Error('Question is required');
     }
 
-    // Request context
+    const lang = typeof language === 'string' ? String(language).toLowerCase() : 'en';
+    const supportedLangs = new Set(['en','ar','bn','hi','ur']);
+    const safeLang = supportedLangs.has(lang) ? (lang as 'en'|'ar'|'bn'|'hi'|'ur') : 'en';
+
     requestId = correlation_id || crypto.randomUUID();
     startedAt = Date.now();
     const safePreview = truncate(question, 40);
@@ -227,6 +230,9 @@ serve(async (req) => {
     }
 
     // Step 2: Generate AI response
+    const languageNames: Record<string, string> = { en: 'English', ar: 'Arabic', bn: 'Bengali', hi: 'Hindi', ur: 'Urdu' };
+    const respondLanguageLine = safeLang !== 'en' ? `\n- Respond in ${languageNames[safeLang]} (${safeLang}) using appropriate script.` : '';
+
     const systemPrompt = `You are Elma, an Islamic AI assistant that provides authentic answers based on the Quran and Hadith.
 
 ${contextText ? `RELEVANT CONTEXT FROM ISLAMIC SOURCES:
@@ -242,12 +248,13 @@ Guidelines:
 - Always cite your sources (Surah name and verse number, or Hadith collection)
 - If you don't know something or it's not in authentic sources, say so honestly
 - Focus on spiritual guidance, moral teachings, and practical Islamic living
-- Be respectful of different schools of thought when they exist
+- Be respectful of different schools of thought when they exist${respondLanguageLine}
 
 Example response format:
 "In Islam, patience is highly valued. Allah says in the Quran: 'And give good tidings to the patient' (Al-Baqarah 2:155). The Prophet (peace be upon him) also said: 'No one can be given a blessing better and greater than patience' (Sahih Bukhari).
 
 Source: Quran 2:155, Sahih Bukhari"`;
+
 
     console.log(`[ai-chat][${requestId}] Generating AI response...`);
     const aiResponse = await fetchWithTimeoutAndRetry('https://openrouter.ai/api/v1/chat/completions', {

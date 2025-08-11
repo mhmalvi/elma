@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import airchatbotLogo from '@/assets/airchatbot-logo.png'
+import { PremiumLanguageSelector } from '@/components/voice/PremiumLanguageSelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface ChatHeaderProps {
   title?: string
@@ -29,6 +31,7 @@ export const ChatHeader = ({
   onVoiceModeToggle,
   className
 }: ChatHeaderProps) => {
+  const { language, setLanguage } = useLanguage();
   return (
     <header className={cn(
       "sticky top-0 z-40 glass border-b border-border/20 backdrop-blur-xl",
@@ -76,6 +79,13 @@ export const ChatHeader = ({
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
+        <div className="hidden sm:flex">
+          <PremiumLanguageSelector
+            currentLanguage={language}
+            onLanguageChange={setLanguage}
+          />
+        </div>
+
         <FuturisticButton
           variant="ghost"
           size="icon"
