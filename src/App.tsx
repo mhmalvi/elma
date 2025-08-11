@@ -27,6 +27,7 @@ import VoiceQuality from "./pages/VoiceQuality";
 import { ConversationsProvider } from "./contexts/ConversationsContext";
 import { VoiceModeProvider } from "./contexts/VoiceModeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import './i18n';
 
 const queryClient = new QueryClient();
 

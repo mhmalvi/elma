@@ -21,6 +21,7 @@ import { useVoiceModes } from '@/hooks/useVoiceModes';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 interface Message {
   id: string;
   text: string;
@@ -57,6 +58,7 @@ export const EnhancedChatInterface = ({
     setMode
   } = useVoiceMode();
   const { language, languageInfo } = useLanguage();
+  const { t } = useTranslation();
 
   // Use conversation management context
   const conversationHookResult = useConversationsContext();
@@ -490,15 +492,17 @@ export const EnhancedChatInterface = ({
               <div className="flex gap-3 items-end p-4 rounded-3xl border border-border/30 bg-background/80 backdrop-blur-sm transition-all duration-300 focus-within:border-primary/40 focus-within:bg-background/90 focus-within:shadow-lg focus-within:shadow-primary/10">
                 {/* Input Field */}
                 <div className="flex-1 relative">
-                  <Textarea 
-                    ref={textareaRef} 
-                    value={inputValue} 
-                    onChange={e => setInputValue(e.target.value)} 
-                    onKeyDown={handleKeyDown} 
-                    placeholder="Ask about Islamic guidance..." 
-                    className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
-                    disabled={isProcessing} 
-                  />
+                    <Textarea 
+                      ref={textareaRef} 
+                      value={inputValue} 
+                      onChange={e => setInputValue(e.target.value)} 
+                      onKeyDown={handleKeyDown} 
+                      placeholder={t('chat.placeholder')}
+                      lang={language}
+                      dir={languageInfo.rtl ? 'rtl' : 'ltr'}
+                      className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 text-sm leading-relaxed" 
+                      disabled={isProcessing} 
+                    />
                   
                   {/* Character count - Subtle */}
                   {inputValue.length > 100 && (
