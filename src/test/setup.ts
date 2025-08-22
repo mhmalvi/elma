@@ -17,14 +17,22 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // speechSynthesis mock
-if (!(window as any).speechSynthesis) {
-  (window as any).speechSynthesis = {
+interface MockSpeechSynthesis {
+  speak: ReturnType<typeof vi.fn>;
+  cancel: ReturnType<typeof vi.fn>;
+  pause: ReturnType<typeof vi.fn>;
+  resume: ReturnType<typeof vi.fn>;
+  getVoices: ReturnType<typeof vi.fn>;
+}
+
+if (!('speechSynthesis' in window)) {
+  (window as unknown as { speechSynthesis: MockSpeechSynthesis }).speechSynthesis = {
     speak: vi.fn(),
     cancel: vi.fn(),
     pause: vi.fn(),
     resume: vi.fn(),
     getVoices: vi.fn(() => []),
-  } as any;
+  };
 }
 
 // Audio mock
@@ -45,5 +53,5 @@ class MockAudio {
   }
 }
 
-// @ts-ignore
-(globalThis as any).Audio = MockAudio;
+// @ts-expect-error - MockAudio is a test replacement for the global Audio constructor
+(globalThis as typeof globalThis & { Audio: typeof MockAudio }).Audio = MockAudio;

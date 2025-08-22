@@ -300,8 +300,8 @@ export function AppSidebar() {
             !collapsed && "shadow-primary/20"
           )}>
             <img 
-              src="/airchatbot-logo.png" 
-              alt="AirChatBot"
+              src="/elma-logo.png" 
+              alt="ELMA"
               className={cn(
                 "object-contain transition-transform duration-300 group-hover:rotate-12",
                 collapsed ? "h-5 w-5" : "h-6 w-6"
@@ -312,10 +312,10 @@ export function AppSidebar() {
             <>
               <div className="flex-1 min-w-0 text-left">
                 <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent transition-all duration-300">
-                  AirChatBot
+                  ELMA
                 </h2>
                 <p className="text-xs text-sidebar-foreground/70 font-medium transition-all duration-300 group-hover:text-sidebar-foreground/90">
-                  Islamic AI Assistant
+                  Islamic AI Companion
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-all duration-300 group-hover:text-primary group-hover:translate-x-1" />

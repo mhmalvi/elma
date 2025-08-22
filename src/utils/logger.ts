@@ -13,13 +13,13 @@ interface LogEntry {
   userId?: string;
   component?: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   
-  private sanitize(data: any): any {
+  private sanitize(data: unknown): unknown {
     if (typeof data !== 'object' || data === null) {
       return data;
     }
@@ -52,7 +52,7 @@ class Logger {
       userId?: string;
       component?: string;
       error?: Error;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     } = {}
   ): LogEntry {
     return {
@@ -90,7 +90,7 @@ class Logger {
     userId?: string;
     component?: string;
     error?: Error;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     this.log(this.createLogEntry('error', message, options));
   }
@@ -99,7 +99,7 @@ class Logger {
     correlationId?: string;
     userId?: string;
     component?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     this.log(this.createLogEntry('warn', message, options));
   }
@@ -108,7 +108,7 @@ class Logger {
     correlationId?: string;
     userId?: string;
     component?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     this.log(this.createLogEntry('info', message, options));
   }
@@ -117,7 +117,7 @@ class Logger {
     correlationId?: string;
     userId?: string;
     component?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     if (this.isDevelopment) {
       this.log(this.createLogEntry('debug', message, options));

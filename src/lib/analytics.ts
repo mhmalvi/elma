@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface AnalyticsEvent {
   event_name: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   user_id?: string;
   session_id?: string;
 }
@@ -26,7 +26,7 @@ class Analytics {
     this.userId = user?.id;
   }
 
-  async track(eventName: string, properties: Record<string, any> = {}) {
+  async track(eventName: string, properties: Record<string, unknown> = {}) {
     try {
       const event: AnalyticsEvent = {
         event_name: eventName,
@@ -64,7 +64,7 @@ class Analytics {
   }
 
   // Track user actions
-  userAction(action: string, context: Record<string, any> = {}) {
+  userAction(action: string, context: Record<string, unknown> = {}) {
     this.track('user_action', {
       action,
       ...context
@@ -72,7 +72,7 @@ class Analytics {
   }
 
   // Track errors
-  error(errorMessage: string, errorStack?: string, context: Record<string, any> = {}) {
+  error(errorMessage: string, errorStack?: string, context: Record<string, unknown> = {}) {
     this.track('error', {
       error_message: errorMessage,
       error_stack: errorStack,
@@ -81,7 +81,7 @@ class Analytics {
   }
 
   // Track performance metrics
-  performance(metric: string, value: number, context: Record<string, any> = {}) {
+  performance(metric: string, value: number, context: Record<string, unknown> = {}) {
     this.track('performance', {
       metric,
       value,
@@ -90,7 +90,7 @@ class Analytics {
   }
 
   // Track AI interactions
-  aiInteraction(type: 'question' | 'response', content: string, metadata: Record<string, any> = {}) {
+  aiInteraction(type: 'question' | 'response', content: string, metadata: Record<string, unknown> = {}) {
     this.track('ai_interaction', {
       interaction_type: type,
       content_length: content.length,

@@ -1,7 +1,7 @@
 {
-  "name": "AirChatBot - Islamic AI Assistant",
-  "short_name": "AirChatBot",
-  "description": "Your Islamic AI companion for spiritual guidance and Quranic wisdom",
+  "name": "ELMA - Islamic AI Companion for Authentic Guidance from Quran and Hadith",
+  "short_name": "ELMA",
+  "description": "ELMA - Islamic AI Companion for Authentic Guidance from Quran and Hadith",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
@@ -12,13 +12,13 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "/airchatbot-logo.png",
+      "src": "/elma-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/airchatbot-logo.png",
+      "src": "/elma-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
@@ -26,13 +26,13 @@
   ],
   "screenshots": [
     {
-      "src": "/airchatbot-logo.png",
+      "src": "/elma-logo.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/airchatbot-logo.png",
+      "src": "/elma-logo.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
@@ -52,5 +52,5 @@
   },
   "prefer_related_applications": false,
   "scope": "/",
-  "id": "airchatbot-islamic-assistant"
+  "id": "elma-islamic-assistant"
 }

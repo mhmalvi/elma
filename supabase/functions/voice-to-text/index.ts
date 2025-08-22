@@ -2,8 +2,21 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'http://localhost:3000',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Allowed origins for CORS validation
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+function validateOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return allowedOrigins.includes(origin);
 }
 
 // Process base64 in chunks to prevent memory issues
@@ -37,9 +50,27 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
 }
 
 serve(async (req) => {
+  // Validate origin for CORS security
+  const origin = req.headers.get('origin');
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    if (!validateOrigin(origin)) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const dynamicHeaders = {
+      ...corsHeaders,
+      'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+    };
+    return new Response('ok', { headers: dynamicHeaders });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), { status: 403 });
+  }
+
+  const dynamicCorsHeaders = {
+    ...corsHeaders,
+    'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+  };
 
   try {
     // Authenticate user
@@ -51,7 +82,7 @@ serve(async (req) => {
     const token = authHeader?.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: dynamicCorsHeaders })
     }
 
     // Rate limit: 20/min per user
@@ -62,16 +93,59 @@ serve(async (req) => {
     })
     if (rlError) {
       console.error('Rate limit error:', rlError)
-      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: dynamicCorsHeaders })
     }
     if (!allowed) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: dynamicCorsHeaders })
     }
 
     const { audio, language, metadata } = await req.json()
     
+    // Comprehensive audio input validation
     if (!audio) {
       throw new Error('No audio data provided')
+    }
+    
+    if (typeof audio !== 'string') {
+      throw new Error('Audio data must be a base64 string')
+    }
+    
+    // Validate base64 format
+    const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Pattern.test(audio)) {
+      throw new Error('Invalid audio data format - must be valid base64')
+    }
+    
+    // Size limits: Max 50MB for audio (base64 adds ~33% overhead)
+    const MAX_AUDIO_SIZE = 50 * 1024 * 1024 * 1.33; // 66.5MB in base64
+    const MIN_AUDIO_SIZE = 100; // Minimum 100 bytes
+    
+    if (audio.length > MAX_AUDIO_SIZE) {
+      throw new Error(`Audio data too large. Maximum size: ${Math.round(MAX_AUDIO_SIZE / (1024 * 1024))}MB`)
+    }
+    
+    if (audio.length < MIN_AUDIO_SIZE) {
+      throw new Error('Audio data too small - minimum 100 bytes required')
+    }
+    
+    // Validate audio content by checking for common audio file headers in base64
+    try {
+      const firstBytes = atob(audio.substring(0, 40)); // Decode first ~30 bytes
+      const isValidAudio = (
+        firstBytes.includes('RIFF') || // WAV
+        firstBytes.includes('OggS') || // OGG
+        firstBytes.includes('ID3') ||  // MP3
+        firstBytes.includes('fLaC') || // FLAC
+        firstBytes.startsWith('\x1a\x45\xdf\xa3') || // WebM/MKV
+        firstBytes.includes('webm') ||
+        firstBytes.includes('opus')
+      );
+      
+      if (!isValidAudio) {
+        throw new Error('Invalid audio format - file does not appear to be valid audio data')
+      }
+    } catch (decodeError) {
+      throw new Error('Failed to validate audio format - invalid base64 encoding')
     }
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
@@ -79,10 +153,12 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured')
     }
 
+    // Privacy-safe logging: only size and language, no audio content
     console.log('Processing audio data...', {
-      audioSize: typeof audio === 'string' ? audio.length : 'unknown',
+      audioSizeKB: Math.round(audio.length / 1024),
       language: language || 'auto-detect',
-      metadata: metadata || 'none'
+      hasMetadata: !!metadata,
+      requestId: user.id.substring(0, 8) + '...'
     })
 
     // Process audio in chunks to prevent memory issues
@@ -132,10 +208,12 @@ serve(async (req) => {
         }
 
         const result = await response.json()
+        // Privacy-safe logging: no transcript content, only metadata
         console.log('Transcription successful:', {
-          text: result.text?.substring(0, 100) + (result.text?.length > 100 ? '...' : ''),
+          textLength: result.text?.length || 0,
           duration: result.duration,
-          language: result.language
+          language: result.language,
+          hasSegments: !!result.segments?.length
         })
 
         return new Response(
@@ -145,7 +223,7 @@ serve(async (req) => {
             duration: result.duration,
             language: result.language
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' } }
         )
       } catch (fetchError) {
         if (retryCount < maxRetries) {
@@ -164,7 +242,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }

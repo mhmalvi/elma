@@ -130,9 +130,9 @@ export const CriticalWorkflowTest = () => {
       if ('Notification' in window) {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-          new Notification('AirChatBot Test', {
+          new Notification('ELMA Test', {
             body: 'Notification system is working correctly!',
-            icon: '/airchatbot-logo.png'
+            icon: '/elma-logo.png'
           });
           
           updateTest('notifications', { 

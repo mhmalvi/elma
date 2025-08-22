@@ -20,14 +20,17 @@ vi.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
-const invokeMock = vi.fn().mockResolvedValue({
-  data: { success: true, response: 'Hello there' },
-  error: null,
+vi.mock('@/integrations/supabase/client', () => {
+  const invokeMock = vi.fn().mockResolvedValue({
+    data: { success: true, response: 'Hello there' },
+    error: null,
+  });
+  
+  return {
+    supabase: { functions: { invoke: invokeMock } },
+    invokeMock, // Export for test access
+  };
 });
-
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: { functions: { invoke: invokeMock } },
-}));
 
 function TestComponent() {
   const { sendTextMessage } = useVoiceChat();
@@ -35,6 +38,8 @@ function TestComponent() {
 }
 
 it('useVoiceChat triggers ai-chat function', async () => {
+  const { invokeMock } = await vi.importMock('@/integrations/supabase/client') as { invokeMock: ReturnType<typeof vi.fn> };
+  
   render(<TestComponent />);
   fireEvent.click(screen.getByText('Send'));
   await vi.waitFor(() =>
