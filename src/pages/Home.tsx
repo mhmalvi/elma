@@ -4,7 +4,7 @@ import { MessageCircle, Mic, BookOpen, Heart, Sparkles, Shield, Users, Zap, Arro
 import { FuturisticButton } from "@/components/ui/futuristic-button"
 import { FuturisticCard, FeatureCard, AnimatedCard } from "@/components/ui/futuristic-card"
 import { Badge } from "@/components/ui/badge"
-import airchatbotLogo from "@/assets/airchatbot-logo.png"
+import elmaLogo from "@/assets/elma-logo.png"
 
 const Home = () => {
   const navigate = useNavigate()
@@ -30,14 +30,14 @@ const Home = () => {
         <div className="flex items-center gap-3">
           <div className="relative">
             <img 
-              src={airchatbotLogo} 
-              alt="AirChatBot" 
+              src={elmaLogo} 
+              alt="Elma" 
               className="w-10 h-10 rounded-xl shadow-glow"
             />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
           </div>
           <div>
-            <h1 className="text-xl font-bold neon-text">AirChatBot</h1>
+            <h1 className="text-xl font-bold neon-text">Elma</h1>
             <p className="text-xs text-muted-foreground">Islamic AI Assistant</p>
           </div>
         </div>
