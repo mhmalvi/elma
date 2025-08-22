@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  elma-app:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    container_name: elma-islamic-assistant
+    restart: unless-stopped
+    networks:
+      - elma-network
+
+networks:
+  elma-network:
+    driver: bridge
