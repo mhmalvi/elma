@@ -340,7 +340,7 @@ export const EnhancedChatInterface = ({
                 <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold mb-2">Welcome to AirChatBot</h2>
+                <h2 className="text-2xl font-semibold mb-2">Welcome to ELMA</h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
                   Your Islamic AI companion for authentic guidance from Quran and Hadith. 
                   Ask anything about Islamic teachings, life advice, or spiritual growth.
@@ -388,7 +388,7 @@ export const EnhancedChatInterface = ({
         <>
               {displayMessages.map(message => <div key={message.id} className={cn("flex gap-3 animate-fade-in", message.isUser ? "justify-end" : "justify-start")}>
                   {!message.isUser && <Avatar className="w-8 h-8 mt-1">
-                      <AvatarImage src="/airchatbot-logo.png" alt="AirChatBot" />
+                      <AvatarImage src="/elma-logo.png" alt="ELMA" />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         AI
                       </AvatarFallback>
@@ -436,7 +436,7 @@ export const EnhancedChatInterface = ({
               {/* Processing indicator */}
               {isProcessing && <div className="flex gap-3 animate-fade-in justify-start">
                   <Avatar className="w-8 h-8 mt-1">
-                    <AvatarImage src="/airchatbot-logo.png" alt="AirChatBot" />
+                    <AvatarImage src="/elma-logo.png" alt="ELMA" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                       AI
                     </AvatarFallback>

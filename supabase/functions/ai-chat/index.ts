@@ -3,9 +3,22 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'http://localhost:3000',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Allowed origins for CORS validation
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+function validateOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return allowedOrigins.includes(origin);
+}
 
 // Utilities: logging, timeouts, retries
 const truncate = (s: string, n = 80) => (s ? (s.length > n ? `${s.slice(0, n)}...` : s) : '');
@@ -57,10 +70,27 @@ function mapErrorToStatus(e: any): number {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Validate origin for CORS security
+  const origin = req.headers.get('origin');
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    if (!validateOrigin(origin)) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const dynamicHeaders = {
+      ...corsHeaders,
+      'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+    };
+    return new Response(null, { headers: dynamicHeaders });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), { status: 403 });
+  }
+
+  const dynamicCorsHeaders = {
+    ...corsHeaders,
+    'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+  };
 
   let requestId: string | null = null;
   let startedAt = Date.now();
@@ -116,7 +146,7 @@ serve(async (req) => {
 
     // Enforce authentication
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', requestId }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Unauthorized', requestId }), { status: 401, headers: dynamicCorsHeaders });
     }
 
     // Database-backed rate limiting via RPC: 60 req/min per user
@@ -127,10 +157,10 @@ serve(async (req) => {
     });
     if (rlError) {
       console.error(`[ai-chat][${requestId}] Rate limit RPC error`);
-      return new Response(JSON.stringify({ error: 'Rate limiter unavailable', requestId }), { status: 503, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable', requestId }), { status: 503, headers: dynamicCorsHeaders });
     }
     if (!allowed) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded', requestId }), { status: 429, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded', requestId }), { status: 429, headers: dynamicCorsHeaders });
     }
 
     let contextText = '';
@@ -262,8 +292,8 @@ Source: Quran 2:155, Sahih Bukhari"`;
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://airchatbot.lovable.app',
-        'X-Title': 'AirChatBot - Islamic AI Assistant'
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'ELMA - Islamic AI Assistant'
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
@@ -356,7 +386,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
         conversationId: currentConversationId || conversation_id || null
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' },
       }
     );
 
@@ -373,7 +403,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
       }),
       {
         status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }

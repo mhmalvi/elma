@@ -65,15 +65,17 @@ export const useAdvancedVoiceSTT = () => {
   useEffect(() => {
     const webSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     const mediaRecorderSupported = 'MediaRecorder' in window;
+    const mediaDevicesSupported = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
     
     setSTTState(prev => ({
       ...prev,
-      isSupported: webSpeechSupported || mediaRecorderSupported
+      isSupported: (webSpeechSupported || mediaRecorderSupported) && mediaDevicesSupported
     }));
 
     console.log('[Advanced STT] Support Check:', {
       webSpeech: webSpeechSupported,
       mediaRecorder: mediaRecorderSupported,
+      mediaDevices: mediaDevicesSupported,
       userAgent: navigator.userAgent
     });
   }, []);
@@ -184,6 +186,16 @@ export const useAdvancedVoiceSTT = () => {
         return;
       }
       
+      if (event.error === 'not-allowed') {
+        setSTTState(prev => ({
+          ...prev,
+          error: 'Microphone permission denied. Please allow microphone access and try again.',
+          isListening: false,
+          isProcessing: false
+        }));
+        return;
+      }
+      
       if (event.error === 'audio-capture') {
         setSTTState(prev => ({
           ...prev,
@@ -285,6 +297,10 @@ export const useAdvancedVoiceSTT = () => {
   const startListeningWithMediaRecorder = useCallback(async (language: string) => {
     try {
       console.log('[Advanced STT] Starting MediaRecorder for:', language);
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported');
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -388,6 +404,18 @@ export const useAdvancedVoiceSTT = () => {
   const startListening = useCallback(async (language: string = 'en') => {
     try {
       console.log('[Advanced STT] Starting with language:', language);
+      
+      // Check if browser supports required APIs
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setSTTState(prev => ({
+          ...prev,
+          error: 'Browser not supported. Please use a modern browser with HTTPS.',
+          isListening: false,
+          isProcessing: false
+        }));
+        return;
+      }
+      
       setCurrentLanguage(language);
       
       setSTTState(prev => ({
@@ -400,6 +428,25 @@ export const useAdvancedVoiceSTT = () => {
         wordCount: 0,
         characterCount: 0
       }));
+
+      // Check microphone permissions first
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('MediaDevices API not supported');
+        }
+        const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Clean up the permission test stream
+        permissionStream.getTracks().forEach(track => track.stop());
+      } catch (permissionError) {
+        console.error('[Advanced STT] Permission denied:', permissionError);
+        setSTTState(prev => ({
+          ...prev,
+          error: 'Microphone permission denied or not supported. Please allow microphone access and ensure you\'re using HTTPS.',
+          isListening: false,
+          isProcessing: false
+        }));
+        return;
+      }
 
       // Try Web Speech API first for real-time streaming
       const recognition = initializeWebSpeech(language);

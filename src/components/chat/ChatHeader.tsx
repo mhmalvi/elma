@@ -4,7 +4,7 @@ import { FuturisticButton } from '@/components/ui/futuristic-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import airchatbotLogo from '@/assets/airchatbot-logo.png'
+import elmaLogo from '@/assets/elma-logo.png'
 import { PremiumLanguageSelector } from '@/components/voice/PremiumLanguageSelector'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -21,8 +21,8 @@ interface ChatHeaderProps {
 }
 
 export const ChatHeader = ({
-  title = "AirChatBot",
-  subtitle = "Islamic AI Assistant",
+  title = "ELMA",
+  subtitle = "Islamic AI Companion for Authentic Guidance from Quran and Hadith",
   isVoiceMode = false,
   onMenuClick,
   onSearchClick,
@@ -53,8 +53,8 @@ export const ChatHeader = ({
         <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar className="w-10 h-10 ring-2 ring-primary/20 shadow-glow">
-              <AvatarImage src={airchatbotLogo} alt="AirChatBot" />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">AC</AvatarFallback>
+              <AvatarImage src={elmaLogo} alt="ELMA" />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">EL</AvatarFallback>
             </Avatar>
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-background animate-pulse" />
           </div>

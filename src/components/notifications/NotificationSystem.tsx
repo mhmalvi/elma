@@ -100,7 +100,7 @@ export const NotificationSystem = ({ collapsed = false }: { collapsed?: boolean 
     if (Notification.permission === 'granted') {
       new Notification(dailyNotification.title, {
         body: dailyNotification.message,
-        icon: '/airchatbot-logo.png'
+        icon: '/elma-logo.png'
       });
     }
   };

@@ -11,7 +11,7 @@ export const MasterAdminCredentials = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const credentials = {
-    email: 'admin@airchatbot.com',
+    email: 'admin@elma.com',
     password: 'MasterAdmin2024!'
   };
 

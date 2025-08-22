@@ -3,15 +3,45 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'http://localhost:3000',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Allowed origins for CORS validation
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+function validateOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return allowedOrigins.includes(origin);
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Validate origin for CORS security
+  const origin = req.headers.get('origin');
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    if (!validateOrigin(origin)) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const dynamicHeaders = {
+      ...corsHeaders,
+      'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+    };
+    return new Response('ok', { headers: dynamicHeaders });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), { status: 403 });
+  }
+
+  const dynamicCorsHeaders = {
+    ...corsHeaders,
+    'Access-Control-Allow-Origin': origin || corsHeaders['Access-Control-Allow-Origin']
+  };
 
   try {
     // Authenticate user
@@ -22,7 +52,7 @@ serve(async (req) => {
     const token = authHeader?.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: dynamicCorsHeaders })
     }
 
     // Rate limit: 30/min per user
@@ -33,10 +63,10 @@ serve(async (req) => {
     })
     if (rlError) {
       console.error('Rate limit error:', rlError)
-      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Rate limiter unavailable' }), { status: 503, headers: dynamicCorsHeaders })
     }
     if (!allowed) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: dynamicCorsHeaders })
     }
 
     console.log('Received request:', req.method)
@@ -62,10 +92,11 @@ serve(async (req) => {
     const voiceId = voice || '9BWtsMINqrJLrRacOk9x'
     const textLength = text.length
 
+    // Privacy-safe logging: no text content, only metadata
     console.log('Converting text to speech:', {
-      text: text.substring(0, 50) + (textLength > 50 ? '...' : ''),
+      textLength: textLength,
       voice: voiceId,
-      length: textLength
+      requestId: user.id.substring(0, 8) + '...'
     })
 
     // Enhanced voice settings with options override
@@ -144,7 +175,7 @@ serve(async (req) => {
           }
         }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' },
         },
       )
     }
@@ -165,7 +196,7 @@ serve(async (req) => {
       }),
       {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...dynamicCorsHeaders, 'Content-Type': 'application/json' },
       },
     )
   }

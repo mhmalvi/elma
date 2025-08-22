@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { ChatMessage } from '@/hooks/useConversations'
 import { formatDistanceToNow } from 'date-fns'
-import airchatbotLogo from '@/assets/airchatbot-logo.png'
+import elmaLogo from '@/assets/elma-logo.png'
 
 interface EnhancedChatBubbleProps {
   message: ChatMessage
@@ -109,7 +109,7 @@ export const EnhancedChatBubble = ({
               ? "ring-primary/30 bg-primary/10" 
               : "ring-spiritual/30 bg-card"
           )}>
-            {!isUser && <AvatarImage src={airchatbotLogo} alt="AirChatBot" />}
+            {!isUser && <AvatarImage src={elmaLogo} alt="ELMA" />}
             <AvatarFallback className={cn(
               "text-sm font-medium",
               isUser ? "text-primary bg-primary/10" : "text-spiritual bg-spiritual/10"

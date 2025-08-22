@@ -1,10 +1,10 @@
 // Service Worker for Push Notifications and PWA functionality
-const CACHE_NAME = 'airchatbot-v1';
+const CACHE_NAME = 'elma-v1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
-  '/airchatbot-logo.png',
+  '/elma-logo.png',
   '/manifest.json'
 ];
 
@@ -34,10 +34,10 @@ self.addEventListener('fetch', event => {
 // Handle push notifications
 self.addEventListener('push', event => {
   const options = {
-    body: event.data ? event.data.text() : 'New message from AirChatBot',
-    icon: '/airchatbot-logo.png',
-    badge: '/airchatbot-logo.png',
-    tag: 'airchatbot-notification',
+    body: event.data ? event.data.text() : 'New message from ELMA',
+    icon: '/elma-logo.png',
+    badge: '/elma-logo.png',
+    tag: 'elma-notification',
     data: {
       dateOfArrival: Date.now(),
       primaryKey: 1
@@ -57,7 +57,7 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('AirChatBot', options)
+    self.registration.showNotification('ELMA', options)
   );
 });
 

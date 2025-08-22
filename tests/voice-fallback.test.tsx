@@ -7,14 +7,16 @@ vi.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
-const invokeMock = vi.fn().mockResolvedValue({
-  data: null,
-  error: new Error('fail'),
+vi.mock('@/integrations/supabase/client', () => {
+  const invokeMock = vi.fn().mockResolvedValue({
+    data: null,
+    error: new Error('fail'),
+  });
+  
+  return {
+    supabase: { functions: { invoke: invokeMock } },
+  };
 });
-
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: { functions: { invoke: invokeMock } },
-}));
 
 function TTSComponent() {
   const { speak } = useAdvancedTTS();
@@ -23,7 +25,8 @@ function TTSComponent() {
 
 it('falls back to browser speech when ElevenLabs fails', async () => {
   const speakSpy = vi.spyOn(window.speechSynthesis, 'speak');
-  (window.speechSynthesis.getVoices as any).mockReturnValue([
+  const mockSpeechSynthesis = window.speechSynthesis as unknown as { getVoices: ReturnType<typeof vi.fn> };
+  mockSpeechSynthesis.getVoices.mockReturnValue([
     { name: 'Google US English', lang: 'en-US' },
   ]);
   render(<TTSComponent />);
