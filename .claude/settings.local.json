@@ -17,7 +17,21 @@
       "Bash(git push:*)",
       "Bash(claude --version)",
       "Bash(node:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(vercel:*)",
+      "Bash(npm search:*)",
+      "Bash(npx -y better-qdrant-mcp-server:*)",
+      "Read(//c/Users/d_rak/**)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__filesystem__list_allowed_directories",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__filesystem__search_files"
     ],
     "deny": [],
     "ask": []
