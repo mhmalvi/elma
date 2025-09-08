@@ -75,34 +75,22 @@ serve(async (req) => {
     const qdrantApiKey = Deno.env.get('QDRANT_API_KEY')
 
     if (!qdrantUrl || !qdrantApiKey) {
-      console.log('Qdrant not configured, falling back to database search')
-      
-      // Fallback to simple text search in database
-      const { data: quranResults } = await supabase
-        .from('quran_verses')
-        .select('*')
-        .textSearch('translation_english', query)
-        .limit(3)
-
-      const { data: hadithResults } = await supabase
-        .from('hadith_collection')
-        .select('*')
-        .textSearch('translation_english', query)
-        .limit(2)
-
+      console.log('Qdrant not configured - cannot provide Islamic content without vector search')
       return new Response(
-        JSON.stringify({
-          results: [
-            ...(quranResults || []).map(r => ({ ...r, source_type: 'quran' })),
-            ...(hadithResults || []).map(r => ({ ...r, source_type: 'hadith' }))
-          ]
+        JSON.stringify({ 
+          error: 'Vector search service not available',
+          results: []
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
 
-    // Search in Qdrant vector database
-    const searchResponse = await fetch(`${qdrantUrl}/collections/islamic_content/points/search`, {
+    // Search in Qdrant vector database  
+    const qdrantCollection = Deno.env.get('QDRANT_COLLECTION') || 'documents_pdf_texts';
+    const searchResponse = await fetch(`${qdrantUrl}/collections/${qdrantCollection}/points/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,18 +105,17 @@ serve(async (req) => {
     })
 
     if (!searchResponse.ok) {
-      console.error('Qdrant search failed, falling back to database')
+      console.error('Qdrant search failed:', searchResponse.status, searchResponse.statusText)
       
-      // Fallback to database search
-      const { data: results } = await supabase
-        .from('quran_verses')
-        .select('*')
-        .textSearch('translation_english', query)
-        .limit(limit)
-
       return new Response(
-        JSON.stringify({ results: results || [] }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Vector search temporarily unavailable',
+          results: []
+        }),
+        { 
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
 
