@@ -288,14 +288,16 @@ export function AppSidebar() {
         <button
           onClick={handleLogoClick}
           className={cn(
-            "flex items-center gap-3 w-full rounded-xl transition-all duration-300 group",
-            "hover:bg-sidebar-accent/50 hover:scale-[1.02] active:scale-[0.98]",
+            "flex items-center gap-3 w-full rounded-xl transition-all duration-500 ease-out group",
+            "hover:bg-sidebar-accent/50 hover:scale-[1.02] active:scale-[0.98] hover:shadow-glow",
+            "transform-gpu",
             collapsed ? "justify-center p-2" : "p-3"
           )}
         >
           <div className={cn(
             "rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg overflow-hidden",
-            "transition-all duration-300 group-hover:shadow-primary/30 group-hover:scale-110",
+            "transition-all duration-500 ease-out group-hover:shadow-primary/30 group-hover:scale-110",
+            "transform-gpu animate-breathe",
             collapsed ? "h-8 w-8" : "h-10 w-10",
             !collapsed && "shadow-primary/20"
           )}>
@@ -303,22 +305,22 @@ export function AppSidebar() {
               src="/elma-logo.png" 
               alt="ELMA"
               className={cn(
-                "object-contain transition-transform duration-300 group-hover:rotate-12",
+                "object-contain transition-transform duration-500 ease-out group-hover:rotate-12 group-hover:scale-110",
                 collapsed ? "h-5 w-5" : "h-6 w-6"
               )}
             />
           </div>
           {!collapsed && (
             <>
-              <div className="flex-1 min-w-0 text-left">
-                <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent transition-all duration-300">
+              <div className="flex-1 min-w-0 text-left animate-fade-in">
+                <h2 className="font-bold text-base gradient-neon bg-clip-text text-transparent transition-all duration-500 group-hover:animate-gentle-pulse">
                   ELMA
                 </h2>
-                <p className="text-xs text-sidebar-foreground/70 font-medium transition-all duration-300 group-hover:text-sidebar-foreground/90">
+                <p className="text-xs text-sidebar-foreground/70 font-medium transition-all duration-500 group-hover:text-sidebar-foreground/90">
                   Islamic AI Companion
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-all duration-300 group-hover:text-primary group-hover:translate-x-1" />
+              <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-all duration-500 ease-out group-hover:text-primary group-hover:translate-x-2 group-hover:scale-110" />
             </>
           )}
         </button>
@@ -335,16 +337,17 @@ export function AppSidebar() {
             className={cn(
               "w-full font-semibold bg-background text-foreground border border-primary",
               "shadow-lg hover:shadow-primary/30 rounded-xl hover:bg-muted/50",
-              "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover-lift group",
+              "transition-all duration-500 ease-out hover:scale-[1.03] active:scale-[0.97] hover-lift group",
+              "transform-gpu hover:shadow-glow",
               collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-12"
             )}
             title={collapsed ? "New Chat" : undefined}
           >
             <Plus className={cn(
-              "text-foreground transition-transform duration-300 group-hover:rotate-90",
+              "text-foreground transition-transform duration-500 ease-out group-hover:rotate-180 group-hover:scale-110",
               collapsed ? "h-4 w-4" : "h-5 w-5"
             )} />
-            {!collapsed && <span className="text-foreground font-semibold">New Chat</span>}
+            {!collapsed && <span className="text-foreground font-semibold animate-fade-in">New Chat</span>}
           </Button>
 
           {/* Search Button */}
@@ -443,7 +446,7 @@ export function AppSidebar() {
                   <SidebarMenuItem key={conversation.id}>
                     <ContextMenu>
                       <ContextMenuTrigger asChild>
-                        <div className="group relative">
+                        <div className="group relative animate-slide-in-up" style={{ animationDelay: `${conversations.indexOf(conversation) * 50}ms` }}>
                           <Button
                             variant="ghost"
                             onClick={() => handleConversationClick(conversation.id)}
@@ -451,29 +454,29 @@ export function AppSidebar() {
                             onMouseUp={handleMouseUp}
                             onMouseLeave={handleMouseLeave}
                             className={cn(
-                              "w-full transition-all duration-300 hover-lift group",
-                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm",
-                              "hover:scale-[1.02] active:scale-[0.98] rounded-xl relative",
+                              "w-full transition-all duration-500 ease-out hover-lift group transform-gpu",
+                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-medium",
+                              "hover:scale-[1.03] active:scale-[0.97] rounded-xl relative",
                               collapsed ? "h-10 w-10 p-0 justify-center" : "justify-start gap-3 h-auto p-3",
-                              currentConversation?.id === conversation.id && "bg-sidebar-accent text-sidebar-accent-foreground"
+                              currentConversation?.id === conversation.id && "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
                             )}
                             title={collapsed ? (conversation.title || 'New Conversation') : undefined}
                           >
                             {/* Pin indicator */}
                             {conversation.metadata?.pinned && !collapsed && (
-                              <Pin className="absolute top-1 right-1 h-3 w-3 text-amber-500" />
+                              <Pin className="absolute top-1 right-1 h-3 w-3 text-amber-500 animate-gentle-pulse" />
                             )}
                             
                             <MessageSquare className={cn(
-                              "flex-shrink-0 text-primary transition-all duration-300 group-hover:scale-110",
+                              "flex-shrink-0 text-primary transition-all duration-500 ease-out group-hover:scale-110 group-hover:rotate-12",
                               collapsed ? "h-4 w-4" : "h-4 w-4"
                             )} />
                             {!collapsed && (
-                              <div className="flex-1 text-left min-w-0">
-                                <div className="truncate text-sm font-medium text-sidebar-foreground transition-colors duration-300">
+                              <div className="flex-1 text-left min-w-0 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+                                <div className="truncate text-sm font-medium text-sidebar-foreground transition-all duration-500 group-hover:text-primary">
                                   {conversation.title || 'New Conversation'}
                                 </div>
-                                <div className="text-xs text-sidebar-foreground/60 transition-colors duration-300 group-hover:text-sidebar-foreground/80">
+                                <div className="text-xs text-sidebar-foreground/60 transition-all duration-500 group-hover:text-sidebar-foreground/90">
                                   {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
                                 </div>
                               </div>

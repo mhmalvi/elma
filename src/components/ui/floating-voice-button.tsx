@@ -10,21 +10,38 @@ interface WaveformProps {
 }
 
 export const Waveform = ({ isActive, bars = 5, className }: WaveformProps) => {
+  const [waveHeights, setWaveHeights] = React.useState<number[]>(
+    Array.from({ length: bars }, () => 8)
+  )
+
+  React.useEffect(() => {
+    if (isActive) {
+      const interval = setInterval(() => {
+        setWaveHeights(prev => 
+          prev.map(() => Math.random() * 20 + 4)
+        )
+      }, 150)
+      return () => clearInterval(interval)
+    } else {
+      setWaveHeights(Array.from({ length: bars }, () => 8))
+    }
+  }, [isActive, bars])
+
   return (
     <div className={cn("flex items-center justify-center gap-1", className)}>
-      {Array.from({ length: bars }).map((_, i) => (
+      {waveHeights.map((height, i) => (
         <div
           key={i}
           className={cn(
-            "w-1 bg-current rounded-full transition-all duration-200",
+            "w-1 bg-current rounded-full transition-all duration-150 ease-out",
             isActive 
-              ? "animate-pulse" 
-              : "h-2 opacity-40"
+              ? "opacity-100" 
+              : "opacity-40"
           )}
           style={{
-            height: isActive ? `${Math.random() * 16 + 8}px` : '8px',
-            animationDelay: `${i * 0.1}s`,
-            animationDuration: `${0.5 + Math.random() * 0.5}s`
+            height: `${height}px`,
+            transform: isActive ? `scaleY(${0.8 + Math.sin(Date.now() * 0.001 + i) * 0.3})` : 'scaleY(1)',
+            animationDelay: `${i * 50}ms`
           }}
         />
       ))}
@@ -50,12 +67,13 @@ export const FloatingVoiceButton = ({
   className
 }: FloatingVoiceButtonProps) => {
   const [ripples, setRipples] = React.useState<number[]>([])
+  const [isPressed, setIsPressed] = React.useState(false)
 
   React.useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
         setRipples(prev => [...prev, Date.now()])
-      }, 500)
+      }, 600)
       
       return () => clearInterval(interval)
     } else {
@@ -65,13 +83,16 @@ export const FloatingVoiceButton = ({
 
   React.useEffect(() => {
     const cleanup = setInterval(() => {
-      setRipples(prev => prev.filter(time => Date.now() - time < 2000))
+      setRipples(prev => prev.filter(time => Date.now() - time < 2500))
     }, 100)
     
     return () => clearInterval(cleanup)
   }, [])
 
   const handlePress = () => {
+    setIsPressed(true)
+    setTimeout(() => setIsPressed(false), 150)
+    
     if (isRecording) {
       onStopRecording()
     } else {
@@ -83,8 +104,8 @@ export const FloatingVoiceButton = ({
     <div className={cn("relative flex flex-col items-center", className)}>
       {/* Transcript Preview */}
       {transcript && (
-        <div className="mb-4 px-4 py-2 bg-card/90 backdrop-blur-sm rounded-full shadow-medium border border-border animate-scale-bounce">
-          <p className="text-sm text-muted-foreground italic">
+        <div className="mb-4 px-4 py-2 bg-card/90 backdrop-blur-sm rounded-full shadow-medium border border-border animate-slide-in-up transform transition-all duration-500 ease-out">
+          <p className="text-sm text-muted-foreground italic animate-fade-in">
             {transcript}
           </p>
         </div>
@@ -96,10 +117,11 @@ export const FloatingVoiceButton = ({
         {ripples.map((rippleTime) => (
           <div
             key={rippleTime}
-            className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping"
+            className="absolute inset-0 border-2 border-primary/40 rounded-full animate-ripple"
             style={{
-              animationDuration: '2s',
-              animationDelay: `${(Date.now() - rippleTime) / 1000}s`
+              animationDuration: '2.5s',
+              animationFillMode: 'forwards',
+              animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             }}
           />
         ))}
@@ -110,26 +132,28 @@ export const FloatingVoiceButton = ({
           onTouchStart={handlePress}
           disabled={isLoading}
           className={cn(
-            "relative w-20 h-20 rounded-full border-0 shadow-floating transition-all duration-300",
-            "hover:scale-105 active:scale-95",
+            "relative w-20 h-20 rounded-full border-0 shadow-floating transition-all duration-300 ease-out",
+            "hover:scale-110 active:scale-95 transform-gpu",
             isRecording 
-              ? "bg-destructive hover:bg-destructive/90 mic-recording" 
+              ? "bg-destructive hover:bg-destructive/90 animate-smooth-glow" 
               : "primary-gradient hover:shadow-large",
             isLoading && "opacity-50 cursor-not-allowed",
-            !isRecording && !isLoading && "breathe"
+            !isRecording && !isLoading && "animate-breathe",
+            isPressed && "scale-90",
+            "before:absolute before:inset-0 before:rounded-full before:bg-white/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
           )}
         >
           {isLoading ? (
             <div className="flex flex-col items-center gap-1">
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-white/80 border-t-white rounded-full animate-spin" />
             </div>
           ) : isRecording ? (
-            <div className="flex flex-col items-center gap-1">
-              <VolumeX className="w-6 h-6 text-white" />
+            <div className="flex flex-col items-center gap-1 animate-fade-in">
+              <VolumeX className="w-6 h-6 text-white animate-gentle-pulse" />
               <Waveform isActive={true} bars={3} className="text-white" />
             </div>
           ) : (
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center transform transition-transform duration-200">
               <Volume2 className="w-8 h-8 text-white" />
             </div>
           )}
@@ -138,7 +162,11 @@ export const FloatingVoiceButton = ({
 
       {/* Status Text */}
       <div className="mt-3 text-center">
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className={cn(
+          "text-xs font-medium transition-all duration-300 ease-out",
+          isRecording ? "text-destructive animate-gentle-pulse" : "text-muted-foreground",
+          isLoading && "animate-pulse"
+        )}>
           {isLoading 
             ? "Processing..." 
             : isRecording 
