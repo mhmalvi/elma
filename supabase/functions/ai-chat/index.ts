@@ -182,7 +182,7 @@ serve(async (req) => {
     const QDRANT_ENDPOINT = Deno.env.get('QDRANT_ENDPOINT');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const QDRANT_COLLECTION = Deno.env.get('QDRANT_COLLECTION') || 'islamic_content';
+    const QDRANT_COLLECTION = Deno.env.get('QDRANT_COLLECTION') || 'documents_pdf_texts';
 
     if (!OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY is not configured');
@@ -308,19 +308,53 @@ serve(async (req) => {
       }
     }
 
-    // Fallback: DB semantic search if no Qdrant context
-    if (!contextText) {
+    // Enhanced Qdrant-only fallback: try broader search with lower threshold if no context found
+    if (!contextText && QDRANT_API_KEY && QDRANT_ENDPOINT) {
       try {
-        const { data: searchData, error: searchErr } = await supabase
-          .rpc('search_islamic_content', { search_query: sanitizedQuestion, result_limit: 3 });
-        if (!searchErr && Array.isArray(searchData) && searchData.length > 0) {
-          contextText = searchData
-            .map((r: any) => `${r.content}\n[Reference: ${r.reference}]`)
-            .join('\n\n---\n\n');
-          console.log(`[ai-chat][${requestId}] Using fallback DB context count=${searchData.length}`);
+        console.log(`[ai-chat][${requestId}] No context from primary search, trying broader search with lower threshold`);
+        
+        // Try the same collection with lower threshold and more results
+        const fallbackResponse = await fetchWithTimeoutAndRetry(
+          `${QDRANT_ENDPOINT}/collections/${QDRANT_COLLECTION}/points/search`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': QDRANT_API_KEY,
+            },
+            body: JSON.stringify({
+              vector: queryEmbedding,
+              limit: 3,
+              score_threshold: 0.5, // Lower threshold for broader results
+              with_payload: true
+            }),
+          },
+          { timeoutMs: 8000, maxRetries: 1 }
+        );
+
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          const fallbackResults = fallbackData.result;
+          
+          if (fallbackResults && fallbackResults.length > 0) {
+            contextText = fallbackResults
+              .map((result: any) => {
+                const payload = result.payload;
+                let context = payload.text || '';
+                if (payload.source) {
+                  context += `\n[Source: ${payload.source}`;
+                  if (payload.page) context += `, Page: ${payload.page}`;
+                  context += ']';
+                }
+                return context;
+              })
+              .join('\n\n---\n\n');
+            
+            console.log(`[ai-chat][${requestId}] Using fallback Qdrant context with lower threshold, count=${fallbackResults.length}`);
+          }
         }
-      } catch (_e) {
-        console.log(`[ai-chat][${requestId}] Fallback search failed`);
+      } catch (fallbackError) {
+        console.log(`[ai-chat][${requestId}] Qdrant fallback search failed:`, fallbackError);
       }
     }
 
