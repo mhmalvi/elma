@@ -57,37 +57,37 @@ export const ChatBubble = ({
 
   return (
     <div className={cn(
-      "flex w-full chat-bubble-enter",
-      isUser ? "justify-end" : "justify-start",
+      "flex w-full animate-slide-in-up",
+      isUser ? "justify-end animate-slide-in-right" : "justify-start animate-slide-in-left",
       className
     )}>
       <Card className={cn(
-        "max-w-[80%] p-4 shadow-soft",
+        "max-w-[80%] p-4 shadow-medium transition-all duration-300 hover:shadow-large transform hover:scale-[1.02]",
         isUser 
           ? "primary-gradient text-primary-foreground ml-4" 
           : "bg-card text-card-foreground mr-4"
       )}>
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap animate-fade-in">
             {message}
           </p>
           
           {source && (
-            <div className="text-xs opacity-80 border-t pt-2 mt-2 space-y-1">
+            <div className="text-xs opacity-80 border-t pt-2 mt-2 space-y-1 animate-fade-in" style={{ animationDelay: "0.2s" }}>
               {source.verse && (
-                <div className="flex items-center gap-1">
-                  <BookOpen className="w-3 h-3" />
+                <div className="flex items-center gap-1 transition-all duration-200 hover:opacity-100">
+                  <BookOpen className="w-3 h-3 transition-transform duration-200 hover:scale-110" />
                   <span>Quran: {source.verse}</span>
                 </div>
               )}
               {source.hadith && (
-                <div className="flex items-center gap-1">
-                  <ExternalLink className="w-3 h-3" />
+                <div className="flex items-center gap-1 transition-all duration-200 hover:opacity-100">
+                  <ExternalLink className="w-3 h-3 transition-transform duration-200 hover:scale-110" />
                   <span>Hadith: {source.hadith}</span>
                 </div>
               )}
               {source.reference && (
-                <div className="text-xs opacity-60">
+                <div className="text-xs opacity-60 transition-opacity duration-200 hover:opacity-80">
                   {source.reference}
                 </div>
               )}
@@ -95,18 +95,18 @@ export const ChatBubble = ({
           )}
           
           {!isUser && (
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 animate-fade-in" style={{ animationDelay: "0.4s" }}>
               {audioUrl && (
                 <Button
                   onClick={handlePlayPause}
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs"
+                  className="h-8 px-2 text-xs transition-all duration-200 hover:scale-105 hover:shadow-medium"
                 >
                   {isPlaying ? (
-                    <Pause className="w-3 h-3 mr-1" />
+                    <Pause className="w-3 h-3 mr-1 animate-gentle-pulse" />
                   ) : (
-                    <Play className="w-3 h-3 mr-1" />
+                    <Play className="w-3 h-3 mr-1 transition-transform duration-200 hover:scale-110" />
                   )}
                   {isPlaying ? "Pause" : "Listen"}
                 </Button>
@@ -117,7 +117,7 @@ export const ChatBubble = ({
                   onClick={onExplainMore}
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs"
+                  className="h-8 px-2 text-xs transition-all duration-200 hover:scale-105 hover:shadow-medium"
                 >
                   Explain more
                 </Button>
@@ -128,9 +128,9 @@ export const ChatBubble = ({
                   onClick={onBookmark}
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs"
+                  className="h-8 px-2 text-xs transition-all duration-200 hover:scale-105 hover:shadow-medium"
                 >
-                  <BookOpen className="w-3 h-3 mr-1" />
+                  <BookOpen className="w-3 h-3 mr-1 transition-transform duration-200 hover:scale-110" />
                   Save
                 </Button>
               )}
