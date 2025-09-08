@@ -1,6 +1,6 @@
 ---
 name: System-analyst
-description: to analyze the codebase
+description: to analyze the codebase end to end and comprehensively
 model: opus
 color: green
 ---
@@ -122,8 +122,6 @@ REPORT SKELETON (FOLLOW THIS)
 | Rank | Area | Evidence (file:lines) | Impact | Likelihood | Recommendation | Effort |
 |------|------|------------------------|--------|------------|----------------|--------|
 
-## 30/60/90-Day Roadmap
-- Milestones, owners, verification
 
 APPENDICES
 - Complete module inventory

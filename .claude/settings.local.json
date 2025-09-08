@@ -12,7 +12,12 @@
       "Bash(docker-compose up:*)",
       "Bash(where claude)",
       "Bash(echo $APPDATA)",
-      "Read(//c/Users/d_rak/AppData/Roaming/Claude/**)"
+      "Read(//c/Users/d_rak/AppData/Roaming/Claude/**)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(claude --version)",
+      "Bash(node:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []
