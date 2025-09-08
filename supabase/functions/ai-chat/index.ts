@@ -20,10 +20,56 @@ function validateOrigin(origin: string | null): boolean {
   return allowedOrigins.includes(origin);
 }
 
-// Utilities: logging, timeouts, retries
+// Utilities: logging, timeouts, retries, sanitization
 const truncate = (s: string, n = 80) => (s ? (s.length > n ? `${s.slice(0, n)}...` : s) : '');
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+// Input sanitization utility
+function sanitizeInput(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+  
+  // Remove HTML tags and encode special characters
+  return input
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[<>&"']/g, (match) => ({ // Encode dangerous characters
+      '<': '&lt;',
+      '>': '&gt;', 
+      '&': '&amp;',
+      '"': '&quot;',
+      "'": '&#x27;'
+    }[match] || match))
+    .trim();
+}
+
+// Content filtering for inappropriate content
+function validateContent(input: string): { isValid: boolean; reason?: string } {
+  const cleanInput = input.toLowerCase().trim();
+  
+  // Check length limits
+  if (cleanInput.length === 0) {
+    return { isValid: false, reason: 'Empty content' };
+  }
+  
+  if (cleanInput.length > 10000) {
+    return { isValid: false, reason: 'Content too long (max 10,000 characters)' };
+  }
+  
+  // Basic profanity and inappropriate content filter
+  const inappropriatePatterns = [
+    /\b(fuck|shit|damn|bitch|asshole|bastard)\b/gi,
+    /\b(hate|kill|murder|suicide|bomb|terrorist|violence)\b/gi,
+    /(script|javascript|<|>|eval|function)/gi // Basic XSS prevention
+  ];
+  
+  for (const pattern of inappropriatePatterns) {
+    if (pattern.test(cleanInput)) {
+      return { isValid: false, reason: 'Content contains inappropriate language or potentially harmful content' };
+    }
+  }
+  
+  return { isValid: true };
+}
 
 async function fetchWithTimeoutAndRetry(
   url: string,
@@ -101,14 +147,33 @@ serve(async (req) => {
       throw new Error('Question is required');
     }
 
+    // Sanitize and validate input
+    const sanitizedQuestion = sanitizeInput(question);
+    const contentValidation = validateContent(sanitizedQuestion);
+    
+    if (!contentValidation.isValid) {
+      console.log(`[ai-chat] Input validation failed: ${contentValidation.reason}`);
+      return new Response(
+        JSON.stringify({ 
+          error: contentValidation.reason, 
+          success: false,
+          requestId: correlation_id || crypto.randomUUID()
+        }), 
+        { 
+          status: 400, 
+          headers: dynamicCorsHeaders 
+        }
+      );
+    }
+
     const lang = typeof language === 'string' ? String(language).toLowerCase() : 'en';
     const supportedLangs = new Set(['en','ar','bn','hi','ur']);
     const safeLang = supportedLangs.has(lang) ? (lang as 'en'|'ar'|'bn'|'hi'|'ur') : 'en';
 
     requestId = correlation_id || crypto.randomUUID();
     startedAt = Date.now();
-    const safePreview = truncate(question, 40);
-    console.log(`[ai-chat][${requestId}] Start len=${question.length} preview="${safePreview}"`);
+    const safePreview = truncate(sanitizedQuestion, 40);
+    console.log(`[ai-chat][${requestId}] Start len=${sanitizedQuestion.length} preview="${safePreview}"`);
 
     // Get environment variables
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
@@ -138,7 +203,7 @@ serve(async (req) => {
       console.log(`[ai-chat][${requestId}] Auth failed`);
     }
 
-    console.log(`[ai-chat][${requestId}] Processing question len=${question.length}`);
+    console.log(`[ai-chat][${requestId}] Processing question len=${sanitizedQuestion.length}`);
     console.log(`[ai-chat][${requestId}] User=${user?.id || 'anonymous'}`);
 
     const endpoint = 'ai-chat';
@@ -183,7 +248,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               model: 'text-embedding-3-small',
-              input: question,
+              input: sanitizedQuestion,
             }),
           }, { timeoutMs: 10000, maxRetries: 2 });
 
@@ -247,7 +312,7 @@ serve(async (req) => {
     if (!contextText) {
       try {
         const { data: searchData, error: searchErr } = await supabase
-          .rpc('search_islamic_content', { search_query: question, result_limit: 3 });
+          .rpc('search_islamic_content', { search_query: sanitizedQuestion, result_limit: 3 });
         if (!searchErr && Array.isArray(searchData) && searchData.length > 0) {
           contextText = searchData
             .map((r: any) => `${r.content}\n[Reference: ${r.reference}]`)
@@ -299,7 +364,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
         model: 'anthropic/claude-3-haiku',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: question }
+          { role: 'user', content: sanitizedQuestion }
         ],
         temperature: 0.7,
         max_tokens: 500
@@ -329,8 +394,8 @@ Source: Quran 2:155, Sahih Bukhari"`;
             .from('conversations')
             .insert({
               user_id: user.id,
-              title: question.substring(0, 100) + (question.length > 100 ? '...' : ''),
-              metadata: { first_question: question }
+              title: sanitizedQuestion.substring(0, 100) + (sanitizedQuestion.length > 100 ? '...' : ''),
+              metadata: { first_question: sanitizedQuestion }
             })
             .select('id')
             .single();
@@ -347,7 +412,7 @@ Source: Quran 2:155, Sahih Bukhari"`;
             .insert({
               conversation_id: currentConversationId,
               user_id: user.id,
-              content: question,
+              content: sanitizedQuestion,
               role: 'user'
             });
 
