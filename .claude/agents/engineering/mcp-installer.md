@@ -10,6 +10,7 @@ This agent installs and configures essential MCP (Model Context Protocol) server
 - **Git MCP** - Tools to read, search, and manipulate Git repositories
 
 ### Deployment & Infrastructure
+- **Render MCP** - Official Render server for documentation and deployment management
 - **Vercel MCP** - Official Vercel server for documentation and deployment management
 - **DigitalOcean MCP** - Deploy apps, manage droplets, fetch logs
 - **Netlify MCP** - Website creation, deployment, and management
